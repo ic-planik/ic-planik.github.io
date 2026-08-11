@@ -1,0 +1,21 @@
+# Este repositorio e PUBLICO. Nada de dado comercial entra aqui.
+# O index.html nao tem dado dentro; o payload e a planilha tem tudo.
+payload.json
+preview*.html
+RELATORIO*
+planilha.xlsx
+*.xlsx
+*.xls
+*.csv
+*.json.gz
+
+# credenciais - nunca versionar
+*serviceAccount*.json
+firebase-key*.json
+.env
+
+# lixo de trabalho
+__pycache__/
+node_modules/
+*.png
+*.jpg
