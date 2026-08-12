@@ -1,0 +1,3028 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Planik · Inteligência Comercial 2026</title>
+<meta name="robots" content="noindex,nofollow">
+<style>
+/* ===========================================================================
+   PALETA — validada (all-pairs, claro e escuro): #2a78d6 / #B08A2E / #B0397A
+   Verde/âmbar/vermelho são RESERVADOS para status; nunca viram cor de série.
+   =========================================================================== */
+:root{
+  --bg:#f4f3f0; --card:#fff; --card-2:#faf9f7;
+  --ink:#16171a; --ink-2:#4a4b4f; --muted:#7b7c80;
+  --border:#e3e1dc; --grid:#eceae5;
+  --s1:#2a78d6; --s2:#B08A2E; --s3:#B0397A; --s4:#5A6B7C; --s0:#8a8a85;
+  --good:#1a7a4e; --warn:#B4651A; --bad:#C0392B;
+  --good-bg:#e8f3ed; --warn-bg:#fbf0e5; --bad-bg:#fbeceb;
+  --gold:#B08A2E; --shadow:0 1px 2px rgba(20,20,20,.05),0 8px 24px rgba(20,20,20,.06);
+}
+:root[data-theme="dark"]{
+  --bg:#0f1012; --card:#17181b; --card-2:#1d1e22;
+  --ink:#f3f2ef; --ink-2:#c3c2bd; --muted:#8d8e91;
+  --border:#2a2b2f; --grid:#25262a;
+  --s1:#4A8FE0; --s2:#B08526; --s3:#BE4A84; --s4:#8FA0B0; --s0:#7e7e79;
+  --good:#2f9e6a; --warn:#D07C2A; --bad:#E05C4E;
+  --good-bg:#15271f; --warn-bg:#2a1f12; --bad-bg:#2b1817;
+  --gold:#C9A24A; --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.35);
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:var(--bg); color:var(--ink);
+  font:14px/1.5 ui-sans-serif,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  -webkit-font-smoothing:antialiased; -webkit-text-size-adjust:100%;
+  padding-bottom:env(safe-area-inset-bottom)}
+body.locked{overflow:hidden}
+body.locked .app{filter:blur(7px); pointer-events:none; user-select:none}
+h1,h2,h3{margin:0;font-weight:650;letter-spacing:-.011em}
+button{font:inherit;color:inherit}
+table{border-collapse:collapse;width:100%}
+.num{font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1}
+
+.wrap{max-width:1320px;margin:0 auto;padding:0 16px}
+header.top{background:var(--card);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:40}
+.topin{display:flex;align-items:center;gap:12px;padding:12px 0;flex-wrap:wrap}
+.brand{display:flex;align-items:baseline;gap:9px;margin-right:auto;min-width:0}
+.brand .mark{font-size:15px;font-weight:750;letter-spacing:.14em;color:var(--gold);text-transform:uppercase}
+.brand .sep{color:var(--border)}
+.brand .ttl{font-size:14px;font-weight:600;color:var(--ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chip{font-size:11.5px;color:var(--muted);background:var(--card-2);border:1px solid var(--border);
+  border-radius:99px;padding:4px 10px;white-space:nowrap}
+.iconbtn{background:var(--card-2);border:1px solid var(--border);border-radius:8px;width:34px;height:34px;
+  cursor:pointer;display:grid;place-items:center;font-size:14px;flex:0 0 auto}
+.iconbtn:hover{border-color:var(--gold)}
+.userbadge{font-size:12px;color:var(--ink-2);background:var(--card-2);border:1px solid var(--border);
+  border-radius:99px;padding:5px 11px;display:flex;align-items:center;gap:7px;white-space:nowrap}
+.userbadge .role{font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:var(--gold);font-weight:700}
+nav.tabs{display:flex;gap:2px;overflow-x:auto;scrollbar-width:none;border-top:1px solid var(--border);
+  margin-top:2px;-webkit-overflow-scrolling:touch}
+nav.tabs::-webkit-scrollbar{display:none}
+.tab{background:none;border:0;border-bottom:2px solid transparent;cursor:pointer;padding:11px 13px;
+  font-size:13.5px;font-weight:550;color:var(--muted);white-space:nowrap}
+.tab.on{color:var(--ink);border-bottom-color:var(--gold);font-weight:650}
+main{padding:20px 0 56px}
+.panel{display:none}.panel.on{display:block}
+
+.card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px 17px;box-shadow:var(--shadow)}
+.card>.hd{margin-bottom:13px}
+.card .h{font-size:14.5px;font-weight:650}
+.card .sub{font-size:12px;color:var(--muted);margin-top:2px}
+.grid{display:grid;gap:13px;min-width:0}
+/* item de grid não encolhe sozinho: sem isto, uma tabela larga empurra a página inteira */
+.grid>*{min-width:0}
+.card{min-width:0}
+.scroll{max-width:100%}
+.g4{grid-template-columns:repeat(4,1fr)}
+.g3{grid-template-columns:repeat(3,1fr)}
+.g2{grid-template-columns:repeat(2,1fr)}
+.g21{grid-template-columns:1.5fr 1fr;align-items:start}
+.gauto{grid-template-columns:repeat(auto-fit,minmax(198px,1fr))}
+.cnc{padding:13px 14px}
+.cnc .val{font-size:clamp(15px,1.45vw,19px)!important}
+.cnc .sub{font-size:11px!important}
+@media(max-width:1080px){.g4{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:900px){.g3,.g2,.g21{grid-template-columns:1fr}}
+@media(max-width:560px){.g4{grid-template-columns:1fr}}
+
+.kpi .lab{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:650}
+.kpi .val{font-size:25px;font-weight:700;letter-spacing:-.02em;margin:6px 0 3px;line-height:1.15;
+  word-break:break-word}
+.kpi .val.lg{font-size:31px}
+.kpi .val.sm{font-size:20px}
+.kpi .sub{font-size:12.5px;color:var(--ink-2);line-height:1.55}
+.meter{height:5px;background:var(--grid);border-radius:99px;overflow:hidden;margin-top:10px}
+.meter span{display:block;height:100%;border-radius:99px}
+.track{position:relative;height:9px;background:var(--grid);border-radius:99px}
+.barfill{height:100%;border-radius:99px}
+.metamark{position:absolute;top:-3px;width:2px;height:15px;background:var(--muted);opacity:.75}
+
+.pill{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:650;padding:2px 8px;
+  border-radius:99px;white-space:nowrap}
+.pill.g{background:var(--good-bg);color:var(--good)}
+.pill.w{background:var(--warn-bg);color:var(--warn)}
+.pill.b{background:var(--bad-bg);color:var(--bad)}
+.pill.off{background:var(--card-2);color:var(--muted);border:1px solid var(--border)}
+.dot{width:8px;height:8px;border-radius:50%;display:inline-block;flex:0 0 auto}
+
+.tgl{display:inline-flex;background:var(--card-2);border:1px solid var(--border);border-radius:8px;
+  padding:2px;gap:2px;flex-wrap:wrap}
+.tgl button{background:none;border:0;border-radius:6px;cursor:pointer;padding:6px 11px;font-size:12.5px;
+  font-weight:550;color:var(--muted)}
+.tgl button.on{background:var(--card);color:var(--ink);font-weight:650;box-shadow:0 1px 2px rgba(0,0,0,.08)}
+
+/* Recorte de ato. Quando "Ato pago" está ligado o relatório inteiro muda de
+   número, então o estado precisa ser impossível de não notar: botão em dourado
+   e uma faixa no rodapé do cabeçalho. Relatório filtrado que parece relatório
+   normal é como alguém leva número errado para a diretoria. */
+.atotgl button.on[data-a="pago"]{background:var(--gold);color:#fff}
+:root[data-theme="dark"] .atotgl button.on[data-a="pago"]{color:#14100a}
+:root[data-ato="pago"] header.top{box-shadow:inset 0 -3px 0 var(--gold)}
+.atochip{display:none;font-size:11.5px;color:var(--gold);font-weight:650}
+
+/* selo da tela de conferência: símbolo grande, cor de status, sem depender
+   só da cor — o ✓ e o ✕ já se distinguem por forma para quem não vê cor */
+.selo{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;
+  border-radius:50%;font-size:15px;font-weight:800;line-height:1}
+.selo.ok{background:var(--good-bg);color:var(--good)}
+.selo.erro{background:var(--bad-bg);color:var(--bad)}
+.selo.aviso{background:var(--warn-bg);color:var(--warn)}
+:root[data-ato="pago"] .atochip{display:inline}
+
+.periodo{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:12.5px}
+.periodo input[type=date]{font:inherit;font-size:12.5px;padding:5px 8px;border:1px solid var(--border);
+  border-radius:7px;background:var(--card);color:var(--ink);color-scheme:light}
+:root[data-theme="dark"] .periodo input[type=date]{color-scheme:dark}
+.periodo .lbl{color:var(--muted)}
+.preset{background:var(--card-2);border:1px solid var(--border);border-radius:99px;padding:4px 10px;
+  font-size:11.5px;cursor:pointer;color:var(--ink-2)}
+.preset:hover,.preset.on{border-color:var(--gold);color:var(--ink)}
+
+.tb{font-size:13px}
+.tb th{text-align:left;font-size:10.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);
+  font-weight:700;padding:8px 10px;border-bottom:1px solid var(--border);white-space:nowrap;background:var(--card)}
+.tb td{padding:9px 10px;border-bottom:1px solid var(--grid)}
+.tb td.r{white-space:nowrap}
+.tb tbody tr:last-child td{border-bottom:0}
+.tb tbody tr.clickable{cursor:pointer}
+.tb tbody tr.clickable:hover{background:var(--card-2)}
+.tb .r{text-align:right}.tb .c{text-align:center}.tb .nm{font-weight:600}
+.tb tr.tot td{font-weight:700;border-top:1.5px solid var(--border);background:var(--card-2)}
+.scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.stickyc{position:sticky;left:0;background:var(--card);z-index:1;white-space:nowrap}
+.tb tr.tot .stickyc{background:var(--card-2)}
+.lnk{cursor:pointer;text-decoration:underline;text-decoration-style:dotted;text-underline-offset:3px;
+  text-decoration-color:var(--muted)}
+.lnk:hover{color:var(--gold);text-decoration-color:var(--gold)}
+.spark{cursor:pointer;border-radius:5px;padding:2px}
+.spark:hover{background:var(--card-2);outline:1px solid var(--border)}
+
+svg{display:block;width:100%;height:auto;overflow:hidden}
+.gridline{stroke:var(--grid);stroke-width:1}
+.axis{stroke:var(--border);stroke-width:1}
+.axislab{fill:var(--muted);font-size:10px;font-family:inherit}
+.dlab{fill:var(--ink-2);font-size:10px;font-weight:650;font-family:inherit;font-variant-numeric:tabular-nums}
+/* halo: o rótulo desvia de outros rótulos, mas a linha do gráfico ainda pode
+   passar atrás dele. O contorno na cor do fundo mantém o número legível. */
+.dlab.halo{paint-order:stroke;stroke:var(--card);stroke-width:3.2px;stroke-linejoin:round}
+.hit{cursor:pointer}
+.legend{display:flex;flex-wrap:wrap;gap:13px;margin-top:12px;font-size:12.5px}
+.legend .it{display:flex;align-items:center;gap:7px;color:var(--ink-2)}
+.legend .it b{color:var(--ink);font-variant-numeric:tabular-nums}
+.legend .it.clickable{cursor:pointer}
+
+#tip{position:fixed;pointer-events:none;opacity:0;transition:opacity .1s;z-index:300;background:var(--card);
+  color:var(--ink);border:1px solid var(--border);border-radius:8px;padding:8px 11px;font-size:12px;
+  box-shadow:var(--shadow);max-width:280px}
+
+.ov{position:fixed;inset:0;background:rgba(12,12,14,.55);backdrop-filter:blur(3px);display:none;
+  align-items:flex-start;justify-content:center;z-index:120;padding:22px 10px;overflow-y:auto}
+.ov.on{display:flex}
+.modal{background:var(--card);border:1px solid var(--border);border-radius:13px;
+  box-shadow:0 24px 64px rgba(0,0,0,.28);width:100%;max-width:1140px;overflow:hidden;animation:pop .16s ease-out}
+@keyframes pop{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+.modal .mh{display:flex;align-items:flex-start;gap:12px;padding:15px 17px;border-bottom:1px solid var(--border);
+  position:sticky;top:0;background:var(--card);z-index:3}
+.modal .mh .t{font-size:16px;font-weight:680;letter-spacing:-.015em}
+.modal .mh .s{font-size:12.5px;color:var(--muted);margin-top:3px}
+.modal .mb{padding:0;max-height:min(70vh,720px);overflow:auto}
+.modal .mf{padding:10px 17px;border-top:1px solid var(--border);background:var(--card-2);font-size:12px;
+  color:var(--muted);display:flex;gap:14px;flex-wrap:wrap}
+.x{margin-left:auto;background:none;border:0;font-size:22px;line-height:1;cursor:pointer;color:var(--muted);padding:0 3px}
+.crumb{background:none;border:0;padding:0;cursor:pointer;color:var(--gold);font-size:12.5px;font-weight:600}
+.crumb:hover{text-decoration:underline}
+.empty{padding:34px 18px;text-align:center;color:var(--muted);font-size:13px}
+
+/* ---- filtro estilo Excel ---- */
+.fh{display:flex;align-items:center;gap:6px;cursor:pointer;user-select:none}
+.fh .car{opacity:.4;font-size:9px;transition:opacity .1s}
+.fh:hover .car{opacity:.9}
+.fh.act .car{opacity:1;color:var(--gold)}
+.fh.act{color:var(--gold)}
+.fmenu{position:fixed;z-index:400;background:var(--card);border:1px solid var(--border);border-radius:9px;
+  box-shadow:0 16px 44px rgba(0,0,0,.24);width:266px;padding:6px;display:none;font-size:12.5px}
+.fmenu.on{display:block}
+.fmenu .op{display:block;width:100%;text-align:left;background:none;border:0;padding:8px 9px;border-radius:6px;
+  cursor:pointer;font-size:12.5px}
+.fmenu .op:hover{background:var(--card-2)}
+.fmenu hr{border:0;border-top:1px solid var(--border);margin:5px 0}
+.fmenu input.srch{width:100%;padding:7px 9px;border:1px solid var(--border);border-radius:7px;
+  background:var(--card-2);color:var(--ink);font:inherit;font-size:12.5px;margin:2px 0 6px}
+.fvals{max-height:190px;overflow:auto;padding:0 2px}
+.fvals label{display:flex;align-items:center;gap:8px;padding:5px 7px;border-radius:6px;cursor:pointer;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fvals label:hover{background:var(--card-2)}
+.fvals input{accent-color:var(--gold);flex:0 0 auto}
+.fbtns{display:flex;gap:7px;margin-top:7px}
+.fbtns button{flex:1;padding:8px;border-radius:7px;border:1px solid var(--border);cursor:pointer;
+  font-size:12.5px;font-weight:600;background:var(--card-2)}
+.fbtns .ok{background:var(--gold);border-color:var(--gold);color:#14161a}
+
+#loginOverlay{position:fixed;inset:0;z-index:500;padding:20px;display:flex;align-items:center;justify-content:center;
+  background:radial-gradient(120% 90% at 50% 0%,#2b2e33 0%,#1c1e22 45%,#141518 100%)}
+.login{background:#fff;border-radius:16px;box-shadow:0 26px 70px rgba(0,0,0,.45);padding:0 30px 30px;
+  width:100%;max-width:392px;overflow:hidden;position:relative;color:#16171a}
+.login:before{content:"";position:absolute;inset:0 0 auto 0;height:4px;
+  background:linear-gradient(90deg,#8d6d1c,#d9b45c,#8d6d1c)}
+.login .mark{font-size:34px;font-weight:300;letter-spacing:.34em;text-align:center;color:#16171a;
+  padding:34px 0 0;text-indent:.34em;font-family:ui-sans-serif,-apple-system,"Segoe UI",Roboto,sans-serif}
+.login .t1{text-align:center;font-size:16px;font-weight:700;margin-top:14px;color:#16171a}
+.login .sb{text-align:center;color:#7b7c80;font-size:12.5px;margin:5px 0 24px}
+.fld{margin-bottom:13px}
+.fld label{display:block;font-size:12px;font-weight:650;color:#3c3d41;margin-bottom:6px}
+.fld input{width:100%;padding:12px 13px;border:1px solid #dcdad4;border-radius:9px;background:#faf9f7;
+  color:#16171a;font:inherit;font-size:16px}
+.fld input::placeholder{color:#a9a8a3}
+.fld input:focus{outline:2px solid #B08A2E;outline-offset:-1px;background:#fff}
+.btn{width:100%;padding:13px;border:0;border-radius:9px;background:#B08A2E;color:#fff;font-weight:700;
+  font-size:15px;cursor:pointer;margin-top:10px;letter-spacing:.01em}
+.btn:hover{background:#9c7826}
+.btn:disabled{opacity:.6;cursor:default}
+.err{color:#C0392B;font-size:12.5px;min-height:18px;margin-top:9px;text-align:center}
+.note{font-size:12px;color:#5b5c60;margin-top:20px;line-height:1.65;background:#f6f4ef;
+  border:1px solid #e8e4d9;border-radius:9px;padding:12px 14px}
+.note b{color:#16171a}
+.txtbtn{background:var(--card-2);border:1px solid var(--border);border-radius:8px;padding:7px 13px;
+  cursor:pointer;font-size:12.5px;font-weight:600;color:var(--ink-2);white-space:nowrap}
+.txtbtn:hover{border-color:var(--gold);color:var(--ink)}
+/* números grandes continuam legíveis: a fonte encolhe sozinha */
+.kpi .val{font-size:clamp(17px,2.05vw,25px)}
+.kpi .val.lg{font-size:clamp(20px,2.6vw,31px)}
+.kpi .val.sm{font-size:clamp(15px,1.65vw,20px)}
+/* engrenagem / cadastro */
+.cfgrow{display:flex;align-items:center;gap:11px;padding:9px 4px;border-bottom:1px solid var(--grid);flex-wrap:wrap}
+.cfgrow.off{opacity:.55}
+.cfgrow .nm{font-weight:650;min-width:120px}
+.sw{width:42px;height:23px;border-radius:99px;border:1px solid var(--border);background:var(--grid);
+  position:relative;cursor:pointer;flex:0 0 auto;transition:background .12s}
+.sw:after{content:"";position:absolute;top:2px;left:2px;width:17px;height:17px;border-radius:50%;
+  background:var(--card);box-shadow:0 1px 2px rgba(0,0,0,.25);transition:left .12s}
+.sw.on{background:var(--good);border-color:var(--good)}
+.sw.on:after{left:21px}
+.sw[disabled]{opacity:.45;cursor:not-allowed}
+.swlab{font-size:11.5px;color:var(--muted);width:52px;flex:0 0 auto}
+.badge-novo{font-size:9.5px;font-weight:700;letter-spacing:.06em;background:var(--warn-bg);color:var(--warn);
+  padding:2px 6px;border-radius:99px;margin-left:7px;text-transform:uppercase}
+.selin,.txtin{font:inherit;font-size:12.5px;padding:6px 9px;border:1px solid var(--border);border-radius:7px;
+  background:var(--card);color:var(--ink)}
+.grouphd{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--gold);
+  margin:18px 0 4px}
+.cfgnote{font-size:11.5px;color:var(--muted);display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+#dataStatus{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:var(--bg);
+  z-index:480;font-size:13.5px;color:var(--ink-2);text-align:center;padding:20px}
+footer{border-top:1px solid var(--border);margin-top:40px;padding:16px 0 24px;font-size:11.5px;color:var(--muted);
+  display:flex;gap:14px;flex-wrap:wrap}
+
+@media(max-width:640px){
+  .kpi .val{font-size:21px} .kpi .val.lg{font-size:25px} .kpi .val.sm{font-size:18px}
+  .card{padding:13px} .modal .mb{max-height:76vh} .wrap{padding:0 11px}
+  .tb{font-size:12.5px} .tb td,.tb th{padding:8px 8px}
+  .modal .mh{padding:12px 13px} .modal .mf{padding:9px 13px;gap:10px;font-size:11.5px}
+  .fmenu{width:min(266px,calc(100vw - 24px))}
+  .topin{gap:8px;padding:10px 0}
+  .brand .ttl,.brand .sep{display:none}   /* sem o título, o "·" ficava órfão */
+  .atotgl{margin-left:auto}
+  .atotgl button{padding:6px 9px;font-size:12px}
+}
+</style>
+</head>
+<body class="locked">
+
+<div id="loginOverlay">
+  <div class="login">
+    <div class="mark">PLANIK</div>
+    <div class="t1">Inteligência Comercial</div>
+    <div class="sb">Acesso restrito · entre com seu usuário</div>
+    <form onsubmit="return doLogin()">
+      <div class="fld"><label for="li_user">Usuário</label>
+        <input id="li_user" placeholder="seu usuário" autocomplete="username"
+               autocapitalize="none" autocorrect="off" spellcheck="false"></div>
+      <div class="fld"><label for="li_pass">Senha</label>
+        <input id="li_pass" type="password" placeholder="sua senha" autocomplete="current-password"></div>
+      <button type="button" id="li_btn" class="btn">Entrar</button>
+      <div class="err" id="li_err"></div>
+    </form>
+    <div class="note">Use seu <b>usuário</b> e <b>senha</b> Planik — só o que vem antes do <b>@</b>.<br>
+      A diretoria (<b>admin</b>) vê tudo e edita o cadastro do time; os demais acessos apenas consultam.</div>
+  </div>
+</div>
+<div id="dataStatus"><div id="dataStatusMsg">Carregando dados…</div></div>
+
+<div class="app">
+<header class="top">
+  <div class="wrap">
+    <div class="topin">
+      <div class="brand"><span class="mark">Planik</span><span class="sep">·</span>
+        <span class="ttl" id="hdTitle">Inteligência Comercial 2026</span></div>
+      <div class="tgl atotgl" id="atoTgl" role="group" aria-label="Recorte de ato">
+        <button data-a="geral" title="Todas as vendas da base">Geral</button>
+        <button data-a="pago" title="Somente vendas com ato pago">Ato pago</button></div>
+      <span class="chip" id="hdPeriodo"></span>
+      <span class="chip" id="hdUpd"></span>
+      <span class="userbadge" id="userBadge"></span>
+      <button class="iconbtn" id="tgl" title="Tema claro/escuro" aria-label="Alternar tema">◐</button>
+      <button class="iconbtn" id="cfgBtn" title="Cadastro do time" aria-label="Cadastro do time">⚙</button>
+      <button class="txtbtn" id="logoutBtn">Sair</button>
+    </div>
+    <nav class="tabs" id="tabs">
+      <button class="tab on" data-p="sintese">Síntese</button>
+      <button class="tab" data-p="geral">Visão Geral</button>
+      <button class="tab" data-p="vendas">Vendas por Empreendimento</button>
+      <button class="tab" data-p="desconto">Desconto por Empreendimento</button>
+      <button class="tab" data-p="canais">Canais</button>
+      <button class="tab" data-p="gerentes">Gerentes</button>
+      <button class="tab" data-p="origem">Origem por Empreendimento</button>
+      <button class="tab" data-p="vso">VSO</button>
+    </nav>
+  </div>
+</header>
+<main class="wrap">
+  <section class="panel on" id="p-sintese"></section>
+  <section class="panel" id="p-geral"></section>
+  <section class="panel" id="p-vendas"></section>
+  <section class="panel" id="p-desconto"></section>
+  <section class="panel" id="p-canais"></section>
+  <section class="panel" id="p-gerentes"></section>
+  <section class="panel" id="p-origem"></section>
+  <section class="panel" id="p-vso"></section>
+  <footer><span id="ftVer">Inteligência Comercial 2026</span>
+    <span class="atochip" id="ftAto"></span>
+    <span>Dados alimentados pela planilha de Inteligência Comercial</span>
+    <span id="ftUpd"></span></footer>
+</main>
+</div>
+
+<div id="tip"></div>
+<div class="fmenu" id="fmenu"></div>
+<div class="ov" id="ov"><div class="modal">
+  <div class="mh"><div style="min-width:0">
+      <div id="ovCrumb" style="margin-bottom:4px"></div>
+      <div class="t" id="ovTitle"></div><div class="s" id="ovSub"></div></div>
+    <button class="x" id="ovX" aria-label="Fechar">×</button></div>
+  <div class="mb" id="ovBody"></div><div class="mf" id="ovFoot"></div>
+</div></div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+
+<script>
+/* ===================== AUTENTICAÇÃO ===================== */
+(function(){
+  var firebaseConfig = {
+    apiKey: "AIzaSyBqQm4vJDdmHqLKcU8bDXdyPvVNI2Yy3Jk",
+    authDomain: "planik-dashboard.firebaseapp.com",
+    projectId: "planik-dashboard",
+    storageBucket: "planik-dashboard.firebasestorage.app",
+    messagingSenderId: "486512975614",
+    appId: "1:486512975614:web:0b3a4c9e2e6f8d1a7c5f21"
+  };
+  /* Contas ativas. O login é só o que vem antes do @; o domínio é acrescentado
+     automaticamente. As SENHAS ficam no Firebase Auth — nunca neste arquivo.
+
+     Esta lista é a PORTARIA: só entra quem está aqui ou na lista de acessos
+     do Firestore (config/acessos), gerenciada pela engrenagem. Autenticar no
+     Firebase não basta — sem liberação, a sessão é encerrada na entrada.
+
+     O campo "cfg" decide a engrenagem:
+        "edita" — vê e altera o cadastro do time e a lista de acessos
+        "le"    — vê o cadastro, mas os controles ficam travados
+        ausente — entra no relatório, sem engrenagem
+
+     Para liberar alguém: crie o usuário no Firebase Auth (login@planik.app) e
+     adicione o login pela engrenagem. Não precisa republicar o site. */
+  window.PLK_ROLES = {
+    "admin":  {role:"admin", nome:"Diretoria / Admin", cfg:"edita"}
+  };
+  var DOMAIN="@planik.app";
+  window.currentUser=null;
+  var $=function(id){return document.getElementById(id);};
+  var fbReady=false, auth=null;
+  try{
+    if(window.firebase && firebase.initializeApp){
+      firebase.initializeApp(firebaseConfig);
+      auth=firebase.auth(); window.PLK_AUTH=auth;
+      try{ window.PLK_DB=firebase.firestore();
+           try{window.PLK_DB.settings({experimentalAutoDetectLongPolling:true});}catch(_){} }catch(e){}
+      fbReady=true;
+    }
+  }catch(e){ console.log("firebase init:",e); }
+  var LABEL={admin:"Admin",diretor_online:"Diretor House",diretor_parcerias:"Diretor Parcerias",
+             gerente:"Gerente",leitor:"Leitor"};
+  function roleFor(u){ var r=window.PLK_ROLES[u];
+    return r?Object.assign({user:u},r):{user:u,role:"leitor",nome:u}; }
+  /* Junta a lista do arquivo com a do banco antes de decidir a entrada.
+     Sem esse await a gente barraria justamente quem foi liberado pela
+     engrenagem, já que a lista do banco chega depois do login. */
+  function liberar(u,ok,nao){
+    if(!window.PLK_DB) return window.PLK_ROLES[u]?ok():nao();
+    window.PLK_DB.collection("config").doc("acessos").get().then(function(sn){
+      try{
+        var d=(sn.exists?sn.data():{})||{};
+        var extra=d.lista?JSON.parse(d.lista):{};
+        Object.keys(extra).forEach(function(k){
+          window.PLK_ROLES[k]=Object.assign({role:"leitor"},window.PLK_ROLES[k]||{},extra[k]);
+        });
+        if(window.PLK_ROLES.admin) window.PLK_ROLES.admin.cfg="edita";
+      }catch(e){}
+      window.PLK_ROLES[u]?ok():nao();
+    }).catch(function(){ window.PLK_ROLES[u]?ok():nao(); });
+  }
+  function barrar(u){
+    try{ if(auth) auth.signOut(); }catch(e){}
+    window.currentUser=null; document.body.classList.add("locked");
+    var o=$("loginOverlay"); if(o) o.style.display="";
+    var e=$("li_err");
+    if(e) e.textContent="Acesso não liberado para "+u+"@planik.app. Fale com a Inteligência Comercial.";
+    var pw=$("li_pass"); if(pw) pw.value="";
+  }
+  function entrar(u){ liberar(u,function(){enter(u);},function(){barrar(u);}); }
+  function enter(u){
+    var f=roleFor(u); window.currentUser=f;
+    var b=$("userBadge");
+    if(b) b.innerHTML="👤 "+f.nome+'<span class="role">'+(LABEL[f.role]||"Leitor")+"</span>";
+    document.body.classList.remove("locked");
+    var o=$("loginOverlay"); if(o) o.style.display="none";
+    load();
+  }
+  function status(m,s){ var a=$("dataStatus"),b=$("dataStatusMsg");
+    if(b)b.textContent=m||""; if(a)a.style.display=s?"flex":"none"; }
+  function load(){
+    if(window.__BOOTED__){ try{window.initDashboard();}catch(e){} return; }
+    status("Carregando dados…",true);
+    if(!window.PLK_DB){ status("Sem conexão com o banco. Verifique a internet e recarregue.",true); return; }
+    window.PLK_DB.collection("dados").doc("atual").get().then(function(s){
+      if(!s.exists){ status("Dados ainda não publicados. Avise a Inteligência Comercial.",true); return; }
+      var d=s.data()||{};
+      window.__PLK_DATA__ = d.payloadStr ? JSON.parse(d.payloadStr) : (d.payload||d);
+      status("",false);
+      if(typeof window.__BOOT__==="function") window.__BOOT__();
+    }).catch(function(e){ status("Falha ao carregar os dados. Tente recarregar a página.",true); console.log(e); });
+  }
+  function busy(b,m){ var x=$("li_btn"); if(x){x.disabled=b;x.textContent=b?"Entrando…":"Entrar";}
+    var e=$("li_err"); if(e&&m!=null) e.textContent=m; }
+  window.doLogin=function(){
+    var u=(($("li_user")||{}).value||"").trim().toLowerCase().replace(/@.*$/,"");
+    var p=(($("li_pass")||{}).value||""); var e=$("li_err");
+    if(!u||!p){ if(e)e.textContent="Preencha usuário e senha."; return false; }
+    if(!fbReady||!auth){ if(e)e.textContent="Sem conexão com o servidor."; return false; }
+    busy(true,"");
+    auth.signInWithEmailAndPassword(u+DOMAIN,p).then(function(){busy(false,"");})
+      .catch(function(err){ busy(false,"");
+        var m="Usuário ou senha inválidos.";
+        if(err&&err.code==="auth/too-many-requests") m="Muitas tentativas. Aguarde um instante.";
+        else if(err&&err.code==="auth/network-request-failed") m="Falha de rede. Verifique a internet.";
+        if(e) e.textContent=m; });
+    return false;
+  };
+  window.doLogout=function(){
+    try{ if(auth) auth.signOut(); }catch(e){}
+    window.currentUser=null; document.body.classList.add("locked");
+    var o=$("loginOverlay"); if(o)o.style.display="";
+    var u=$("li_user"),p=$("li_pass"); if(u)u.value=""; if(p)p.value="";
+  };
+  if(fbReady&&auth) auth.onAuthStateChanged(function(user){
+    if(user) entrar((user.email||"").split("@")[0].toLowerCase());
+    else{ window.currentUser=null; document.body.classList.add("locked");
+          var o=$("loginOverlay"); if(o)o.style.display=""; }
+  });
+  function wire(){
+    var b=$("li_btn"); if(b){b.addEventListener("click",window.doLogin);
+      b.addEventListener("touchend",function(e){e.preventDefault();window.doLogin();});}
+    var p=$("li_pass"); if(p)p.addEventListener("keydown",function(e){if(e.key==="Enter"){e.preventDefault();window.doLogin();}});
+    var u=$("li_user"); if(u)u.addEventListener("keydown",function(e){if(e.key==="Enter"){e.preventDefault();var q=$("li_pass");if(q)q.focus();}});
+    var l=$("logoutBtn"); if(l)l.addEventListener("click",window.doLogout);
+  }
+  if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",wire); else wire();
+})();
+</script>
+
+<script>
+window.__BOOT__ = function(){
+if(window.__BOOTED__){ try{window.initDashboard();}catch(e){} return; }
+window.__BOOTED__ = true;
+
+const D=window.__PLK_DATA__;
+const $=s=>document.querySelector(s), $$=s=>Array.from(document.querySelectorAll(s));
+const MES =["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"];
+const MESL=["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
+const ANO=(D.meta&&D.meta.anoBase)||2026;
+const MESREF=(D.meta&&D.meta.mesRef)||12;
+
+/* ---- Empreendimentos ------------------------------------------------------
+   A ordem oficial é uma PREFERÊNCIA, não uma lista fechada: a relação de
+   produtos é montada a partir dos dados. Se a planilha ganhar um empreendimento
+   novo, ele aparece automaticamente no fim, sem quebrar nada. ------------- */
+const ORDEM_PREF=["NIK Frei Caneca","Core Klabin","Linn Vila Mariana","NIK Vila Mariana","Nuv Moema",
+  "Taj Ibirapuera","NIK Faria Lima","NIK Estilo Paulista","NIK Sunset Paulista","NIK Paradiso","NIK Paulista"];
+const kk=s=>String(s==null?"":s).normalize("NFD").replace(/[\u0300-\u036f]/g,"")
+  .toUpperCase().replace(/[\s.\-_·]/g,"");
+const ORD_IDX={}; ORDEM_PREF.forEach((p,i)=>ORD_IDX[kk(p)]=i);
+function ordProd(a,b){
+  const ia=ORD_IDX[kk(a)], ib=ORD_IDX[kk(b)];
+  if(ia!=null&&ib!=null) return ia-ib;
+  if(ia!=null) return -1;
+  if(ib!=null) return 1;
+  return String(a).localeCompare(String(b),"pt");
+}
+const porOrdem=arr=>arr.slice().sort((a,b)=>ordProd(a.produto||a.nome||a,b.produto||b.nome||b));
+
+/* ---- formatação: sempre número completo, separador brasileiro ---- */
+const nf=(v,d=0)=>(v==null||isNaN(v))?"—":Number(v).toLocaleString("pt-BR",{minimumFractionDigits:d,maximumFractionDigits:d});
+const moeda =v=>(v==null||isNaN(v))?"—":"R$ "+nf(Math.round(v));
+const moedaC=v=>(v==null||isNaN(v))?"—":"R$ "+nf(v,2);
+const pct =v=>(v==null||isNaN(v))?"—":nf(v*100,0)+"%";
+const pct1=v=>(v==null||isNaN(v))?"—":nf(v*100,1)+"%";
+const dtBR=s=>{if(!s)return "—";const p=String(s).split("-");return p.length===3?`${p[2]}/${p[1]}/${p[0]}`:s;};
+/* dias entre duas datas ISO (aaaa-mm-dd), sem fuso no meio do caminho */
+const diasEntre=(a,b)=>{ if(!a||!b) return null;
+  return Math.round((Date.parse(b+"T00:00:00Z")-Date.parse(a+"T00:00:00Z"))/86400000); };
+const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+
+const stCol=a=>a==null?"var(--muted)":a>=1?"var(--good)":a>=.8?"var(--warn)":"var(--bad)";
+function stPill(a){ if(a==null) return '<span class="pill off">sem meta</span>';
+  const c=a>=1?"g":a>=.8?"w":"b", t=a>=1?"No alvo":a>=.8?"Atenção":"Abaixo";
+  return `<span class="pill ${c}">${t} · ${pct(a)}</span>`; }
+
+/* ---- canais: cor fixa por identidade, com reserva para canais novos ---- */
+const HOUSE=["Salão","Online"];
+const CANAL_VAR={"Salão":"--s2","Online":"--s3","Parcerias":"--s1","Lançadora":"--s4","Interna":"--s0"};
+const RESERVA=["--s1","--s2","--s3","--s4"];
+function cCor(c){
+  if(CANAL_VAR[c]) return `var(${CANAL_VAR[c]})`;
+  const i=(typeof CANAIS!=="undefined"?CANAIS.indexOf(c):-1);
+  return `var(${i>=0?RESERVA[i%RESERVA.length]:"--s0"})`;
+}
+
+/* ---- tooltip ---- */
+const tip=$("#tip");
+function showTip(e,h){ tip.innerHTML=h; tip.style.opacity=1;
+  const w=tip.offsetWidth||230,ht=tip.offsetHeight||60;
+  tip.style.left=Math.max(8,Math.min(e.clientX+14,innerWidth-w-10))+"px";
+  tip.style.top =Math.max(8,Math.min(e.clientY-10,innerHeight-ht-10))+"px"; }
+const hideTip=()=>{tip.style.opacity=0;};
+function bindTips(root){ (root||document).querySelectorAll("[data-tip]").forEach(el=>{
+  el.addEventListener("mousemove",e=>showTip(e,el.dataset.tip));
+  el.addEventListener("mouseleave",hideTip); }); }
+
+/* =====================================================================
+   TRANSAÇÕES E PERÍODO
+   ===================================================================== */
+const TX=(D.transacoes||[]).map(t=>Object.assign({},t));
+const soma=a=>a.reduce((s,t)=>s+(t.valor||0),0);
+
+/* ---------------------------------------------------------------------
+   REGRAS DE OURO — contagem de unidades vendidas
+   A coluna Peso da Base já resolve as duas exceções, e é por isso que
+   contar linhas está errado em qualquer lugar do relatório:
+
+   · vaga de garagem (unidade começa com "V") tem peso 0 — entra no VGV,
+     não entra na contagem de unidades;
+   · venda Fifith é dividida entre duas equipes e grava DUAS linhas com
+     peso 0,5 cada — vale meia venda para cada gerente/canal e uma venda
+     inteira no total, nunca duas.
+
+   Hoje: 381 linhas na Base, 359 unidades. A própria planilha publica 359
+   em "Por Canal RESUMIDO", com Parcerias em 185,5 — fracionário porque
+   ela também conta Fifith como meia venda. Somar peso é o que concilia.
+
+   Média de metragem / valor do m² NÃO usa isto: lá as duas linhas Fifith
+   viram uma venda só (valor somado, metragem contada uma vez) — é o que
+   m2DoRecorte() e m2Por() fazem.
+   --------------------------------------------------------------------- */
+const unid=a=>a.reduce((s,t)=>s+(t.peso||0),0);
+/* 0,5 tem que aparecer como 0,5; 12 não pode virar 12,0 */
+const nfu=v=>nf(v,Math.abs(v%1)>1e-9?1:0);
+
+/* Universo de empreendimentos: união de tudo que existe nos dados. */
+const PRODUTOS=(function(){
+  const s=new Set();
+  ((D.metas&&D.metas.geral&&D.metas.geral.produtos)||[]).forEach(p=>s.add(p.produto));
+  (D.sintese||[]).forEach(x=>s.add(x.produto));
+  Object.values((D.desemp||{})).forEach(b=>(b||[]).forEach(x=>s.add(x.produto)));
+  TX.forEach(t=>{ if(t.produto) s.add(t.produto); });
+  return Array.from(s).filter(Boolean).sort(ordProd);
+})();
+/* Universo de canais: metadados da planilha + qualquer canal que apareça nas vendas. */
+const CANAIS=(function(){
+  const s=[]; const add=c=>{ if(c&&c!=="Interna"&&!s.some(x=>kk(x)===kk(c))) s.push(c); };
+  ((D.meta&&D.meta.canais)||[]).forEach(add);
+  Object.keys((D.metas&&D.metas.canais)||{}).forEach(add);
+  TX.forEach(t=>add(t.canal));
+  return s;
+})();
+const TEM_INTERNA=TX.some(t=>t.canal==="Interna");
+/* =====================================================================
+   CADASTRO DO TIME (engrenagem)
+   A semente vem da planilha: quem está no bloco PARÂMETROS entra ativo, e
+   qualquer gerente que apareça nas vendas entra como inativo. Assim, gerente
+   novo na planilha aparece sozinho no cadastro — nada precisa ser codificado.
+   ===================================================================== */
+const PARAM=(D.gerentes&&D.gerentes.parametros)||{};
+const TIMES=[{id:"House",rot:"Planik Vendas (Salão + Online)"},
+             {id:"Parcerias",rot:"Parcerias"},{id:"Lançadora",rot:"Lançadora"}];
+const CFG_KEY="planik_time_v1";
+function timeDoBloco(b){ const k=kk(b||"");
+  if(k==="PLK"||k==="HOUSE"||k.indexOf("PLANIK")===0) return "House";
+  if(k==="PARCERIAS") return "Parcerias";
+  if(k==="LANCADORA"||k==="LANCADORAS") return "Lançadora";
+  return ""; }
+function sementeTime(){
+  const out={};
+  Object.keys(PARAM).forEach(n=>{ out[n]={ativo:true,time:timeDoBloco(PARAM[n].bloco),novo:false,
+    mesEntrada:PARAM[n].mesEntrada||1}; });
+  TX.forEach(t=>{ const g=t.gerente;
+    if(!g||kk(g)==="INTERNA") return;
+    if(!Object.keys(out).some(k=>kk(k)===kk(g))) out[g]={ativo:false,time:"",novo:false};
+  });
+  return out;
+}
+function mesclarTime(salvo){
+  const base=sementeTime();
+  Object.keys(salvo||{}).forEach(n=>{
+    const achado=Object.keys(base).find(k=>kk(k)===kk(n));
+    if(achado) base[achado]=Object.assign({},base[achado],salvo[n]);
+    else base[n]=Object.assign({ativo:true,time:"",novo:true},salvo[n]);
+  });
+  return base;
+}
+let TIME=(function(){ try{ const raw=localStorage.getItem(CFG_KEY);
+  if(raw) return mesclarTime(JSON.parse(raw)); }catch(e){} return sementeTime(); })();
+let SYNC="Salvo neste navegador.";
+function salvarTime(){
+  try{ localStorage.setItem(CFG_KEY,JSON.stringify(TIME)); }catch(e){}
+  const u=window.currentUser;
+  if(window.PLK_DB && u && u.role==="admin"){
+    window.PLK_DB.collection("config").doc("time")
+      .set({gerentes:JSON.stringify(TIME),por:u.user||u.nome,ts:Date.now()})
+      .then(()=>{ SYNC="Salvo e compartilhado com todos os acessos."; pintaCfg(); })
+      .catch(()=>{ SYNC="Salvo neste navegador. O banco recusou a escrita — confira as regras do Firestore."; pintaCfg(); });
+  }
+}
+function carregarTimeDoBanco(){
+  if(!window.PLK_DB) return;
+  window.PLK_DB.collection("config").doc("time").get().then(sn=>{
+    if(!sn.exists) return;
+    const d=sn.data()||{}; if(!d.gerentes) return;
+    TIME=mesclarTime(JSON.parse(d.gerentes));
+    SYNC="Cadastro compartilhado, carregado do banco.";
+    try{ localStorage.setItem(CFG_KEY,JSON.stringify(TIME)); }catch(e){}
+    Object.keys(feito).forEach(k=>{ if(feito[k]) try{R[k]();}catch(e){} });
+  }).catch(()=>{});
+}
+function entradaTime(g){ const k=Object.keys(TIME).find(x=>kk(x)===kk(g)); return k?TIME[k]:null; }
+const ativo=g=>{ if(kk(g)==="INTERNA") return true; const e=entradaTime(g); return e?!!e.ativo:false; };
+const timeDoGer=g=>{ const e=entradaTime(g); return e?e.time:""; };
+const rotGer=g=>ativo(g)?esc(g):`${esc(g)} <span class="pill off">Desligado</span>`;
+
+/* período global por aba (Visão Geral e Origem) */
+function hojeISO(){
+  const d=new Date(), y=d.getFullYear();
+  if(y<ANO) return `${ANO}-01-01`;
+  if(y>ANO) return `${ANO}-12-31`;
+  return `${y}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+}
+/* `auto:true` = a data final acompanha o dia de hoje. Vira false assim que o
+   usuário digita uma data ou escolhe "Ano todo". Recalculado a cada render,
+   então uma aba deixada aberta durante a noite se corrige sozinha. */
+function novoPeriodo(){ return {ini:`${ANO}-01-01`, fim:hojeISO(), auto:true}; }
+function sincHoje(p){
+  if(!p||!p.auto) return false;
+  const h=hojeISO();
+  if(p.fim===h) return false;
+  p.fim=h; return true;
+}
+const dentro=(t,p)=>!t.data||((!p.ini||t.data>=p.ini)&&(!p.fim||t.data<=p.fim));
+function mesesDoPeriodo(p){
+  const a=p.ini?+p.ini.slice(5,7)-1:0, b=p.fim?+p.fim.slice(5,7)-1:11;
+  const ya=p.ini?+p.ini.slice(0,4):ANO, yb=p.fim?+p.fim.slice(0,4):ANO;
+  const de=ya<ANO?0:a, ate=yb>ANO?11:b;
+  return Array.from({length:12},(_,i)=>i).filter(i=>i>=de&&i<=ate);
+}
+/* ---------------------------------------------------------------------
+   Recorte ATO (Geral x Ato pago). Fica aqui dentro de propósito: filtrar()
+   é o único funil por onde passa toda venda exibida no site, então ligar o
+   recorte aqui faz todas as abas, KPIs, gráficos e modais obedecerem sem
+   que ninguém precise lembrar de aplicá-lo caso a caso.
+   Uma venda só é "pago" se a coluna Ato disser Pago. Se a coluna sumir da
+   planilha o extrator quebra alto — nunca finge que está tudo pago.
+   --------------------------------------------------------------------- */
+let ATO=(function(){ try{ return localStorage.getItem("plk_ato")==="pago"?"pago":"geral"; }
+                     catch(e){ return "geral"; } })();
+const ehPago=t=>kk(t.ato||"")==="PAGO";
+const TXPEND=TX.filter(t=>!ehPago(t));
+
+function filtrar(f,p,todos){
+  f=f||{};
+  return TX.filter(t=>{
+    if(!todos&&ATO==="pago"&&!ehPago(t)) return false;
+    if(p&&!dentro(t,p)) return false;
+    if(f.mes!=null&&t.mes!==f.mes) return false;
+    if(f.canal){ if(Array.isArray(f.canal)){ if(!f.canal.includes(t.canal)) return false; }
+                 else if(t.canal!==f.canal) return false; }
+    if(f.gerente&&t.gerente!==f.gerente) return false;
+    if(f.produto){ if(Array.isArray(f.produto)){ if(!f.produto.includes(t.produto)) return false; }
+                   else if(t.produto!==f.produto) return false; }
+    if(f.origem&&(t.origem||"Não informada")!==f.origem) return false;
+    if(f.campanha&&t.campanha!==f.campanha) return false;
+    if(f.plataforma&&t.plataforma!==f.plataforma) return false;
+    return true;
+  });
+}
+/* Fração do VGV de um recorte que está com ato pago. Serve para reescalar
+   número que já vem calculado da planilha e que a Base não sabe refazer —
+   caso da VSO, cujo denominador considera distrato e reentrada de unidade.
+   Reescalar pelo numerador mantém o denominador deles intacto; sem nada
+   pendente a fração é 1 e o número volta a ser idêntico ao da planilha. */
+/* Valor do m² de assinatura, recalculado no navegador a partir das vendas —
+   antes vinha pronto da planilha e por isso ignorava o recorte de ato.
+   Mesma regra do extrator: linhas divididas (Fifith) da mesma unidade viram
+   uma venda só, com o valor somado e a metragem contada uma vez; vagas de
+   garagem (peso 0) ficam de fora porque distorcem o preço por m². */
+function m2Por(f,p){
+  const grupos=new Map();
+  filtrar(f,p).forEach(t=>{
+    if(!t.metragem||!t.peso) return;
+    const k=t.produto+"||"+(t.unidade||("#"+Math.random()));
+    const g=grupos.get(k)||{prod:t.produto,vgv:0,m2:0};
+    g.vgv+=t.valor; g.m2=Math.max(g.m2,t.metragem);
+    grupos.set(k,g);
+  });
+  const acc={};
+  grupos.forEach(g=>{ const a=acc[g.prod]||(acc[g.prod]={vgv:0,m2:0,n:0});
+    a.vgv+=g.vgv; a.m2+=g.m2; a.n++; });
+  const saida={};
+  Object.entries(acc).forEach(([p2,a])=>{ if(a.m2>0)
+    saida[p2]={valorM2:a.vgv/a.m2,metragemMedia:a.m2/a.n,vendas:a.n}; });
+  const tv=Object.values(acc).reduce((s,a)=>s+a.vgv,0);
+  const tm=Object.values(acc).reduce((s,a)=>s+a.m2,0);
+  saida._geral={valorM2:tm?tv/tm:null,metragemMedia:null,
+                vendas:Object.values(acc).reduce((s,a)=>s+a.n,0)};
+  return saida;
+}
+function fatiaAto(f,p){
+  if(ATO!=="pago") return 1;
+  const tot=soma(filtrar(f,p,true));
+  if(!tot) return null;
+  return soma(filtrar(f,p))/tot;
+}
+function seletorPeriodo(id,p,aoMudar,opts){
+  const el=document.getElementById(id); if(!el) return;
+  const btns=(opts&&opts.presets)||[{k:"ano",r:"Ano todo"},{k:"ytd",r:"YTD"},{k:"tri",r:"Últimos 3 meses"}];
+  el.innerHTML=`<span class="lbl">Período</span>
+    <input type="date" id="${id}_i" value="${p.ini}" min="${ANO}-01-01" max="${ANO}-12-31">
+    <span class="lbl">até</span>
+    <input type="date" id="${id}_f" value="${p.fim}" min="${ANO}-01-01" max="${ANO}-12-31">
+    ${btns.map(b=>`<button class="preset" data-k="${b.k}">${b.r}</button>`).join("")}
+    ${p.auto?'<span class="lbl" style="font-size:11.5px">· termina sempre no dia de hoje</span>':""}`;
+  const dois=n=>String(n).padStart(2,"0");
+  const ult=m=>new Date(ANO,m+1,0).getDate();
+  const aplica=()=>{ p.ini=document.getElementById(id+"_i").value||`${ANO}-01-01`;
+                     p.fim=document.getElementById(id+"_f").value||hojeISO();
+                     p.auto=false; aoMudar(); };
+  el.querySelector("#"+id+"_i").addEventListener("change",aplica);
+  el.querySelector("#"+id+"_f").addEventListener("change",aplica);
+  el.querySelectorAll(".preset").forEach(b=>b.addEventListener("click",()=>{
+    const k=b.dataset.k;
+    const h=hojeISO();
+    if(k==="ano"){ p.ini=`${ANO}-01-01`; p.fim=`${ANO}-12-31`; p.auto=false; }
+    if(k==="ytd"){ p.ini=`${ANO}-01-01`; p.fim=h; p.auto=true; }
+    if(k==="tri"){ const mh=+h.slice(5,7), de=Math.max(1,mh-2);
+      p.ini=`${ANO}-${dois(de)}-01`; p.fim=h; p.auto=true; }
+    if(k[0]==="t"&&k.length===2){                      // t1..t4 = trimestres
+      const q=+k[1], m0=(q-1)*3+1, m1=q*3;
+      p.ini=`${ANO}-${dois(m0)}-01`; p.fim=`${ANO}-${dois(m1)}-${ult(m1-1)}`; p.auto=false; }
+    const ci=document.getElementById(id+"_i"), cf=document.getElementById(id+"_f");
+    if(ci) ci.value=p.ini; if(cf) cf.value=p.fim;      // reflete o atalho nos campos
+    aoMudar();
+  }));
+}
+
+/* Valor do m² de um conjunto de vendas.
+   Venda dividida (Fifith = Sim) ocupa duas linhas com metade do valor cada, mas
+   com a metragem cheia repetida — por isso agrupamos por unidade antes de somar.
+   Vagas de garagem (peso 0) ficam de fora: preço por m² é outro universo. */
+function m2DoRecorte(rows){
+  const g={};
+  rows.forEach(t=>{ if(!t.metragem||!t.peso) return;
+    const k=t.produto+"||"+(t.unidade||Math.random());
+    g[k]=g[k]||{v:0,m:0}; g[k].v+=t.valor; g[k].m=Math.max(g[k].m,t.metragem); });
+  let v=0,m=0; Object.values(g).forEach(x=>{v+=x.v;m+=x.m;});
+  return m?v/m:null;
+}
+
+/* =====================================================================
+   MODAL
+   ===================================================================== */
+const OV=$("#ov"); let pilha=[];
+function abrir(cfg,empilhar){ if(!empilhar) pilha=[]; pilha.push(cfg); pintaModal(); }
+function voltar(i){ pilha=pilha.slice(0,i+1); pintaModal(); }
+function fechar(){ OV.classList.remove("on"); pilha=[]; hideTip(); fecharFiltro(); }
+function pintaModal(){
+  const c=pilha[pilha.length-1];
+  $("#ovTitle").textContent=c.titulo;
+  $("#ovSub").innerHTML=c.sub||"";
+  $("#ovCrumb").innerHTML=pilha.length>1
+    ? pilha.slice(0,-1).map((x,i)=>`<button class="crumb" data-i="${i}">${esc(x.titulo)}</button>`)
+        .join('<span style="color:var(--muted);font-size:12px"> › </span>') : "";
+  $("#ovBody").innerHTML=c.html; $("#ovFoot").innerHTML=c.rodape||"";
+  $("#ovCrumb").querySelectorAll(".crumb").forEach(b=>b.addEventListener("click",()=>voltar(+b.dataset.i)));
+  OV.classList.add("on");
+  if(c.render) c.render($("#ovBody"),c);
+  bindTips($("#ovBody")); $("#ovBody").scrollTop=0;
+}
+$("#ovX").addEventListener("click",fechar);
+OV.addEventListener("click",e=>{ if(e.target===OV) fechar(); });
+document.addEventListener("keydown",e=>{ if(e.key==="Escape"){ if($("#fmenu").classList.contains("on")) fecharFiltro(); else fechar(); }});
+
+/* =====================================================================
+   TABELA DE VENDAS COM FILTRO ESTILO EXCEL
+   ===================================================================== */
+const COLS=[
+  {k:"produto", t:"Empreendimento", nm:true},
+  {k:"unidade", t:"Unidade"},
+  {k:"data",    t:"Data da venda", f:dtBR},
+  /* Coluna filtrável: no modo Geral dá para isolar as pendentes sem trocar
+     o recorte do relatório inteiro. */
+  {k:"ato",     t:"Ato", f:v=>v||"—"},
+  {k:"corretor",t:"Corretor", f:v=>v||"—"},
+  {k:"gerente", t:"Gerente"},
+  {k:"canal",   t:"Canal"},
+  {k:"origem",  t:"Origem", f:v=>v||"—"},
+  {k:"metragem",t:"Metragem (m²)", r:true, f:v=>v==null?"—":nf(v,2)},
+  {k:"valorM2", t:"Valor do m²", r:true, f:v=>v==null?"—":moeda(v)},
+  {k:"valor",   t:"Valor (VGV)", r:true, f:moeda},
+  {k:"desconto",t:"Desconto", r:true, f:v=>v==null?"—":nf(v*100,1)+"%"}
+];
+const FM=$("#fmenu"); let fmAberto=null;
+function fecharFiltro(){ FM.classList.remove("on"); fmAberto=null; }
+document.addEventListener("click",e=>{ if(!FM.contains(e.target)&&!e.target.closest(".fh")) fecharFiltro(); });
+window.addEventListener("resize",fecharFiltro);
+
+function tabelaVendas(rows,est){
+  const {ord,dir,filtros}=est;
+  let dados=rows.filter(t=>{
+    for(const k in filtros){ const s=filtros[k]; if(!s) continue;
+      const v=t[k]==null||t[k]===""?"(vazio)":String(t[k]);
+      if(!s.has(v)) return false; }
+    return true;
+  });
+  const col=COLS.find(c=>c.k===ord)||COLS[2];
+  dados.sort((a,b)=>{
+    if(col.k==="produto") return ordProd(a.produto,b.produto)*dir;
+    let x=a[col.k],y=b[col.k];
+    if(x==null)x=col.r?-Infinity:""; if(y==null)y=col.r?-Infinity:"";
+    if(typeof x==="number"&&typeof y==="number") return (x-y)*dir;
+    return String(x).localeCompare(String(y),"pt")*dir;
+  });
+  const th=COLS.map(c=>{
+    const act=filtros[c.k]?"act":"";
+    const seta=c.k===ord?(dir>0?"▲":"▼"):"";
+    return `<th class="${c.r?"r":""}"><span class="fh ${act}" data-k="${c.k}">
+      <span>${c.t}</span><span class="car">${seta||"▾"}</span></span></th>`;
+  }).join("");
+  const tb=dados.map(t=>"<tr>"+COLS.map(c=>{
+    const v=c.f?c.f(t[c.k]):(t[c.k]==null?"—":t[c.k]);
+    const st=c.k==="desconto"&&t.desconto!=null&&t.desconto<=-.05?' style="color:var(--bad)"':"";
+    return `<td class="${c.r?"r":""} ${c.nm?"nm":""}"${st}>${esc(v)}</td>`;
+  }).join("")+"</tr>").join("");
+  est.visiveis=dados;
+  return dados.length
+    ? `<div class="scroll"><table class="tb num"><thead><tr>${th}</tr></thead><tbody>${tb}</tbody></table></div>`
+    : `<div class="empty">Nenhuma venda com os filtros aplicados.</div>`;
+}
+
+function menuFiltro(campo,rows,est,alvo,redesenhar){
+  const col=COLS.find(c=>c.k===campo);
+  const vals=Array.from(new Set(rows.map(t=>t[campo]==null||t[campo]===""?"(vazio)":String(t[campo]))));
+  vals.sort((a,b)=>campo==="produto"?ordProd(a,b):a.localeCompare(b,"pt",{numeric:true}));
+  const sel=est.filtros[campo]?new Set(est.filtros[campo]):new Set(vals);
+  const linhas=v=>vals.filter(x=>!v||x.toLowerCase().includes(v.toLowerCase()))
+    .map(x=>`<label><input type="checkbox" value="${esc(x)}" ${sel.has(x)?"checked":""}>
+      <span>${esc(col.f&&campo!=="produto"?col.f(x):x)}</span></label>`).join("");
+  FM.innerHTML=`
+    <button class="op" data-s="az">↑&nbsp; Classificar A → Z</button>
+    <button class="op" data-s="za">↓&nbsp; Classificar Z → A</button><hr>
+    <input class="srch" placeholder="Buscar valor…">
+    <div class="fvals"><label style="font-weight:650"><input type="checkbox" id="fAll"
+      ${sel.size===vals.length?"checked":""}><span>(Selecionar tudo)</span></label>${linhas("")}</div>
+    <div class="fbtns"><button class="ok">OK</button><button class="lim">Limpar</button></div>`;
+  const r=alvo.getBoundingClientRect();
+  FM.style.left=Math.max(8,Math.min(r.left,innerWidth-278))+"px";
+  FM.style.top=Math.min(r.bottom+6,innerHeight-320)+"px";
+  FM.classList.add("on"); fmAberto=campo;
+
+  const box=FM.querySelector(".fvals");
+  FM.querySelector(".srch").addEventListener("input",e=>{
+    const t=e.target.value;
+    box.innerHTML=`<label style="font-weight:650"><input type="checkbox" id="fAll"
+      ${sel.size===vals.length?"checked":""}><span>(Selecionar tudo)</span></label>`+linhas(t);
+    liga();
+  });
+  function liga(){
+    box.querySelector("#fAll").addEventListener("change",e=>{
+      box.querySelectorAll('input[type=checkbox]:not(#fAll)').forEach(c=>c.checked=e.target.checked);
+    });
+  }
+  liga();
+  FM.querySelectorAll(".op").forEach(b=>b.addEventListener("click",()=>{
+    est.ord=campo; est.dir=b.dataset.s==="az"?1:-1; fecharFiltro(); redesenhar();
+  }));
+  FM.querySelector(".lim").addEventListener("click",()=>{
+    delete est.filtros[campo]; fecharFiltro(); redesenhar();
+  });
+  FM.querySelector(".ok").addEventListener("click",()=>{
+    const marcados=Array.from(box.querySelectorAll('input[type=checkbox]:not(#fAll)'))
+      .filter(c=>c.checked).map(c=>c.value);
+    // mantém escolhas de valores que estavam fora do texto buscado
+    const visiveis=new Set(Array.from(box.querySelectorAll('input[type=checkbox]:not(#fAll)')).map(c=>c.value));
+    const finais=new Set(marcados);
+    if(est.filtros[campo]) est.filtros[campo].forEach(v=>{ if(!visiveis.has(v)) finais.add(v); });
+    if(finais.size===vals.length||finais.size===0) delete est.filtros[campo];
+    else est.filtros[campo]=finais;
+    fecharFiltro(); redesenhar();
+  });
+}
+
+function modalVendas(titulo,sub,rows,empilhar){
+  const est={ord:"data",dir:1,filtros:{},visiveis:rows};
+  const cfg={titulo,sub,html:"",render(body){
+    const desenha=()=>{
+      body.innerHTML=tabelaVendas(rows,est);
+      const v=est.visiveis;
+      const m2r=m2DoRecorte(v);
+      const un=unid(v);
+      $("#ovFoot").innerHTML=v.length
+        ? `<span><b>${nfu(un)}</b> unidade${un===1?"":"s"}${v.length!==rows.length?` de ${nfu(unid(rows))}`:""}
+             <span style="color:var(--muted)">em ${nf(v.length)} linha${v.length>1?"s":""}</span></span>
+           <span>VGV <b>${moedaC(soma(v))}</b></span>
+           <span>Ticket médio <b>${un?moeda(soma(v)/un):"—"}</b></span>
+           ${m2r?`<span>Valor do m² <b>${moeda(m2r)}</b></span>`:""}
+           <span style="margin-left:auto">Clique no cabeçalho para ordenar e filtrar</span>`
+        : `<span>Nenhuma linha</span><span style="margin-left:auto">Use "Limpar" no filtro para voltar</span>`;
+      body.querySelectorAll(".fh").forEach(h=>h.addEventListener("click",e=>{
+        e.stopPropagation();
+        if(fmAberto===h.dataset.k){ fecharFiltro(); return; }
+        menuFiltro(h.dataset.k,rows,est,h,desenha);
+      }));
+    };
+    desenha();
+  }};
+  abrir(cfg,empilhar);
+}
+
+/* =====================================================================
+   GRÁFICOS
+   ===================================================================== */
+function eixoY(g,pad,W,ih,max,fmtv){
+  for(let t=0;t<=4;t++){ const v=max/4*t, y=pad.t+ih-(v/max)*ih;
+    g.push(`<line class="gridline" x1="${pad.l}" y1="${y}" x2="${W-pad.r}" y2="${y}"/>`);
+    g.push(`<text class="axislab" x="${pad.l-7}" y="${y+3.5}" text-anchor="end">${fmtv(v)}</text>`); }
+  return g;
+}
+function barrasMes(el,series,o){
+  o=o||{}; const meses=o.meses||Array.from({length:12},(_,i)=>i);
+  const foco=o.foco?new Set(o.foco):null;   // meses dentro do período selecionado
+  const dentroF=mi=>!foco||foco.has(mi);
+  const W=780,H=o.altura||280,pad={t:o.ating?28:18,r:12,b:28,l:o.padL||86};
+  const iw=W-pad.l-pad.r, ih=H-pad.t-pad.b, n=meses.length;
+  const max=Math.max(1,...series.flatMap(s=>meses.map(i=>s.valores[i]||0)))*1.14;
+  const band=iw/n, x=k=>pad.l+band*k, y=v=>pad.t+ih-(v/max)*ih;
+  let g=eixoY([],pad,W,ih,max,v=>nf(v,0));
+  g.push(`<line class="axis" x1="${pad.l}" y1="${y(0)}" x2="${W-pad.r}" y2="${y(0)}"/>`);
+  const k=series.length, bw=Math.min(17,(band-8)/k);
+  meses.forEach((mi,idx)=>{
+    const x0=x(idx)+(band-bw*k-2*(k-1))/2;
+    series.forEach((s,j)=>{
+      const v=s.valores[mi]||0, yy=y(v), h=Math.max(y(0)-yy,0), bx=x0+j*(bw+2);
+      if(h<=0) return;
+      const op=dentroF(mi)?"":' opacity=".26"';
+      g.push(s.tipo==="ref"
+        ? `<rect x="${bx}" y="${yy}" width="${bw}" height="${h}" rx="4" fill="none" stroke="${s.cor}" stroke-width="1.5"${op}/>`
+        : `<rect x="${bx}" y="${yy}" width="${bw}" height="${h}" rx="4" fill="${s.cor}"${op}/>`);
+    });
+    if(o.ating&&o.ating[mi]!=null&&(series[0].valores[mi]||0)>0&&dentroF(mi))
+      g.push(`<text class="dlab" x="${x(idx)+band/2}" y="${pad.t-9}" text-anchor="middle"
+        style="fill:${stCol(o.ating[mi])}">${pct(o.ating[mi])}</text>`);
+    g.push(`<text class="axislab" x="${x(idx)+band/2}" y="${H-8}" text-anchor="middle"
+      ${mi===MESREF-1?'style="fill:var(--ink);font-weight:700"':(dentroF(mi)?"":'opacity=".45"')}>${MES[mi]}</text>`);
+    const tt=series.map(s=>`${s.nome}: <b>${moeda(s.valores[mi])}</b>`).join("<br>")
+      +(dentroF(mi)?"":"<br><span style='color:var(--muted)'>fora do período selecionado</span>");
+    g.push(`<rect class="hit" x="${x(idx)}" y="${pad.t}" width="${band}" height="${ih}" fill="transparent"
+      data-tip="<b>${MESL[mi]}</b><br>${tt}${o.aoClicar?"<br><span style='color:var(--muted)'>clique para ver as vendas</span>":""}"
+      ${o.aoClicar?`data-mes="${mi}"`:""}/>`);
+  });
+  el.innerHTML=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${o.aria||"Gráfico mensal"}">${g.join("")}</svg>`;
+  bindTips(el);
+  if(o.aoClicar) el.querySelectorAll("[data-mes]").forEach(r=>{
+    r.style.cursor="pointer"; r.addEventListener("click",()=>o.aoClicar(+r.dataset.mes)); });
+}
+function linhas(el,series,o){
+  o=o||{}; const meses=o.meses||Array.from({length:12},(_,i)=>i);
+  const foco=o.foco?new Set(o.foco):null;
+  const dentroF=mi=>!foco||foco.has(mi);
+  /* Com rótulos ligados o gráfico precisa de mais largura por mês, senão dois
+     valores vizinhos disputam o mesmo espaço. Largura é do viewBox: aumentar
+     aqui não estica nada na tela, só dá mais folga relativa ao texto. */
+  const W=o.largura||(o.rotulos?1060:780);
+  const H=o.altura||280, pad={t:o.rotulos?32:20,r:o.rotulos?34:20,b:28,l:o.padL||86};
+  const iw=W-pad.l-pad.r, ih=H-pad.t-pad.b, n=meses.length;
+  const max=Math.max(1,...series.flatMap(s=>meses.map(i=>s.valores[i]||0)))*1.14;
+  const band=iw/n, x=k=>pad.l+band*k+band/2, y=v=>pad.t+ih-(v/max)*ih;
+  let g=eixoY([],pad,W,ih,max,v=>nf(v,0));
+  const obst=[];   /* pontos já desenhados: rótulo nenhum pode cobri-los */
+  series.forEach(s=>{
+    const pts=meses.map((mi,k)=>s.valores[mi]==null?null:`${x(k)},${y(s.valores[mi])}`).filter(Boolean).join(" ");
+    g.push(`<polyline points="${pts}" fill="none" stroke="${s.cor}" stroke-width="2"
+      stroke-linecap="round" stroke-linejoin="round" ${s.ref?'opacity=".6"':""}/>`);
+    meses.forEach((mi,k)=>{ if(s.valores[mi]==null) return;
+      const cy=y(s.valores[mi]);
+      g.push(`<circle cx="${x(k)}" cy="${cy}" r="4" fill="${s.cor}" stroke="var(--card)"
+        stroke-width="2"${dentroF(mi)?"":' opacity=".3"'}/>`);
+      obst.push({x0:x(k)-6,x1:x(k)+6,y0:cy-6,y1:cy+6}); });
+  });
+  /* ---------------------------------------------------------------------
+     Rótulos com desvio de colisão. Cada valor tenta uma sequência de poses
+     (acima, abaixo, mais acima, deslocado p/ o lado) e fica na primeira que
+     não encosta em nada já colocado nem sai da moldura. O que não couber em
+     pose nenhuma fica sem rótulo — e só nesse caso o hover é necessário.
+     Sem isso dois meses seguidos com valor parecido escrevem um por cima
+     do outro, que foi exatamente o que apareceu no Nov/Dez do Linn.
+     --------------------------------------------------------------------- */
+  if(o.rotulos){
+    const CW=5.75, caixas=obst.slice(), cands=[];
+    const livre=b=>b.x0>=3&&b.x1<=W-3&&b.y0>=3&&b.y1<=pad.t+ih+6
+      &&!caixas.some(c=>b.x0<c.x1-0.5&&b.x1>c.x0+0.5&&b.y0<c.y1-0.5&&b.y1>c.y0+0.5);
+    series.forEach(s=>meses.forEach((mi,k)=>{
+      const v=s.valores[mi];
+      if(v==null||!(v>0)||!dentroF(mi)) return;
+      cands.push({cor:s.cor,px:x(k),py:y(v),
+        txt:o.rotulo?o.rotulo(v):nf(v,0)});
+    }));
+    cands.sort((a,b)=>a.py-b.py);          /* picos escolhem primeiro */
+    const POSES=[[0,-12,"middle"],[0,16,"middle"],[0,-25,"middle"],[0,29,"middle"],
+                 [-10,-12,"end"],[10,-12,"start"],[-10,16,"end"],[10,16,"start"],
+                 [0,-38,"middle"],[0,42,"middle"]];
+    cands.forEach(c=>{
+      const w=c.txt.length*CW;
+      for(const [dx,dy,anc] of POSES){
+        const cx=c.px+dx, yb=c.py+dy;
+        const x0=anc==="middle"?cx-w/2:anc==="start"?cx:cx-w;
+        const b={x0,x1:x0+w,y0:yb-9,y1:yb+3};
+        if(livre(b)){
+          caixas.push(b);
+          g.push(`<text class="dlab halo" x="${cx}" y="${yb}" text-anchor="${anc}"
+            style="fill:${c.cor}">${c.txt}</text>`);
+          return;
+        }
+      }
+    });
+  }
+  meses.forEach((mi,k)=>{
+    g.push(`<text class="axislab" x="${x(k)}" y="${H-8}" text-anchor="middle"
+      ${mi===MESREF-1?'style="fill:var(--ink);font-weight:700"':(dentroF(mi)?"":'opacity=".45"')}>${MES[mi]}</text>`);
+    const tt=series.map(s=>`${s.nome}: <b>${moeda(s.valores[mi])}</b>`).join("<br>");
+    g.push(`<rect class="hit" x="${pad.l+band*k}" y="${pad.t}" width="${band}" height="${ih}" fill="transparent"
+      data-tip="<b>${MESL[mi]}</b><br>${tt}${o.aoClicar?"<br><span style='color:var(--muted)'>clique para ver as vendas</span>":""}"
+      ${o.aoClicar?`data-mes="${mi}"`:""}/>`);
+  });
+  el.innerHTML=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${o.aria||"Evolução mensal"}">${g.join("")}</svg>`;
+  bindTips(el);
+  if(o.aoClicar) el.querySelectorAll("[data-mes]").forEach(r=>{
+    r.style.cursor="pointer"; r.addEventListener("click",()=>o.aoClicar(+r.dataset.mes)); });
+}
+function donut(el,fatias,centro,aoClicar){
+  const R=94,r=58,cx=110,cy=110, tot=fatias.reduce((s,f)=>s+f.valor,0)||1;
+  let a=-Math.PI/2, g="";
+  fatias.forEach(f=>{
+    const ang=(f.valor/tot)*Math.PI*2, G=0.016, a0=a+G/2, a1=a+ang-G/2;
+    if(a1>a0){ const big=(a1-a0)>Math.PI?1:0;
+      g+=`<path d="M ${cx+R*Math.cos(a0)} ${cy+R*Math.sin(a0)} A ${R} ${R} 0 ${big} 1 ${cx+R*Math.cos(a1)} ${cy+R*Math.sin(a1)}
+        L ${cx+r*Math.cos(a1)} ${cy+r*Math.sin(a1)} A ${r} ${r} 0 ${big} 0 ${cx+r*Math.cos(a0)} ${cy+r*Math.sin(a0)} Z"
+        fill="${f.cor}" class="hit" data-nome="${esc(f.nome)}"
+        data-tip="<b>${esc(f.nome)}</b><br>${moeda(f.valor)} · ${pct(f.valor/tot)}<br><span style='color:var(--muted)'>clique para abrir</span>"/>`; }
+    a+=ang;
+  });
+  g+=`<text x="${cx}" y="${cy-6}" text-anchor="middle" class="axislab"
+    style="font-size:10px;letter-spacing:.09em;font-weight:700">REALIZADO</text>`;
+  g+=`<text x="${cx}" y="${cy+15}" text-anchor="middle"
+    style="fill:var(--ink);font-size:15px;font-weight:700;font-variant-numeric:tabular-nums">${centro}</text>`;
+  el.innerHTML=`<svg viewBox="0 0 220 220" style="max-width:236px;margin:0 auto" role="img"
+    aria-label="Participação por canal">${g}</svg>`;
+  bindTips(el);
+  if(aoClicar) el.querySelectorAll("[data-nome]").forEach(p=>{
+    p.style.cursor="pointer"; p.addEventListener("click",()=>aoClicar(p.dataset.nome)); });
+}
+function spark(vals,cor){
+  const W=110,H=26,m=Math.max(1,...vals.map(v=>v||0));
+  const x=i=>i*(W/Math.max(1,vals.length-1)), y=v=>H-2-((v||0)/m)*(H-6);
+  return `<svg viewBox="0 0 ${W} ${H}" style="width:110px;height:26px"><polyline
+    points="${vals.map((v,i)=>`${x(i)},${y(v)}`).join(" ")}" fill="none" stroke="${cor||"var(--s1)"}"
+    stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+}
+function barrasH(el,itens,o){
+  o=o||{};
+  const max=Math.max(1,...itens.map(i=>Math.max(i.valor||0,o.comMeta?(i.meta||0):0)));
+  el.innerHTML=itens.map(i=>`
+    <div style="margin-bottom:13px" class="hit" ${o.aoClicar?`data-nome="${esc(i.nome)}"`:""}
+      data-tip="<b>${esc(i.nome)}</b><br>Realizado: <b>${moeda(i.valor)}</b>${o.comMeta?`<br>Meta: <b>${moeda(i.meta)}</b>`:""}${i.ating!=null?`<br>Atingimento: <b>${pct1(i.ating)}</b>`:""}${o.aoClicar?"<br><span style='color:var(--muted)'>clique para ver as vendas</span>":""}">
+      <div style="display:flex;align-items:baseline;gap:9px;margin-bottom:5px;flex-wrap:wrap">
+        <span style="font-weight:600;font-size:13px">${esc(i.nome)}</span>
+        <span class="num" style="margin-left:auto;font-size:12.5px;color:var(--ink-2)">${moeda(i.valor)}</span></div>
+      <div class="track">${o.comMeta&&i.meta>0?`<div class="metamark" style="left:${Math.min((i.meta/max)*100,100)}%"></div>`:""}
+        <div class="barfill" style="width:${Math.min((i.valor/max)*100,100)}%;background:${i.cor||o.cor||"var(--s1)"}"></div></div>
+    </div>`).join("");
+  bindTips(el);
+  if(o.aoClicar) el.querySelectorAll("[data-nome]").forEach(d=>{
+    d.style.cursor="pointer"; d.addEventListener("click",()=>o.aoClicar(d.dataset.nome)); });
+}
+
+/* Dois painéis empilhados dividindo o eixo de meses. Duas medidas de escalas
+   diferentes NUNCA vão no mesmo eixo — viram dois gráficos, um sobre o outro. */
+function duploPainel(el,cfg,o){
+  o=o||{};
+  const W=780,H=352,pad={l:o.padL||74,r:18};
+  const topo={t:34,h:132}, base={t:224,h:74};
+  const iw=W-pad.l-pad.r, band=iw/12;
+  // a escala do desconto inclui o teto, senão a linha do teto sai do quadro
+  const mx1=Math.max(...cfg.linha.valores.filter(v=>v!=null).map(Math.abs),
+                     Math.abs(o.limite||0),0.01)*1.18;
+  const mx2=Math.max(...cfg.barras.valores.map(v=>v||0),1)*1.3;
+  const X=i=>pad.l+band*i+band/2;
+  const Y1=v=>topo.t+(Math.abs(v)/mx1)*topo.h;      // 0 no topo, desconto desce
+  const Y2=v=>base.t+base.h-((v||0)/mx2)*base.h;
+  let g=[];
+  // faixa vermelha suave abaixo do teto = zona fora da política
+  if(o.limite!=null){
+    const yt=Y1(o.limite);
+    g.push(`<rect x="${pad.l}" y="${yt}" width="${iw}" height="${Math.max(topo.t+topo.h-yt,0)}"
+      fill="var(--bad)" opacity=".07"/>`);
+  }
+  for(let t=0;t<=4;t++){ const v=mx1/4*t, y=Y1(v);
+    g.push(`<line class="gridline" x1="${pad.l}" y1="${y}" x2="${W-pad.r}" y2="${y}"/>`);
+    g.push(`<text class="axislab" x="${pad.l-7}" y="${y+3.5}" text-anchor="end">${cfg.linha.fmt(-v)}</text>`); }
+  g.push(`<text class="axislab" x="${pad.l}" y="${topo.t-14}" style="font-weight:700">${cfg.linha.nome}</text>`);
+  if(o.limite!=null){
+    const yt=Y1(o.limite);
+    g.push(`<line x1="${pad.l}" y1="${yt}" x2="${W-pad.r}" y2="${yt}" stroke="var(--bad)"
+      stroke-width="1.5" opacity=".8"/>`);
+    g.push(`<text class="dlab" x="${W-pad.r}" y="${yt-6}" text-anchor="end"
+      style="fill:var(--bad)">teto ${cfg.linha.fmt(o.limite)}</text>`);
+  }
+  const pts=cfg.linha.valores.map((v,i)=>v==null?null:`${X(i)},${Y1(v)}`).filter(Boolean).join(" ");
+  g.push(`<polyline points="${pts}" fill="none" stroke="${cfg.linha.cor}" stroke-width="2.5"
+    stroke-linecap="round" stroke-linejoin="round"/>`);
+  cfg.linha.valores.forEach((v,i)=>{ if(v==null) return;
+    const fora=(o.limite!=null&&v<o.limite);
+    g.push(`<circle cx="${X(i)}" cy="${Y1(v)}" r="4.5" fill="${fora?"var(--bad)":cfg.linha.cor}"
+      stroke="var(--card)" stroke-width="2"/>`);
+    g.push(`<text class="dlab" x="${X(i)}" y="${Math.min(Y1(v)+16,topo.t+topo.h+13)}" text-anchor="middle"
+      style="fill:${fora?"var(--bad)":"var(--ink-2)"}">${cfg.linha.fmt(v)}</text>`); });
+  g.push(`<text class="axislab" x="${pad.l}" y="${base.t-10}" style="font-weight:700">${cfg.barras.nome}</text>`);
+  g.push(`<line class="axis" x1="${pad.l}" y1="${Y2(0)}" x2="${W-pad.r}" y2="${Y2(0)}"/>`);
+  const bw=Math.min(26,band*.52);
+  cfg.barras.valores.forEach((v,i)=>{ if(!v) return;
+    g.push(`<rect x="${X(i)-bw/2}" y="${Y2(v)}" width="${bw}" height="${Math.max(Y2(0)-Y2(v),0)}" rx="4"
+      fill="${cfg.barras.cor}"/>`);
+    g.push(`<text class="dlab" x="${X(i)}" y="${Math.max(Y2(v)-6,base.t-1)}" text-anchor="middle">${nf(v)}</text>`); });
+  for(let i=0;i<12;i++){
+    g.push(`<text class="axislab" x="${X(i)}" y="${H-7}" text-anchor="middle"
+      ${i===MESREF-1?'style="fill:var(--ink);font-weight:700"':""}>${MES[i]}</text>`);
+    g.push(`<rect class="hit" x="${pad.l+band*i}" y="${topo.t}" width="${band}" height="${H-topo.t-20}"
+      fill="transparent" data-mes="${i}"
+      data-tip="<b>${MESL[i]}</b><br>${cfg.linha.nome}: <b>${cfg.linha.valores[i]==null?"—":cfg.linha.fmt(cfg.linha.valores[i])}</b><br>${cfg.barras.nome}: <b>${nf(cfg.barras.valores[i]||0)}</b>${o.aoClicar?"<br><span style='color:var(--muted)'>clique para ver as vendas</span>":""}"/>`);
+  }
+  el.innerHTML=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${o.aria||""}">${g.join("")}</svg>`;
+  bindTips(el);
+  if(o.aoClicar) el.querySelectorAll("[data-mes]").forEach(r=>{ r.style.cursor="pointer";
+    r.addEventListener("click",()=>o.aoClicar(+r.dataset.mes)); });
+}
+
+/* modal de detalhamento mensal reaproveitável */
+function modalMensal(titulo,sub,series,filtroBase,empilhar,o){
+  o=o||{};
+  let modo=o.linha?"linha":"barra";
+  abrir({titulo,sub,html:`<div style="padding:16px 17px">
+      ${o.toggle?`<div class="tgl" id="mmT" style="margin-bottom:12px">
+        <button class="${modo==="linha"?"on":""}" data-m="linha">Linha</button>
+        <button class="${modo==="barra"?"on":""}" data-m="barra">Barra</button></div>`:""}
+      <div id="mmG"></div><div class="legend" id="mmL"></div>${o.extra||""}</div>`,
+    rodape:`<span style="margin-left:auto">Clique num mês para abrir as vendas daquele mês</span>`,
+    render(){
+      const alvo=document.getElementById("mmG");
+      const clique=mi=>{ const f=Object.assign({},filtroBase,{mes:mi});
+        modalVendas(`${MESL[mi]} de ${ANO}`,sub,filtrar(f,o.per),true); };
+      const desenha=()=>{
+        if(modo==="linha") linhas(alvo,series,{aoClicar:clique,aria:titulo});
+        else barrasMes(alvo,series,{ating:o.ating,aoClicar:clique,aria:titulo});
+      };
+      desenha();
+      const t=document.getElementById("mmT");
+      if(t) t.addEventListener("click",e=>{ const b=e.target.closest("button"); if(!b) return;
+        t.querySelectorAll("button").forEach(x=>x.classList.remove("on"));
+        b.classList.add("on"); modo=b.dataset.m; desenha(); });
+      document.getElementById("mmL").innerHTML=series.map(s=>
+        `<span class="it"><span class="dot" style="background:${s.tipo==="ref"?"none":s.cor};
+          ${s.tipo==="ref"?`border:1.5px solid ${s.cor}`:""}"></span>${s.nome}</span>`).join("");
+    }},empilhar);
+}
+
+/* =====================================================================
+   MODAL DO CADASTRO (engrenagem)
+   ===================================================================== */
+let cfgEdicao=false;
+function ehAdmin(){ return window.currentUser && window.currentUser.role==="admin"; }
+/* Engrenagem: "edita" mexe no cadastro, "le" só olha, sem cfg não vê o botão.
+   Isto é organização de interface, não segurança: quem entra no site recebe o
+   payload inteiro de qualquer jeito. O que de fato protege a escrita são as
+   regras do Firestore. */
+function cfgNivel(){ const u=window.currentUser; return (u&&u.cfg)||""; }
+function podeVerCfg(){ return cfgNivel()==="edita"||cfgNivel()==="le"; }
+function podeEditarCfg(){ return cfgNivel()==="edita"; }
+function pintaAcessos(){
+  const b=$("#cfgBtn"); if(b) b.style.display=podeVerCfg()?"":"none";
+}
+
+/* =====================================================================
+   ACESSOS — quem entra e o que vê da engrenagem
+
+   Os três acessos originais moram no HTML. Os que você criar depois ficam
+   no Firestore (config/acessos), para não precisar reeditar e republicar o
+   site toda vez que entrar alguém no time.
+
+   "admin" é fixo em edita e não pode ser removido daqui. É a trava contra o
+   acidente óbvio: rebaixar a si mesmo e não sobrar ninguém capaz de devolver
+   o acesso a ninguém sem mexer no arquivo.
+
+   Continua valendo o mesmo aviso: isto organiza a interface, não protege
+   dado. Quem faz login recebe o payload inteiro. A trava de verdade contra
+   escrita indevida são as regras do Firestore.
+   ===================================================================== */
+const NIVEIS=[{v:"edita",r:"Edita o cadastro"},{v:"le",r:"Vê a engrenagem"},{v:"",r:"Só o relatório"}];
+const ACESSO_BASE=JSON.parse(JSON.stringify(window.PLK_ROLES||{}));
+let ACESSOS={}, SYNCAC="Somente os acessos originais do arquivo.";
+const loginOk=s=>/^[a-z0-9._-]{2,40}$/.test(String(s||"").trim().toLowerCase());
+
+function aplicarAcessos(){
+  /* base do arquivo + o que veio do banco; "admin" volta a edita sempre */
+  const m=Object.assign({},ACESSO_BASE);
+  Object.entries(ACESSOS).forEach(([u,c])=>{
+    m[u]=Object.assign({},m[u]||{role:"leitor"},{nome:c.nome||(m[u]||{}).nome||u,cfg:c.cfg||""});
+  });
+  if(m.admin) m.admin.cfg="edita";
+  window.PLK_ROLES=m;
+  /* quem já está logado sente a mudança na hora, sem novo login */
+  const u=window.currentUser;
+  if(u&&m[u.user]) window.currentUser=Object.assign({},u,m[u.user],{user:u.user});
+  else if(u&&!m[u.user]) window.currentUser=Object.assign({},u,{cfg:""});
+  pintaAcessos();
+}
+function carregarAcessosDoBanco(){
+  if(!window.PLK_DB) return;
+  window.PLK_DB.collection("config").doc("acessos").get().then(sn=>{
+    if(!sn.exists) return;
+    const d=sn.data()||{}; if(!d.lista) return;
+    ACESSOS=JSON.parse(d.lista);
+    SYNCAC="Lista de acessos carregada do banco.";
+    aplicarAcessos();
+    if(pilha.length&&document.getElementById("cfgBody")) pintaCfg();
+  }).catch(()=>{});
+}
+function salvarAcessos(){
+  aplicarAcessos();
+  if(!window.PLK_DB){ SYNCAC="Sem banco: a mudança vale só nesta sessão."; pintaCfg(); return; }
+  window.PLK_DB.collection("config").doc("acessos")
+    .set({lista:JSON.stringify(ACESSOS),por:(window.currentUser||{}).user||"",ts:Date.now()})
+    .then(()=>{ SYNCAC="Acessos salvos e valendo para todos."; pintaCfg(); })
+    .catch(()=>{ SYNCAC="O banco recusou a escrita — confira as regras do Firestore."; pintaCfg(); });
+}
+function pintaListaAcessos(){
+  const el=document.getElementById("acBody"); if(!el) return;
+  const logins=Array.from(new Set(Object.keys(ACESSO_BASE).concat(Object.keys(ACESSOS))));
+  const nivelDe=u=>u==="admin"?"edita":((ACESSOS[u]||{}).cfg!=null&&ACESSOS[u]?ACESSOS[u].cfg:(ACESSO_BASE[u]||{}).cfg||"");
+  const nomeDe=u=>(ACESSOS[u]||{}).nome||(ACESSO_BASE[u]||{}).nome||u;
+  el.innerHTML=logins.map(u=>{
+    const fixo=(u==="admin"), doArquivo=!!ACESSO_BASE[u];
+    return `<div class="cfgrow" data-ac="${esc(u)}">
+      <span class="nm">${esc(nomeDe(u))}
+        <span style="color:var(--muted);font-weight:400">· ${esc(u)}@planik.app</span>
+        ${doArquivo?'<span class="badge-novo" style="background:var(--card-2);color:var(--muted)">do arquivo</span>':""}</span>
+      <select class="selin" data-niv="1" ${fixo||!cfgEdicao?"disabled":""} style="margin-left:auto">
+        ${NIVEIS.map(n=>`<option value="${n.v}" ${nivelDe(u)===n.v?"selected":""}>${n.r}</option>`).join("")}
+      </select>
+      ${(cfgEdicao&&!doArquivo)?'<button class="txtbtn" data-acdel="1" title="Remover da lista">Remover</button>':""}
+    </div>`;
+  }).join("")
+  + (cfgEdicao?`<div class="cfgrow" style="margin-top:9px">
+      <input class="selin" id="acNovo" placeholder="login (sem @planik.app)" style="min-width:190px">
+      <input class="selin" id="acNome" placeholder="nome que aparece no topo" style="min-width:190px">
+      <select class="selin" id="acNivel">
+        ${NIVEIS.map(n=>`<option value="${n.v}">${n.r}</option>`).join("")}</select>
+      <button class="txtbtn" id="acAdd">Adicionar</button></div>`:"")
+  + `<div class="cfgnote" style="margin-top:9px">${esc(SYNCAC)} · O login precisa existir no
+      <b>Firebase Auth</b> como <code>login@planik.app</code>; esta lista decide quem entra e o que enxerga.
+      <b>Quem não estiver nesta lista não entra</b> — mesmo com senha válida, a sessão é
+      encerrada na entrada.</div>`;
+
+  if(!cfgEdicao) return;
+  el.querySelectorAll("[data-ac]").forEach(row=>{
+    const u=row.dataset.ac;
+    const sel=row.querySelector("[data-niv]");
+    if(sel) sel.addEventListener("change",()=>{
+      ACESSOS[u]=Object.assign({},ACESSOS[u]||{},{nome:nomeDe(u),cfg:sel.value});
+      salvarAcessos();
+    });
+    const del=row.querySelector("[data-acdel]");
+    if(del) del.addEventListener("click",()=>{
+      if(!confirm(`Remover ${u}@planik.app da lista? Ele deixa de conseguir entrar no relatório, mesmo com a senha certa.`)) return;
+      delete ACESSOS[u]; salvarAcessos();
+    });
+  });
+  const add=document.getElementById("acAdd");
+  if(add) add.addEventListener("click",()=>{
+    const u=(document.getElementById("acNovo").value||"").trim().toLowerCase().replace(/@.*$/,"");
+    if(!loginOk(u)){ alert("Login inválido. Use só letras, números, ponto, hífen ou sublinhado."); return; }
+    const nome=(document.getElementById("acNome").value||"").trim()||u;
+    ACESSOS[u]={nome,cfg:document.getElementById("acNivel").value};
+    salvarAcessos();
+  });
+}
+function abrirCfg(){
+  if(!podeVerCfg()) return;          // porta fechada também para chamada direta
+  cfgEdicao=podeEditarCfg();
+  abrir({titulo:"Configurações — cadastro do time",
+    sub:`Só quem estiver <b>ativo</b> aparece nas abas de Gerentes.${
+      cfgEdicao?" 🔓 <b>Admin</b> — acesso total ao cadastro."
+               :" 🔒 Seu acesso é somente leitura; fale com a diretoria para alterar."}`,
+    html:`<div id="cfgBody" style="padding:14px 17px"></div>
+      <div style="padding:0 17px 16px">
+        <div class="grouphd">Acessos ao relatório</div>
+        <div class="sub" style="margin:-4px 0 9px">Quem pode entrar e o que enxerga da engrenagem.
+          Organiza a interface — não substitui as regras do Firestore.</div>
+        <div id="acBody"></div></div>`,
+    rodape:`<span class="cfgnote" id="cfgSync"></span>
+            <span style="margin-left:auto;display:flex;gap:7px;flex-wrap:wrap">
+              <button class="txtbtn" id="cfgConf">Conferir com o Excel</button>
+              <button class="txtbtn" id="cfgExp">Exportar</button>
+              <button class="txtbtn" id="cfgImp">Importar</button>
+              <button class="txtbtn" id="cfgRst">Restaurar da planilha</button></span>`,
+    render(){ pintaCfg(); pintaListaAcessos(); }});
+}
+
+/* =====================================================================
+   CONFERÊNCIA BI × EXCEL
+   Dois caminhos independentes até o mesmo número: de um lado o site soma
+   a Base linha a linha; do outro, o que a planilha publica nos blocos-
+   resumo dela (Por Canal RESUMIDO, caixa de KPI de Metas 2026, VSOs 2026).
+   Se baterem, a Base e os resumos estão sincronizados. Se não baterem,
+   alguém mexeu num lado e não no outro — e é melhor descobrir aqui do que
+   numa reunião de diretoria.
+
+   A comparação roda SEMPRE no Geral, mesmo com o botão Ato pago ligado:
+   a planilha não tem recorte de ato, então comparar contra ela em Ato pago
+   acusaria divergência em tudo, sem que nada esteja errado.
+   ===================================================================== */
+const TOL={moeda:1, qtd:0.01, taxa:0.0002};   // centavo, meia venda arredondada, 0,02 p.p.
+function abrirConferencia(){
+  if(!podeVerCfg()) return;
+  const C=D.conferencia||{};
+  const G=(D.metas&&D.metas.geral)||{meta:[]};
+  const mesRef=(D.meta&&D.meta.mesRef)||12;
+
+  /* lado BI: tudo recalculado da Base, ignorando o recorte de ato */
+  const todas=TX.slice();
+  const vgv=soma(todas);
+  const qtd=unid(todas);
+  const metaAno=(G.meta||[]).reduce((s,v)=>s+(v||0),0);
+  const metaYTD=(G.meta||[]).slice(0,mesRef).reduce((s,v)=>s+(v||0),0);
+  const ating=metaYTD?vgv/metaYTD:null;
+  const vso=C.estoqueInicio?vgv/C.estoqueInicio:null;
+
+  const itens=[
+    {rot:"VGV realizado",            bi:vgv,      ex:C.vgvYTD,  fmt:moeda, tol:TOL.moeda,
+     fonte:"Base, linha a linha × Por Canal RESUMIDO · VGV REAL YTD"},
+    {rot:"Quantidade de vendas",     bi:qtd,      ex:C.qtdYTD,  fmt:nfu,   tol:TOL.qtd,
+     fonte:"soma da coluna Peso × Por Canal RESUMIDO · QTD YTD",
+     nota:"vaga de garagem pesa 0 e venda Fifith pesa 0,5 para cada equipe"},
+    {rot:"Atingimento da meta",      bi:ating,    ex:C.ating,   fmt:v=>pct1(v), tol:TOL.taxa,
+     fonte:"VGV da Base ÷ meta YTD × Por Canal RESUMIDO · ATINGIMENTO"},
+    {rot:`VSO ano YTD`,              bi:vso,      ex:C.vsoAnoYTD, fmt:v=>v==null?"—":nf(v*100,2)+"%", tol:TOL.taxa,
+     fonte:"VGV da Base ÷ estoque inicial × VSOs 2026 · bloco VSO ANO YTD"},
+    {rot:"Meta do ano",              bi:metaAno,  ex:C.metaAno, fmt:moeda, tol:TOL.moeda,
+     fonte:"soma dos 12 meses de Metas 2026 × caixa de KPI Meta ANO"},
+    {rot:`Meta YTD (até ${MESL[mesRef-1]||"—"})`, bi:metaYTD, ex:C.metaYTD, fmt:moeda, tol:TOL.moeda,
+     fonte:"soma dos meses até o mês de referência × Por Canal RESUMIDO · VGV META YTD"},
+  ];
+  const bate=i=>i.bi!=null&&i.ex!=null&&Math.abs(i.bi-i.ex)<=i.tol;
+  const semDado=i=>i.bi==null||i.ex==null;
+  const divergentes=itens.filter(i=>!semDado(i)&&!bate(i));
+  const faltando=itens.filter(semDado);
+
+  const selo=i=>semDado(i)
+    ? `<span class="selo aviso" title="Sem número dos dois lados para comparar">?</span>`
+    : bate(i) ? `<span class="selo ok" title="Confere">✓</span>`
+              : `<span class="selo erro" title="Divergente">✕</span>`;
+
+  abrir({titulo:"Conferência · BI × Excel",
+    sub:`Cada número é calculado dos dois lados por caminhos diferentes${
+      ATO==="pago"?' · <b style="color:var(--gold)">a conferência ignora o recorte Ato pago</b>, porque a planilha não tem esse corte':""}`,
+    html:`<div style="padding:15px 17px">
+      <div class="card kpi" style="margin-bottom:13px;border-color:${
+        divergentes.length?"var(--bad)":faltando.length?"var(--warn)":"var(--good)"}">
+        <div class="lab">Resultado da conferência</div>
+        <div class="val" style="color:${divergentes.length?"var(--bad)":faltando.length?"var(--warn)":"var(--good)"}">
+          ${divergentes.length ? `${divergentes.length} de ${itens.length} divergente${divergentes.length>1?"s":""}`
+            : faltando.length ? `${itens.length-faltando.length} de ${itens.length} conferem`
+            : "Tudo confere"}</div>
+        <div class="sub">${divergentes.length
+          ? `Divergem: <b>${divergentes.map(i=>i.rot).join(", ")}</b>. Antes de publicar, confira se a Base
+             e os blocos-resumo da planilha foram atualizados juntos.`
+          : faltando.length
+          ? `${faltando.map(i=>i.rot).join(", ")} sem número comparável nesta extração.`
+          : `Os ${itens.length} indicadores batem entre a Base e os blocos-resumo da planilha.`}</div></div>
+      <div class="scroll"><table class="tb num"><thead><tr>
+        <th class="stickyc">Indicador</th><th class="r">BI</th><th class="r">Excel</th>
+        <th class="r">Diferença</th><th class="c">Confere</th></tr></thead>
+      <tbody>${itens.map(i=>{
+        const dif=semDado(i)?null:i.bi-i.ex;
+        return `<tr><td class="nm stickyc">${i.rot}
+          <span style="display:block;font-size:10.5px;color:var(--muted);font-weight:400;white-space:normal">
+            ${i.fonte}${i.nota?` · ${i.nota}`:""}</span></td>
+          <td class="r"><b>${i.bi==null?"—":i.fmt(i.bi)}</b></td>
+          <td class="r">${i.ex==null?"—":i.fmt(i.ex)}</td>
+          <td class="r" style="color:${dif&&Math.abs(dif)>i.tol?"var(--bad)":"var(--muted)"}">
+            ${dif==null?"—":Math.abs(dif)<=i.tol?"—":(dif>0?"+":"")+i.fmt(dif)}</td>
+          <td class="c">${selo(i)}</td></tr>`;}).join("")}
+      </tbody></table></div>
+      <div class="sub" style="margin-top:12px">Fonte do lado Excel: ${esc(C.fonte||"—")}.
+        Tolerâncias: R$ 1,00 em valores, 0,01 em quantidade e 0,02 ponto percentual em taxas —
+        só para absorver arredondamento, não diferença real.</div></div>`,
+    rodape:`<span>Planilha de <b>${(D.meta&&D.meta.atualizado)||"—"}</b></span>
+            <span>Mês de referência <b>${MESL[mesRef-1]||"—"}</b></span>
+            <span style="margin-left:auto">${nf(TX.length)} linhas na Base · <b>${nfu(qtd)}</b> unidades</span>`},
+    true);
+}
+function pintaCfg(){
+  pintaListaAcessos();          // as duas listas vivem no mesmo modal
+  const body=document.getElementById("cfgBody"); if(!body) return;
+  const nomes=Object.keys(TIME);
+  const vgv={}; TX.forEach(t=>{ if(t.gerente) vgv[t.gerente]=(vgv[t.gerente]||0)+t.valor; });
+  const linhaDe=n=>{
+    const c=TIME[n], v=Object.keys(vgv).find(k=>kk(k)===kk(n));
+    return `<div class="cfgrow ${c.ativo?"":"off"}" data-n="${esc(n)}">
+      <button class="sw ${c.ativo?"on":""}" data-sw="1" ${cfgEdicao?"":"disabled"}
+        aria-label="Ativar ou desativar ${esc(n)}"></button>
+      <span class="swlab">${c.ativo?"Ativo":"Inativo"}</span>
+      <span class="nm">${esc(n)}${c.novo?'<span class="badge-novo">novo</span>':""}</span>
+      <select class="selin" data-time="1" ${cfgEdicao?"":"disabled"}>
+        <option value="">— sem time —</option>
+        ${TIMES.map(t=>`<option value="${t.id}" ${c.time===t.id?"selected":""}>${t.rot}</option>`).join("")}
+      </select>
+      <span style="margin-left:auto;font-size:12px;color:var(--muted)" class="num">
+        ${v?moeda(vgv[v]):"sem vendas em "+ANO}</span>
+      ${(cfgEdicao&&c.novo)?'<button class="txtbtn" data-del="1" title="Remover">Remover</button>':""}
+    </div>`;
+  };
+  const grupos=TIMES.map(t=>({rot:t.rot+" ",ids:nomes.filter(n=>TIME[n].time===t.id)}))
+    .concat([{rot:"Sem time definido ",ids:nomes.filter(n=>!TIME[n].time)}]);
+  body.innerHTML=(cfgEdicao?`
+    <div class="card" style="background:var(--card-2);margin-bottom:6px">
+      <div class="h" style="font-size:13px;margin-bottom:9px">Adicionar gerente</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <input class="txtin" id="ngNome" placeholder="Nome do gerente" style="flex:1;min-width:180px">
+        <select class="selin" id="ngTime">${TIMES.map(t=>`<option value="${t.id}">${t.rot}</option>`).join("")}</select>
+        <button class="txtbtn" id="ngAdd" style="background:var(--gold);border-color:var(--gold);color:#14161a">+ Adicionar</button>
+      </div>
+      <div class="sub" style="margin-top:8px">O nome precisa ser exatamente o que aparece na coluna
+        <b>Gerente</b> da planilha para que as vendas sejam puxadas automaticamente.</div>
+    </div>`:"")
+    +grupos.map(g=>g.ids.length?`<div class="grouphd">${g.rot}(${g.ids.length})</div>`+
+        g.ids.sort((a,b)=>(TIME[b].ativo-TIME[a].ativo)||a.localeCompare(b,"pt")).map(linhaDe).join("")
+      :`<div class="grouphd">${g.rot}(0)</div><div class="sub" style="padding:6px 4px">Ninguém neste grupo.</div>`
+    ).join("");
+  const sy=document.getElementById("cfgSync"); if(sy) sy.innerHTML="💾 "+SYNC;
+
+  body.querySelectorAll(".cfgrow").forEach(row=>{
+    const n=row.dataset.n;
+    const sw=row.querySelector("[data-sw]");
+    if(sw&&cfgEdicao) sw.addEventListener("click",()=>{ TIME[n].ativo=!TIME[n].ativo; salvarTime(); pintaCfg(); reRender(); });
+    const sel=row.querySelector("[data-time]");
+    if(sel&&cfgEdicao) sel.addEventListener("change",()=>{ TIME[n].time=sel.value; salvarTime(); pintaCfg(); reRender(); });
+    const del=row.querySelector("[data-del]");
+    if(del) del.addEventListener("click",()=>{ delete TIME[n]; salvarTime(); pintaCfg(); reRender(); });
+  });
+  const add=document.getElementById("ngAdd");
+  if(add) add.addEventListener("click",()=>{
+    const nome=(document.getElementById("ngNome").value||"").trim();
+    if(!nome) return;
+    if(Object.keys(TIME).some(k=>kk(k)===kk(nome))){
+      const k=Object.keys(TIME).find(x=>kk(x)===kk(nome));
+      TIME[k].ativo=true; TIME[k].time=document.getElementById("ngTime").value;
+    } else TIME[nome]={ativo:true,time:document.getElementById("ngTime").value,novo:true};
+    document.getElementById("ngNome").value="";
+    salvarTime(); pintaCfg(); reRender();
+  });
+  const cnf=document.getElementById("cfgConf");
+  if(cnf&&!cnf.dataset.lig){ cnf.dataset.lig=1;
+    cnf.addEventListener("click",abrirConferencia); }
+  const exp=document.getElementById("cfgExp");
+  if(exp&&!exp.dataset.lig){ exp.dataset.lig=1;
+    exp.addEventListener("click",()=>{
+      const b=new Blob([JSON.stringify(TIME,null,2)],{type:"application/json"});
+      const a=document.createElement("a"); a.href=URL.createObjectURL(b);
+      a.download="cadastro_time_planik.json"; a.click(); }); }
+  const imp=document.getElementById("cfgImp");
+  if(imp&&!imp.dataset.lig){ imp.dataset.lig=1;
+    imp.addEventListener("click",()=>{
+      if(!cfgEdicao) return;
+      const i=document.createElement("input"); i.type="file"; i.accept="application/json";
+      i.onchange=()=>{ const f=i.files[0]; if(!f) return; const r=new FileReader();
+        r.onload=()=>{ try{ TIME=mesclarTime(JSON.parse(r.result)); salvarTime(); pintaCfg(); reRender(); }
+          catch(e){ alert("Arquivo inválido."); } }; r.readAsText(f); };
+      i.click(); }); }
+  const rst=document.getElementById("cfgRst");
+  if(rst&&!rst.dataset.lig){ rst.dataset.lig=1;
+    rst.addEventListener("click",()=>{ if(!cfgEdicao) return;
+      if(confirm("Restaurar o cadastro exatamente como está na planilha? Suas alterações manuais serão perdidas.")){
+        TIME=sementeTime(); salvarTime(); pintaCfg(); reRender(); } }); }
+}
+function reRender(){ Object.keys(feito).forEach(k=>{ if(feito[k]) try{R[k]();}catch(e){} }); }
+
+/* =====================================================================
+   1 · SÍNTESE
+   ===================================================================== */
+/* ---------------------------------------------------------------------
+   Recorte de ato nos números de VIDA do empreendimento.
+
+   A planilha traz vendido-vida e estoque como posição, sem coluna de ato —
+   e ato só existe em 2026. A regra: tudo que é anterior a 2026 conta como
+   ato pago, então a única coisa que muda no recorte são as vendas do ano
+   que ainda estão pendentes. Elas saem do vendido e voltam para o estoque.
+
+   VGV total e unidades totais não se movem, e nem deveriam: o empreendimento
+   tem o tamanho que tem, independente de quem pagou o ato.
+   --------------------------------------------------------------------- */
+function ajusteAto(produto){
+  if(ATO!=="pago") return {vgv:0,uni:0};
+  const pend=TX.filter(t=>!ehPago(t)&&(!produto||t.produto===produto));
+  return {vgv:soma(pend),uni:unid(pend)};
+}
+function rSintese(){
+  const S=porOrdem(D.sintese||[]);
+  const M2=m2Por({});
+  const t=S.reduce((a,s)=>{ const aj=ajusteAto(s.produto);
+    return {vgv:a.vgv+s.vgvTotal, vend:a.vend+s.vgvVendidoVida-aj.vgv,
+      disp:a.disp+s.vgvDisponivel+aj.vgv, uni:a.uni+s.uniTotal,
+      uv:a.uv+s.uniVendidasVida-aj.uni, livres:a.livres+s.uniLivres+aj.uni}; },
+    {vgv:0,vend:0,disp:0,uni:0,uv:0,livres:0});
+  const m2g=(M2._geral||{}).valorM2;
+  const pendTot=ajusteAto(null);
+
+  $("#p-sintese").innerHTML=`
+  <div class="grid g3" style="margin-bottom:13px">
+    <div class="card kpi"><div class="lab">VGV total dos empreendimentos</div>
+      <div class="val">${moeda(t.vgv)}</div>
+      <div class="sub">${nf(t.uni)} unidades em ${S.length} empreendimentos</div></div>
+    <div class="card kpi"><div class="lab">VGV vendido — vida</div>
+      <div class="val">${moeda(t.vend)}</div>
+      <div class="sub"><b>${pct1(t.vend/t.vgv)}</b> do VGV total</div>
+      <div class="meter"><span style="width:${(t.vend/t.vgv)*100}%;background:var(--s1)"></span></div></div>
+    <div class="card kpi"><div class="lab">Estoque disponível</div>
+      <div class="val">${moeda(t.disp)}</div>
+      <div class="sub"><b>${nf(t.livres)}</b> unidades livres para venda</div></div>
+  </div>
+  <div class="card">
+    <div class="hd"><div class="h">Vida do empreendimento</div>
+      <div class="sub">Do mais antigo para o mais novo · clique na linha para ver as vendas de ${ANO}${
+        ATO==="pago"?` · <b style="color:var(--gold)">recorte Ato pago</b>: as ${nfu(pendTot.uni)} unidades
+        de ${ANO} com ato pendente (<b>${moeda(pendTot.vgv)}</b>) saíram do vendido e voltaram para o
+        estoque. Venda anterior a ${ANO} conta como paga. VGV e unidades totais não mudam`:""}</div></div>
+    <div class="scroll"><table class="tb num"><thead><tr>
+      <th class="stickyc">Empreendimento</th><th class="r">VGV total</th><th class="r">Vendido (vida)</th>
+      <th class="r">Disponível</th><th class="r">Un. total</th><th class="r">Un. vendidas</th>
+      <th class="r">Un. livres</th><th class="r">% Vendido (Unidades)</th><th class="r">% Vendido (VGV)</th>
+      <th class="r">Valor do m² (${ANO})</th></tr></thead>
+    <tbody>${S.map(s=>{ const aj=ajusteAto(s.produto); return `
+      <tr class="clickable" data-produto="${esc(s.produto)}">
+        <td class="nm stickyc">${esc(s.produto)}</td>
+        <td class="r">${moeda(s.vgvTotal)}</td><td class="r">${moeda(s.vgvVendidoVida-aj.vgv)}</td>
+        <td class="r">${moeda(s.vgvDisponivel+aj.vgv)}</td><td class="r">${nf(s.uniTotal)}</td>
+        <td class="r">${nfu(s.uniVendidasVida-aj.uni)}</td><td class="r">${nfu(s.uniLivres+aj.uni)}</td>
+        <td class="r"><b>${pct1(s.uniTotal?(s.uniVendidasVida-aj.uni)/s.uniTotal:null)}</b></td>
+        <td class="r"><b>${pct1(s.vgvTotal?(s.vgvVendidoVida-aj.vgv)/s.vgvTotal:null)}</b></td>
+        <td class="r">${M2[s.produto]?moeda(M2[s.produto].valorM2):"—"}</td>
+      </tr>`; }).join("")}
+      <tr class="tot"><td class="stickyc">Total</td><td class="r">${moeda(t.vgv)}</td>
+        <td class="r">${moeda(t.vend)}</td><td class="r">${moeda(t.disp)}</td>
+        <td class="r">${nf(t.uni)}</td><td class="r">${nfu(t.uv)}</td><td class="r">${nfu(t.livres)}</td>
+        <td class="r">${pct1(t.uv/t.uni)}</td><td class="r">${pct1(t.vend/t.vgv)}</td>
+        <td class="r">${moeda(m2g)}</td></tr>
+    </tbody></table></div>
+  </div>`;
+  $$("#p-sintese tr[data-produto]").forEach(tr=>tr.addEventListener("click",()=>{
+    const p=tr.dataset.produto; modalVendas(p,`Vendas de ${ANO}`,filtrar({produto:p}));
+  }));
+}
+
+/* =====================================================================
+   2 · VISÃO GERAL
+   ===================================================================== */
+const perGeral=novoPeriodo();
+function rGeral(){
+  $("#p-geral").innerHTML=`
+    <div class="card" style="margin-bottom:13px"><div class="periodo" id="pgSel"></div>
+      <div class="sub" style="margin-top:8px">As metas são contadas por mês inteiro; o realizado usa a data exata da venda.</div></div>
+    <div id="pgCorpo"></div>`;
+  seletorPeriodo("pgSel",perGeral,pintaGeral);
+  pintaGeral();
+}
+function pintaGeral(){
+  sincHoje(perGeral);
+  const G=D.metas.geral;
+  /* Antes esses três vinham prontos da planilha (D.kpi) e por isso ignoravam
+     o botão Geral / Ato pago. Recalculados aqui dão o mesmo número no modo
+     Geral e passam a obedecer o recorte. */
+  const K=(function(){ const mAno=G.meta.reduce((s,v)=>s+(v||0),0);
+    const rAno=soma(filtrar({}));
+    return {metaAno:mAno,gapAno:mAno-rAno,atingAno:mAno?rAno/mAno:null}; })();
+  const ms=mesesDoPeriodo(perGeral);
+  const tx=filtrar({},perGeral);
+  const real=soma(tx), qtd=unid(tx);
+  const meta=ms.reduce((s,i)=>s+(G.meta[i]||0),0);
+  const at=meta?real/meta:null;
+  const anoTodo=ms.length===12;
+  const TODOS=Array.from({length:12},(_,i)=>i);
+  const realMes=Array.from({length:12},(_,i)=>soma(filtrar({mes:i},perGeral)));
+  const ating=Array.from({length:12},(_,i)=>G.meta[i]?(realMes[i]/G.meta[i]):null);
+  let acc=0; const realAc=Array.from({length:12},(_,i)=>{ acc+=realMes[i];
+    return (ms.includes(i)&&realMes.slice(0,i+1).some(v=>v>0))?acc:null; });
+  const mesesComVenda=ms.filter(i=>realMes[i]>0).length||1;
+  const restantes=12-MESREF+1;
+
+  document.getElementById("pgCorpo").innerHTML=`
+  <div class="grid g4" style="margin-bottom:13px">
+    <div class="card kpi"><div class="lab">Atingimento da meta${anoTodo?" · ano":""}</div>
+      <div class="val lg" style="color:${stCol(at)}">${pct1(at)}</div>
+      <div class="sub">Realizado <b>${moeda(real)}</b><br>de <b>${moeda(meta)}</b> no período</div>
+      <div class="meter"><span style="width:${Math.min(at||0,1)*100}%;background:${stCol(at)}"></span></div></div>
+    <div class="card kpi"><div class="lab">VGV realizado</div>
+      <div class="val">${moeda(real)}</div>
+      <div class="sub"><b>${nfu(qtd)}</b> unidades no período<br>Ticket médio <b>${moeda(qtd?real/qtd:0)}</b></div></div>
+    <div class="card kpi"><div class="lab">GAP para a meta</div>
+      <div class="val" style="color:${meta-real>0?"var(--bad)":"var(--good)"}">${moeda(meta-real)}</div>
+      <div class="sub">Meta do ano <b>${moeda(K.metaAno)}</b><br>Atingimento do ano <b>${pct1(K.atingAno)}</b></div></div>
+    <div class="card kpi"><div class="lab">Ritmo necessário</div>
+      <div class="val">${moeda(K.gapAno/Math.max(1,restantes))}</div>
+      <div class="sub">por mês nos <b>${restantes}</b> meses restantes<br>
+        <b>${nf((K.gapAno/Math.max(1,restantes))/(real/mesesComVenda),1)}×</b> a média de <b>${moeda(real/mesesComVenda)}</b></div></div>
+  </div>
+
+  <div class="card" style="margin-bottom:13px">
+    <div class="hd" style="display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap">
+      <div><div class="h">Curva de vendas</div><div class="sub" id="cSub"></div></div>
+      <div class="tgl" id="cTgl" style="margin-left:auto">
+        <button class="on" data-m="mensal">Mês a mês</button><button data-m="acum">Acumulado</button></div></div>
+    <div id="cG"></div><div class="legend" id="cL"></div>
+  </div>
+
+  <div class="card">
+    <div class="hd"><div class="h">GAP por empreendimento</div>
+      <div class="sub">Do mais antigo para o mais novo · clique na linha para as vendas, ou no
+        <b>gráfico mês a mês</b> para ampliar</div></div>
+    <div class="scroll"><table class="tb num"><thead><tr>
+      <th class="stickyc">Empreendimento</th><th class="r">Meta do período</th><th class="r">Realizado</th>
+      <th class="r">GAP</th><th class="r">Qtd</th><th class="c">Atingimento</th><th>Mês a mês</th>
+    </tr></thead><tbody id="tbGap"></tbody></table></div>
+  </div>`;
+
+  let modo="mensal";
+  const desenha=()=>{
+    if(modo==="mensal"){
+      barrasMes(document.getElementById("cG"),[
+        {nome:"Realizado",valores:realMes,cor:"var(--s2)"},
+        {nome:"Meta",valores:G.meta,cor:"var(--muted)",tipo:"ref"}],
+        {meses:TODOS,foco:ms,ating,aria:"Meta e realizado mês a mês",
+         aoClicar:mi=>modalVendas(`${MESL[mi]} de ${ANO}`,"Todos os canais",filtrar({mes:mi},perGeral),false)});
+      document.getElementById("cSub").textContent="VGV mensal · realizado (barra cheia) contra meta (contorno) · o ano inteiro, com o período em destaque";
+      document.getElementById("cL").innerHTML=`
+        <span class="it"><span class="dot" style="background:var(--s2)"></span>Realizado</span>
+        <span class="it"><span class="dot" style="background:none;border:1.5px solid var(--muted)"></span>Meta</span>
+        <span class="it" style="color:var(--muted)">meses esmaecidos estão fora do período · clique numa coluna para abrir as vendas</span>`;
+    }else{
+      linhas(document.getElementById("cG"),[
+        {nome:"Realizado acumulado",valores:realAc,cor:"var(--s2)"},
+        {nome:"Meta acumulada",valores:G.metaAcum,cor:"var(--muted)",ref:true}],
+        {meses:TODOS,foco:ms,aria:"Curva acumulada",
+         aoClicar:mi=>modalVendas(`${MESL[mi]} de ${ANO}`,"Todos os canais",filtrar({mes:mi},perGeral),false)});
+      document.getElementById("cSub").textContent="VGV acumulado · realizado contra meta ao longo de "+ANO+" · o ano inteiro, com o período em destaque";
+      document.getElementById("cL").innerHTML=`
+        <span class="it"><span class="dot" style="background:var(--s2)"></span>Realizado acumulado</span>
+        <span class="it"><span class="dot" style="background:var(--muted)"></span>Meta acumulada</span>`;
+    }
+  };
+  desenha();
+  document.getElementById("cTgl").addEventListener("click",e=>{
+    const b=e.target.closest("button"); if(!b) return;
+    document.querySelectorAll("#cTgl button").forEach(x=>x.classList.remove("on"));
+    b.classList.add("on"); modo=b.dataset.m; desenha();
+  });
+
+  const metaG=metaProdCanal(null);
+  const prods=PRODUTOS.map(p=>({produto:p,meta:metaG[p]||Array(12).fill(0)}));
+  document.getElementById("tbGap").innerHTML=prods.map(p=>{
+    const rm=Array.from({length:12},(_,i)=>soma(filtrar({produto:p.produto,mes:i},perGeral)));
+    const mt=ms.reduce((s,i)=>s+(p.meta[i]||0),0), rl=ms.reduce((s,i)=>s+rm[i],0);
+    const q=unid(filtrar({produto:p.produto},perGeral));
+    const a=mt?rl/mt:null;
+    return `<tr data-produto="${esc(p.produto)}">
+      <td class="nm stickyc"><span class="lnk" data-abrir="1">${esc(p.produto)}</span></td>
+      <td class="r">${moeda(mt)}</td><td class="r">${moeda(rl)}</td>
+      <td class="r" style="color:${mt-rl>0?"var(--bad)":"var(--good)"}">${moeda(mt-rl)}</td>
+      <td class="r">${nf(q)}</td><td class="c">${stPill(a)}</td>
+      <td><span class="spark" data-exp="1" title="Ampliar mês a mês">${spark(rm,"var(--s2)")}</span></td>
+    </tr>`;
+  }).join("");
+  document.querySelectorAll("#tbGap tr[data-produto]").forEach(tr=>{
+    const p=tr.dataset.produto;
+    tr.querySelector("[data-abrir]").addEventListener("click",()=>
+      modalVendas(p,`Vendas de ${ANO}`,filtrar({produto:p},perGeral)));
+    tr.querySelector("[data-exp]").addEventListener("click",()=>{
+      const item=prods.find(x=>x.produto===p);
+      const rm=Array.from({length:12},(_,i)=>soma(filtrar({produto:p,mes:i},perGeral)));
+      const mtP=item.meta;
+      /* Numa tela estreita não existe rótulo legível para 12 meses: o texto
+         encolheria junto com o viewBox. Lá o gráfico vira leitura de forma e a
+         tabela abaixo passa a ser quem entrega o número exato. */
+      const estreito=window.matchMedia("(max-width:760px)").matches;
+      const tabMes=Array.from({length:12},(_,i)=>`
+        <tr class="clickable" data-mes="${i}"><td class="nm">${MESL[i]}</td>
+          <td class="r"><b>${moeda(rm[i])}</b></td><td class="r">${moeda(mtP[i]||0)}</td>
+          <td class="r" style="color:${mtP[i]&&rm[i]<mtP[i]?"var(--bad)":"var(--good)"}">
+            ${mtP[i]?moeda(mtP[i]-rm[i]):"—"}</td>
+          <td class="c">${mtP[i]?stPill(rm[i]/mtP[i]):'<span class="pill off">sem meta</span>'}</td></tr>`).join("");
+      abrir({titulo:p,sub:"VGV realizado mês a mês · o mesmo gráfico da coluna, ampliado · valores em R$",
+        html:`<div style="padding:16px 17px"><div id="gpG"></div>
+          <div class="legend">
+            <span class="it"><span class="dot" style="background:var(--s2)"></span>Realizado</span>
+            <span class="it"><span class="dot" style="background:var(--muted)"></span>Meta</span>
+            <span class="it" style="color:var(--muted)">clique num mês para abrir as vendas</span></div></div>
+          <div class="scroll"><table class="tb num"><thead><tr><th>Mês</th>
+            <th class="r">Realizado</th><th class="r">Meta</th><th class="r">GAP</th>
+            <th class="c">Atingimento</th></tr></thead><tbody>${tabMes}</tbody></table></div>`,
+        rodape:`<span>Realizado no período <b>${moeda(rm.reduce((a,b)=>a+b,0))}</b></span>
+                <span>Meta <b>${moeda(mtP.reduce((a,b)=>a+b,0))}</b></span>`,
+        render(body){
+          const abrirMesP=mi=>modalVendas(`${MESL[mi]} · ${p}`,"Vendas do mês",
+            filtrar({produto:p,mes:mi},perGeral),true);
+          linhas(document.getElementById("gpG"),
+            [{nome:"Realizado",valores:rm,cor:"var(--s2)"},
+             {nome:"Meta",valores:mtP,cor:"var(--muted)",ref:true}],
+            estreito?{altura:260,largura:380,padL:66,aria:"Mês a mês de "+p,aoClicar:abrirMesP}
+                    :{rotulos:true,altura:340,aria:"Mês a mês de "+p,aoClicar:abrirMesP});
+          body.querySelectorAll("tr[data-mes]").forEach(tr=>
+            tr.addEventListener("click",()=>abrirMesP(+tr.dataset.mes)));
+        }});
+    });
+  });
+}
+
+/* =====================================================================
+   3 · VENDAS POR EMPREENDIMENTO
+   ===================================================================== */
+const VISTAS=[{id:"Geral",rot:"Geral",canal:null},
+  {id:"House",rot:"House (Salão + Online)",canal:HOUSE}]
+  .concat(CANAIS.map(c=>({id:c,rot:c,canal:c})));
+let vVenda="Geral";
+
+/* Meta por produto e mês, para um canal (ou o total, quando canal = null).
+   Sai direto da aba "Metas 2026", que tem um bloco por canal — então um canal
+   novo passa a ter meta sozinho, sem mexer no site. */
+function metaProdCanal(canal){
+  const out={};
+  if(!canal){ ((D.metas&&D.metas.geral&&D.metas.geral.produtos)||[])
+      .forEach(p=>out[p.produto]=(p.meta||[]).slice()); return out; }
+  (Array.isArray(canal)?canal:[canal]).forEach(c=>{
+    const b=(D.metas&&D.metas.canais||{})[c]; if(!b) return;
+    (b.produtos||[]).forEach(p=>{
+      out[p.produto]=out[p.produto]||Array(12).fill(0);
+      (p.meta||[]).forEach((v,i)=>out[p.produto][i]+=v||0);
+    });
+  });
+  return out;
+}
+/* Realizado por produto e mês vem SEMPRE das transações da Base — nunca de uma
+   aba intermediária. É o que garante que um canal novo (Lançadora) apareça. */
+function realProdCanal(canal,per){
+  const real={},qtd={};
+  filtrar(canal?{canal}:{},per).forEach(t=>{
+    if(!real[t.produto]){ real[t.produto]=Array(12).fill(0); qtd[t.produto]=Array(12).fill(0); }
+    if(t.mes!=null){ real[t.produto][t.mes]+=t.valor; qtd[t.produto][t.mes]++; }
+  });
+  return {real,qtd};
+}
+function serieVista(id,per){
+  const canal=(VISTAS.find(v=>v.id===id)||{}).canal;
+  const metas=metaProdCanal(canal), {real,qtd}=realProdCanal(canal,per);
+  return PRODUTOS.map(p=>({produto:p, meta:metas[p]||Array(12).fill(0),
+    real:real[p]||Array(12).fill(0), qtd:qtd[p]||Array(12).fill(0)}));
+}
+function canalVista(){ return (VISTAS.find(v=>v.id===vVenda)||{}).canal; }
+function rVendas(){
+  $("#p-vendas").innerHTML=`
+  <div class="card" style="margin-bottom:13px">
+    <div class="hd" style="display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap">
+      <div><div class="h">Vendas por empreendimento</div>
+        <div class="sub">Valor vendido mês a mês · <b>clique no mês</b> para abrir as vendas ·
+          <b>clique no empreendimento</b> para o detalhe</div></div>
+      <div class="tgl" id="vT" style="margin-left:auto">
+        ${VISTAS.map(v=>`<button class="${v.id===vVenda?"on":""}" data-v="${v.id}">${v.rot}</button>`).join("")}</div></div>
+    <div id="vTab"></div>
+  </div>
+  <div class="card"><div class="hd"><div class="h">Total do recorte, mês a mês</div>
+    <div class="sub" id="vSub"></div></div><div id="vG"></div>
+    <div class="legend"><span class="it"><span class="dot" style="background:var(--s2)"></span>Realizado</span>
+      <span class="it"><span class="dot" style="background:none;border:1.5px solid var(--muted)"></span>Meta</span>
+      <span class="it" style="color:var(--muted)">clique numa coluna para abrir as vendas do mês</span></div></div>`;
+  document.getElementById("vT").addEventListener("click",e=>{
+    const b=e.target.closest("button"); if(!b) return;
+    document.querySelectorAll("#vT button").forEach(x=>x.classList.remove("on"));
+    b.classList.add("on"); vVenda=b.dataset.v; pintaVendas();
+  });
+  pintaVendas();
+}
+function abrirMes(mi,produto){
+  const canal=canalVista(), f={mes:mi};
+  if(canal) f.canal=canal; if(produto) f.produto=produto;
+  const p=[`Canal: <b>${(VISTAS.find(v=>v.id===vVenda)||{}).rot}</b>`];
+  if(produto) p.push(`Empreendimento: <b>${esc(produto)}</b>`);
+  modalVendas(`${MESL[mi]} de ${ANO}`,p.join(" · "),filtrar(f));
+}
+function detalheProduto(prod){
+  const dados=serieVista(vVenda).find(p=>p.produto===prod);
+  const canal=canalVista();
+  const real=Array.from({length:12},(_,i)=>soma(filtrar(Object.assign({produto:prod,mes:i},canal?{canal}:{}))));
+  const meta=dados?dados.meta:Array(12).fill(0);
+  const varia=real.map((v,i)=>i===0?null:(real[i-1]?((v-real[i-1])/real[i-1]):null));
+  const linhasTab=Array.from({length:12},(_,i)=>`
+    <tr class="clickable" data-mes="${i}"><td class="nm">${MESL[i]}</td>
+      <td class="r">${moeda(meta[i])}</td><td class="r"><b>${moeda(real[i])}</b></td>
+      <td class="r" style="color:${meta[i]&&real[i]<meta[i]?"var(--bad)":"var(--good)"}">${meta[i]?moeda(meta[i]-real[i]):"—"}</td>
+      <td class="c">${meta[i]?stPill(real[i]/meta[i]):'<span class="pill off">sem meta</span>'}</td>
+      <td class="r" style="color:${varia[i]==null?"var(--muted)":varia[i]>=0?"var(--good)":"var(--bad)"}">
+        ${varia[i]==null?"—":(varia[i]>0?"+":"")+nf(varia[i]*100,1)+"%"}</td></tr>`).join("");
+  abrir({titulo:prod,
+    sub:`Recorte <b>${(VISTAS.find(v=>v.id===vVenda)||{}).rot}</b> · evolução mensal, meta e variação mês a mês`,
+    html:`<div style="padding:16px 17px"><div id="dpG"></div>
+      <div class="legend"><span class="it"><span class="dot" style="background:var(--s2)"></span>Realizado</span>
+        <span class="it"><span class="dot" style="background:var(--muted)"></span>Meta</span>
+        <span class="it" style="color:var(--muted)"><b>clique no gráfico</b> para abrir as vendas do mês</span></div></div>
+      <div class="scroll"><table class="tb num"><thead><tr><th>Mês</th><th class="r">Meta</th>
+        <th class="r">Vendas</th><th class="r">GAP</th><th class="c">Atingimento</th>
+        <th class="r">Variação vs mês anterior</th></tr></thead><tbody>${linhasTab}</tbody></table></div>`,
+    rodape:`<span>Realizado no ano <b>${moeda(real.reduce((a,b)=>a+b,0))}</b></span>
+            <span>Meta no ano <b>${moeda(meta.reduce((a,b)=>a+b,0))}</b></span>
+            <span style="margin-left:auto">Clique numa linha para ver as vendas do mês</span>`,
+    render(body){
+      linhas(document.getElementById("dpG"),
+        [{nome:"Realizado",valores:real,cor:"var(--s2)"},{nome:"Meta",valores:meta,cor:"var(--muted)",ref:true}],
+        {aoClicar:mi=>abrirMes(mi,prod),aria:"Evolução mensal de "+prod});
+      body.querySelectorAll("tr[data-mes]").forEach(tr=>tr.addEventListener("click",()=>abrirMes(+tr.dataset.mes,prod)));
+    }});
+}
+function pintaVendas(){
+  const dados=serieVista(vVenda), meses=Array.from({length:12},(_,i)=>i);
+  const tReal=meses.map(i=>dados.reduce((s,p)=>s+(p.real[i]||0),0));
+  const tMeta=meses.map(i=>dados.reduce((s,p)=>s+(p.meta[i]||0),0));
+  const at=meses.map(i=>tMeta[i]?tReal[i]/tMeta[i]:null);
+  const th=meses.map(i=>`<th class="r"><span class="lnk" data-mes="${i}"
+    data-tip="Abrir todas as vendas de ${MESL[i]}">${MES[i]}</span></th>`).join("");
+  const corpo=dados.map(p=>`<tr class="clickable" data-linha="${esc(p.produto)}">
+      <td class="nm stickyc"><span class="lnk" data-prod="${esc(p.produto)}">${esc(p.produto)}</span></td>
+      ${meses.map(i=>{ const r=p.real[i]||0;
+        return `<td class="r" ${r>0?`style="cursor:pointer" data-cel="${i}" data-p="${esc(p.produto)}"
+          data-tip="<b>${esc(p.produto)}</b> · ${MESL[i]}<br>Vendas: <b>${moeda(r)}</b><br>Qtd: <b>${nf(p.qtd[i]||0)}</b><br><span style='color:var(--muted)'>clique para ver as vendas</span>"`:""}>
+          ${r>0?moeda(r):'<span style="color:var(--muted)">—</span>'}</td>`; }).join("")}
+      <td class="r" style="border-left:1.5px solid var(--border)"><b>${moeda(p.real.reduce((a,b)=>a+b,0))}</b></td>
+    </tr>`).join("");
+  document.getElementById("vTab").innerHTML=`<div class="scroll"><table class="tb num">
+    <thead><tr><th class="stickyc">Empreendimento</th>${th}
+      <th class="r" style="border-left:1.5px solid var(--border)">Total ${ANO}</th></tr></thead>
+    <tbody>${corpo}<tr class="tot"><td class="stickyc">Total</td>
+      ${meses.map(i=>`<td class="r">${tReal[i]>0?moeda(tReal[i]):"—"}</td>`).join("")}
+      <td class="r" style="border-left:1.5px solid var(--border)">${moeda(tReal.reduce((a,b)=>a+b,0))}</td></tr>
+    </tbody></table></div>`;
+  bindTips(document.getElementById("vTab"));
+  document.querySelectorAll("#vTab [data-mes]").forEach(e=>e.addEventListener("click",()=>abrirMes(+e.dataset.mes)));
+  document.querySelectorAll("#vTab [data-cel]").forEach(e=>e.addEventListener("click",()=>abrirMes(+e.dataset.cel,e.dataset.p)));
+  document.querySelectorAll("#vTab tr[data-linha]").forEach(tr=>tr.addEventListener("click",ev=>{
+    if(ev.target.closest("[data-cel]")) return;      // célula de mês abre a venda direto
+    detalheProduto(tr.dataset.linha); }));
+  barrasMes(document.getElementById("vG"),
+    [{nome:"Realizado",valores:tReal,cor:"var(--s2)"},{nome:"Meta",valores:tMeta,cor:"var(--muted)",tipo:"ref"}],
+    {ating:at,aoClicar:mi=>abrirMes(mi),aria:"Meta e realizado do recorte"});
+  const canal=canalVista();
+  document.getElementById("vSub").innerHTML=`Recorte <b>${(VISTAS.find(v=>v.id===vVenda)||{}).rot}</b> ·
+    ${nfu(unid(filtrar(canal?{canal}:{})))} unidades em ${ANO}`;
+}
+
+/* =====================================================================
+   4 · DESCONTO POR PRODUTO
+   O desconto máximo é política da companhia e vem da planilha.
+
+   A MÉDIA não é média de percentuais: é o desconto total concedido em reais
+   dividido pelo valor de tabela total. Para cada venda, o valor de tabela
+   sai de valor ÷ (1 + desconto) — o desconto na Base é negativo, então
+   dividir "desfaz" o abatimento e devolve o preço cheio.
+
+       média = (Σ valor − Σ tabela) ÷ Σ tabela
+
+   É assim que a planilha passou a calcular, e faz diferença de verdade:
+   no Core Klabin a média simples dá −11,73% e esta dá −10,82%, porque a
+   média simples deixa uma unidade pequena com desconto grande pesar igual
+   a uma unidade grande com desconto pequeno. Conferido célula a célula
+   contra a aba DESCONTO POR PRODUTO: 11 produtos e as 53 células mensais
+   fecham com a planilha.
+
+   A perda nominal também vem do valor de tabela, não do VGV vendido —
+   mesma base da média, senão os dois números contariam histórias diferentes.
+   ===================================================================== */
+const perDesc=novoPeriodo();
+const POLITICA=(function(){ const o={};
+  (D.desconto||[]).forEach(d=>{ if(d.maximo!=null) o[d.produto]=d.maximo; }); return o; })();
+
+/* valor de tabela: o preço antes do abatimento */
+const tabela=t=>t.valor/(1+t.desconto);
+/* desconto agregado de um conjunto de vendas; null se ninguém tem desconto */
+function descAgregado(rows){
+  let val=0,tab=0;
+  rows.forEach(t=>{ if(t.desconto==null) return; val+=t.valor; tab+=tabela(t); });
+  return tab>0?{taxa:(val-tab)/tab,tabela:tab,vgv:val}:null;
+}
+
+function calcDesconto(per){
+  return PRODUTOS.map(p=>{
+    const vendas=filtrar({produto:p},per);
+    const comDesc=vendas.filter(t=>t.desconto!=null);
+    const ag=descAgregado(comDesc);
+    const media=ag?ag.taxa:null;
+    const mensal=Array.from({length:12},(_,i)=>{
+      const a=descAgregado(comDesc.filter(t=>t.mes===i));
+      return a?a.taxa:null;
+    });
+    const max=POLITICA[p]!=null?POLITICA[p]:null;
+    const perda=(media!=null&&max!=null)?Math.min(0,media-max):null;
+    return {produto:p,mensal,media,max,perda,vgv:soma(vendas),vendas:unid(vendas),
+            tabela:ag?ag.tabela:0,
+            nominal:perda!=null?Math.abs(perda)*(ag?ag.tabela:0):null};
+  });
+}
+function rDesconto(){
+  $("#p-desconto").innerHTML=`
+    <div class="card" style="margin-bottom:13px"><div class="periodo" id="pdSel"></div>
+      <div class="sub" style="margin-top:8px">O <b>desconto máximo</b> é o teto aprovado pela companhia e vem da planilha.
+        A <b>média</b> e a <b>perda</b> são recalculadas com as vendas do período selecionado:
+        desconto concedido em reais sobre o <b>valor de tabela</b>, e não média de percentuais —
+        assim uma unidade grande pesa mais que uma pequena, como passou a ser na planilha.</div></div>
+    <div id="pdCorpo"></div>`;
+  seletorPeriodo("pdSel",perDesc,pintaDesconto);
+  pintaDesconto();
+}
+function pintaDesconto(){
+  sincHoje(perDesc);
+  const L=calcDesconto(perDesc);
+  const comPerda=L.filter(x=>x.perda!=null&&x.perda<0).sort((a,b)=>b.nominal-a.nominal);
+  const totalNominal=L.reduce((s,x)=>s+(x.nominal||0),0);
+  const totalVGV=L.reduce((s,x)=>s+x.vgv,0);
+  const todas=L.flatMap(x=>filtrar({produto:x.produto},perDesc)).filter(t=>t.desconto!=null);
+  const agGeral=descAgregado(todas);
+  const mediaGeral=agGeral?agGeral.taxa:null;
+  const pior=comPerda[0];
+
+  const cel=(v,max)=>{
+    if(v==null) return `<td class="c" style="color:var(--muted)">–</td>`;
+    const ruim=(max!=null&&v<max);
+    return `<td class="c" style="font-weight:650;font-size:11.5px;
+      background:${ruim?"var(--bad-bg)":"var(--good-bg)"};color:${ruim?"var(--bad)":"var(--good)"}">
+      ${nf(v*100,2)}%</td>`;
+  };
+  document.getElementById("pdCorpo").innerHTML=`
+  <div class="grid g3" style="margin-bottom:13px">
+    <div class="card kpi"><div class="lab">Perda nominal no período</div>
+      <div class="val lg" style="color:${totalNominal>0?"var(--bad)":"var(--good)"}">${moeda(totalNominal)}</div>
+      <div class="sub">Quanto o desconto acima do teto custou, sobre o valor de tabela<br>
+        <b>${pct1(totalVGV?totalNominal/totalVGV:0)}</b> do VGV vendido no período</div></div>
+    <div class="card kpi"><div class="lab">Desconto médio concedido</div>
+      <div class="val">${mediaGeral!=null?nf(mediaGeral*100,2)+"%":"—"}</div>
+      <div class="sub">Desconto em reais sobre <b>${moeda(agGeral?agGeral.tabela:0)}</b> de valor de tabela<br>
+        ${nf(comPerda.length)} empreendimento(s) acima do teto</div></div>
+    <div class="card kpi"><div class="lab">Maior perda</div>
+      ${pior?`<div class="val sm">${esc(pior.produto)}</div>
+        <div class="sub"><b>${moeda(pior.nominal)}</b> · desconto médio de
+          <b>${nf(pior.media*100,2)}%</b> contra teto de <b>${nf(pior.max*100,2)}%</b></div>`
+        :`<div class="val sm">—</div><div class="sub">Nenhum empreendimento passou do teto no período</div>`}</div>
+  </div>
+  <div class="card">
+    <div class="hd"><div class="h">Desconto por empreendimento</div>
+      <div class="sub">Média mensal do desconto concedido · <span style="color:var(--good)">verde</span>
+        dentro do teto, <span style="color:var(--bad)">vermelho</span> acima ·
+        clique no empreendimento para ver as vendas</div></div>
+    <div class="scroll"><table class="tb num"><thead><tr>
+      <th class="stickyc">Produto</th>
+      ${MES.map(m=>`<th class="c">${m}</th>`).join("")}
+      <th class="c" style="border-left:1.5px solid var(--border)">Média total</th>
+      <th class="c">Desconto máximo</th><th class="c">Perda</th>
+      <th class="r">Perda nominal</th><th class="r">VGV do período</th></tr></thead>
+    <tbody>${L.map(x=>`<tr class="clickable" data-p="${esc(x.produto)}">
+      <td class="nm stickyc">${esc(x.produto)}</td>
+      ${x.mensal.map(v=>cel(v,x.max)).join("")}
+      <td class="c" style="border-left:1.5px solid var(--border);font-weight:700;
+        background:var(--card-2)">${x.media!=null?nf(x.media*100,2)+"%":"–"}</td>
+      <td class="c" style="color:var(--ink-2)">${x.max!=null?nf(x.max*100,2)+"%":"–"}</td>
+      <td class="c" style="font-weight:700;color:${x.perda?"var(--bad)":"var(--good)"}">
+        ${x.perda!=null?nf(x.perda*100,2)+"%":"–"}</td>
+      <td class="r" style="color:${x.nominal?"var(--bad)":"var(--muted)"};font-weight:${x.nominal?"700":"400"}">
+        ${x.nominal?moeda(x.nominal):"—"}</td>
+      <td class="r" style="color:var(--muted)">${moeda(x.vgv)}</td></tr>`).join("")}
+      <tr class="tot"><td class="stickyc">Total</td>
+        ${MES.map(()=>"<td></td>").join("")}
+        <td class="c" style="border-left:1.5px solid var(--border)">${mediaGeral!=null?nf(mediaGeral*100,2)+"%":"–"}</td>
+        <td></td><td></td>
+        <td class="r" style="color:var(--bad)">${moeda(totalNominal)}</td>
+        <td class="r">${moeda(totalVGV)}</td></tr>
+    </tbody></table></div>
+    <div class="sub" style="margin-top:11px"><b>Como ler.</b> A <b>perda</b> é quanto o desconto médio passou
+      do teto aprovado; quando fica dentro do teto, é zero. A <b>perda nominal</b> converte esse excedente
+      em reais sobre o VGV vendido no período — é o dinheiro que saiu da mesa.</div>
+  </div>
+  `;
+  document.querySelectorAll("#pdCorpo tr[data-p]").forEach(tr=>tr.addEventListener("click",()=>{
+    const p=tr.dataset.p, item=L.find(x=>x.produto===p);
+    const unid=Array.from({length:12},(_,i)=>filtrar({produto:p,mes:i},perDesc).filter(t=>t.peso).length);
+    const meses=item.mensal.map((v,i)=>v!=null&&unid[i]>0?i:null).filter(i=>i!=null);
+    const fora=meses.filter(i=>item.max!=null&&item.mensal[i]<item.max);
+    abrir({titulo:p,sub:`Desconto e volume mês a mês${
+        item.max!=null?` · teto aprovado de <b>${nf(item.max*100,2)}%</b>`:""}`,
+      html:`<div style="padding:16px 17px"><div id="dxG"></div>
+        <div class="legend">
+          <span class="it"><span class="dot" style="background:var(--s3)"></span>Desconto médio do mês</span>
+          <span class="it"><span class="dot" style="background:var(--bad)"></span>Mês acima do teto</span>
+          <span class="it"><span class="dot" style="background:var(--s1)"></span>Unidades vendidas</span>
+          <span class="it" style="color:var(--muted)">clique num mês para abrir as vendas</span></div>
+        <div class="sub" style="margin-top:12px">A linha do desconto desce conforme o desconto aumenta.
+          Tudo o que cai dentro da <b style="color:var(--bad)">faixa vermelha</b> passou do teto aprovado.
+          ${fora.length?`Neste recorte isso aconteceu em <b>${fora.length}</b> ${fora.length>1?"meses":"mês"}:
+            ${fora.map(i=>MESL[i]).join(", ")}.`:"Neste recorte nenhum mês passou do teto."}</div></div>`,
+      rodape:`<span>Média do período <b>${item.media!=null?nf(item.media*100,2)+"%":"—"}</b></span>
+              <span>Perda <b style="color:${item.perda?"var(--bad)":"var(--good)"}">${item.perda!=null?nf(item.perda*100,2)+"%":"—"}</b></span>
+              <span>Perda nominal <b style="color:var(--bad)">${item.nominal?moeda(item.nominal):"—"}</b></span>
+              <span>Unidades no período <b>${nf(unid.reduce((a,b)=>a+b,0))}</b></span>`,
+      render(){ duploPainel(document.getElementById("dxG"),
+        {linha:{nome:"Desconto médio do mês",valores:item.mensal,cor:"var(--s3)",
+                fmt:v=>v==null?"—":nf(v*100,2)+"%"},
+         barras:{nome:"Unidades vendidas no mês",valores:unid,cor:"var(--s1)"}},
+        {limite:item.max,aria:"Desconto e volume de "+p,
+         aoClicar:mi=>modalVendas(`${MESL[mi]} · ${p}`,"Vendas do mês",
+           filtrar({produto:p,mes:mi},perDesc),true)}); }});
+  }));
+}
+
+/* =====================================================================
+   5 · CANAIS
+   ===================================================================== */
+/* Meta acumulada até o mês de referência da planilha, para um canal ou grupo. */
+function metaYTDCanal(canal){
+  const M=(D.metas&&D.metas.canais)||{};
+  return (Array.isArray(canal)?canal:[canal]).reduce((s,c)=>
+    s+(M[c]&&M[c].metaAcum?(M[c].metaAcum[MESREF-1]||0):0),0);
+}
+function aggCanais(){
+  const M=D.metas.canais||{}, out=[];
+  CANAIS.forEach(c=>{
+    const tx=filtrar({canal:c});
+    out.push({canal:c, real:soma(tx), qtd:unid(tx),
+      meta:M[c]?(M[c].metaAcum[11]||0):0, serie:M[c]?M[c].real:null});
+  });
+  const tot=out.reduce((s,c)=>s+c.real,0), interna=(D.realYTD||0)-tot;
+  if(interna>1){ const tx=filtrar({canal:"Interna"});
+    out.push({canal:"Interna",real:interna,qtd:unid(tx),meta:0,serie:null}); }
+  return out;
+}
+let vCanal="canais";
+function rCanais(){
+  const C=aggCanais(), total=C.reduce((s,c)=>s+c.real,0)||1;
+  const house=C.filter(c=>HOUSE.includes(c.canal));
+  const houseReal=house.reduce((s,c)=>s+c.real,0), houseMeta=house.reduce((s,c)=>s+c.meta,0);
+  const agrup = vCanal==="house"
+    ? [{canal:"House (Salão + Online)",real:houseReal,meta:houseMeta,qtd:unid(filtrar({canal:HOUSE})),cor:"var(--s2)",grupo:HOUSE}]
+        .concat(C.filter(c=>!HOUSE.includes(c.canal)).map(c=>({...c,cor:cCor(c.canal),grupo:c.canal})))
+    : C.map(c=>({...c,cor:cCor(c.canal),grupo:c.canal}));
+
+  $("#p-canais").innerHTML=`
+  <div class="card" style="margin-bottom:13px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+    <div><div class="h">Canais de venda</div>
+      <div class="sub">House reúne Salão e Online · Lançadora é canal próprio desde maio</div></div>
+    <div class="tgl" id="cnT" style="margin-left:auto">
+      <button class="${vCanal==="canais"?"on":""}" data-v="canais">Todos os canais</button>
+      <button class="${vCanal==="house"?"on":""}" data-v="house">Agrupar House</button></div>
+  </div>
+  <div class="grid gauto" id="cnCards" style="margin-bottom:13px"></div>
+  <div class="grid g21">
+    <div class="card"><div class="hd"><div class="h">Meta e realizado por canal · ano</div>
+      <div class="sub">Clique na barra para abrir as vendas do canal</div></div><div id="cnBar"></div></div>
+    <div class="card"><div class="hd"><div class="h">Participação no VGV</div>
+      <div class="sub">Realizado por canal · <b>clique na fatia</b> para abrir os gerentes</div></div>
+      <div id="cnD"></div><div class="legend" id="cnL" style="flex-direction:column;gap:8px"></div></div>
+  </div>`;
+
+  document.getElementById("cnT").addEventListener("click",e=>{
+    const b=e.target.closest("button"); if(!b) return; vCanal=b.dataset.v; rCanais(); });
+
+  barrasH(document.getElementById("cnBar"),
+    agrup.map(c=>({nome:c.canal,valor:c.real,meta:c.meta,ating:c.meta?c.real/c.meta:null,cor:c.cor})),
+    {comMeta:true,aoClicar:n=>abrirCanal(agrup.find(x=>x.canal===n))});
+  donut(document.getElementById("cnD"),
+    agrup.map(c=>({nome:c.canal,valor:c.real,cor:c.cor})), nf(Math.round(total)),
+    n=>abrirCanal(agrup.find(x=>x.canal===n)));
+  document.getElementById("cnL").innerHTML=agrup.map(c=>`
+    <span class="it clickable" data-c="${esc(c.canal)}" style="width:100%">
+      <span class="dot" style="background:${c.cor}"></span><span style="font-weight:600">${esc(c.canal)}</span>
+      <span style="margin-left:auto;text-align:right"><b>${pct1(c.real/total)}</b>
+        <span style="color:var(--muted);font-size:11.5px;display:block">${moeda(c.real)} · ${nfu(c.qtd)} unidades</span>
+      </span></span>`).join("");
+  document.querySelectorAll("#cnL [data-c]").forEach(e=>e.addEventListener("click",()=>
+    abrirCanal(agrup.find(x=>x.canal===e.dataset.c))));
+  document.getElementById("cnCards").innerHTML=agrup.map(c=>{
+    const my=metaYTDCanal(c.grupo), aty=my?c.real/my:null;
+    return `<div class="card cnc"><div style="display:flex;align-items:center;gap:8px;margin-bottom:7px">
+      <span class="dot" style="background:${c.cor}"></span>
+      <div class="h" style="font-size:13px">${esc(c.canal)}</div></div>
+      <div class="kpi"><div class="val sm">${moeda(c.real)}</div>
+        <div class="sub" style="font-size:11.5px;line-height:1.6">
+          Meta do ano <b>${c.meta?moeda(c.meta):"—"}</b><br>
+          <span style="white-space:nowrap">Meta YTD <b>${my?moeda(my):"—"}</b> ·
+            Ating. <b style="color:${stCol(aty)}">${aty!=null?pct1(aty):"—"}</b></span><br>
+          ${nfu(c.qtd)} unidades · ticket <b>${moeda(c.qtd?c.real/c.qtd:0)}</b></div></div></div>`;
+  }).join("");
+}
+function abrirCanal(c){
+  if(!c) return;
+  const rows=filtrar({canal:c.grupo});
+  const por={};
+  rows.forEach(t=>{ const g=t.gerente||"—"; (por[g]=por[g]||{vgv:0,qtd:0}); por[g].vgv+=t.valor; por[g].qtd+=(t.peso||0); });
+  const total=soma(rows)||1;
+  const lista=Object.entries(por).map(([g,v])=>({g,...v})).sort((a,b)=>b.vgv-a.vgv);
+  const desligados=lista.filter(x=>!ativo(x.g)).length;
+  abrir({titulo:`Canal ${c.canal}`,
+    sub:`Gerentes que venderam neste canal · clique no nome para abrir as vendas${
+      desligados?` · <b>${desligados}</b> já não fazem parte da equipe`:""}`,
+    html:`<div class="scroll"><table class="tb num"><thead><tr><th>Gerente</th><th class="r">Qtd</th>
+      <th class="r">VGV</th><th class="r">Ticket médio</th><th class="r">Share do canal</th><th></th></tr></thead>
+      <tbody>${lista.map(x=>`<tr class="clickable" data-g="${esc(x.g)}">
+        <td class="nm">${rotGer(x.g)}</td><td class="r">${nfu(x.qtd)}</td>
+        <td class="r">${moeda(x.vgv)}</td><td class="r">${x.qtd?moeda(x.vgv/x.qtd):"—"}</td>
+        <td class="r"><b>${pct1(x.vgv/total)}</b></td>
+        <td style="width:130px"><div class="track" style="height:7px">
+          <div class="barfill" style="width:${(x.vgv/total)*100}%;background:${c.cor}"></div></div></td></tr>`).join("")}
+      </tbody></table></div>`,
+    rodape:`<span><b>${lista.length}</b> gerentes</span><span><b>${nfu(unid(rows))}</b> unidades</span>
+            <span>VGV do canal <b>${moedaC(total)}</b></span>`,
+    render(body){ body.querySelectorAll("tr[data-g]").forEach(tr=>tr.addEventListener("click",()=>{
+      const g=tr.dataset.g, r=filtrar({canal:c.grupo,gerente:g});
+      modalVendas(`${g} · ${c.canal}`,`${nf(r.length)} venda(s) neste canal`,r,true); })); }});
+}
+
+/* =====================================================================
+   5 · GERENTES
+   ===================================================================== */
+const perGer=novoPeriodo();
+const VG=[{id:"house",rot:"House (Salão + Online)",canal:HOUSE},
+          {id:"parc",rot:"Parcerias",canal:"Parcerias"},
+          {id:"geral",rot:"Geral (House + Parcerias)",canal:HOUSE.concat(["Parcerias"])}];
+let vGer="geral", vGerModo="lista";
+function metaCanal(canal){
+  const M=D.metas.canais||{}, lista=Array.isArray(canal)?canal:[canal];
+  return lista.reduce((s,c)=>s+(M[c]?(M[c].metaAcum[11]||0):0),0);
+}
+function rGerentes(){
+  sincHoje(perGer);
+  const ms=mesesDoPeriodo(perGer);
+  const somaMeta=(canal)=>{ const M=(D.metas&&D.metas.canais)||{};
+    return (Array.isArray(canal)?canal:[canal]).reduce((s,c)=>
+      s+(M[c]?ms.reduce((a,i)=>a+((M[c].meta||[])[i]||0),0):0),0); };
+  const hR=soma(filtrar({canal:HOUSE},perGer)), hM=somaMeta(HOUSE);
+  const pR=soma(filtrar({canal:"Parcerias"},perGer)), pM=somaMeta("Parcerias");
+  $("#p-gerentes").innerHTML=`
+  <div class="card" style="margin-bottom:13px"><div class="periodo" id="pgerSel"></div>
+    <div class="sub" style="margin-top:8px">As metas são contadas por mês inteiro; o realizado usa a data exata da venda.</div></div>
+  <div class="grid g2" style="margin-bottom:13px">
+    <div class="card kpi"><div class="lab">House · Salão + Online</div>
+      <div class="val">${moeda(hR)}</div>
+      <div class="sub">Meta do período <b>${moeda(hM)}</b> · GAP <b style="color:var(--bad)">${moeda(hM-hR)}</b>
+        · Ating. <b style="color:${stCol(hM?hR/hM:null)}">${pct1(hM?hR/hM:null)}</b></div>
+      <div class="meter"><span style="width:${Math.min(hM?hR/hM:0,1)*100}%;background:${stCol(hM?hR/hM:null)}"></span></div></div>
+    <div class="card kpi"><div class="lab">Parcerias</div>
+      <div class="val">${moeda(pR)}</div>
+      <div class="sub">Meta do período <b>${moeda(pM)}</b> · GAP <b style="color:var(--bad)">${moeda(pM-pR)}</b>
+        · Ating. <b style="color:${stCol(pM?pR/pM:null)}">${pct1(pM?pR/pM:null)}</b></div>
+      <div class="meter"><span style="width:${Math.min(pM?pR/pM:0,1)*100}%;background:${stCol(pM?pR/pM:null)}"></span></div></div>
+  </div>
+  <div class="card" style="margin-bottom:13px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+    <div class="tgl" id="gT">${VG.map(v=>`<button class="${v.id===vGer?"on":""}" data-v="${v.id}">${v.rot}</button>`).join("")}</div>
+    <div class="tgl" id="gM" style="margin-left:auto">
+      <button class="${vGerModo==="lista"?"on":""}" data-m="lista">Ranking</button>
+      <button class="${vGerModo==="matriz"?"on":""}" data-m="matriz">Gerente × Empreendimento</button></div>
+  </div>
+  <div id="gCorpo"></div>`;
+  seletorPeriodo("pgerSel",perGer,rGerentes);
+  document.getElementById("gT").addEventListener("click",e=>{
+    const b=e.target.closest("button"); if(!b) return; vGer=b.dataset.v; rGerentes(); });
+  document.getElementById("gM").addEventListener("click",e=>{
+    const b=e.target.closest("button"); if(!b) return; vGerModo=b.dataset.m; rGerentes(); });
+  vGerModo==="matriz"?pintaMatrizGer():pintaRankingGer();
+}
+function gerentesDoRecorte(){
+  const canal=(VG.find(v=>v.id===vGer)||{}).canal;
+  const rows=filtrar({canal},perGer);
+  const por={};
+  let foraDoTime=0;
+  rows.forEach(t=>{ const g=t.gerente||"—"; if(kk(g)==="INTERNA") return;
+    if(!ativo(g)){ foraDoTime+=t.valor; return; }          // só gerentes ativos no cadastro
+    (por[g]=por[g]||{vgv:0,qtd:0,mes:Array(12).fill(0),ult:null});
+    por[g].vgv+=t.valor; por[g].qtd+=(t.peso||0); if(t.mes!=null) por[g].mes[t.mes]+=t.valor;
+    if(t.data&&(!por[g].ult||t.data>por[g].ult)) por[g].ult=t.data; });
+  // gerentes ativos que ainda não venderam também entram, zerados
+  Object.keys(TIME).forEach(n=>{ if(!TIME[n].ativo||por[n]) return;
+    const t=TIME[n].time;
+    const cabe = vGer==="geral" ? (t==="House"||t==="Parcerias")
+               : vGer==="house" ? t==="House" : t==="Parcerias";
+    if(cabe) por[n]={vgv:0,qtd:0,mes:Array(12).fill(0),ult:null};
+  });
+  return {canal,foraDoTime,
+    lista:Object.entries(por).map(([g,v])=>({nome:g,...v})).sort((a,b)=>b.vgv-a.vgv)};
+}
+/* Última venda do gerente. O "há N dias" é medido contra o FIM do período em
+   tela, não contra hoje: olhando o 1º trimestre, "há 200 dias" não diria nada.
+   Passa de 30 dias sem vender e o número fica em vermelho — é o sinal que a
+   diretoria procura quando pergunta quem não está entregando. */
+function ultVenda(iso){
+  if(!iso) return '<span style="color:var(--muted)">sem venda</span>';
+  const ref=(perGer.fim>hojeISO()?hojeISO():perGer.fim);
+  const d=diasEntre(iso,ref);
+  const cor=d==null?"var(--muted)":d>60?"var(--bad)":d>30?"var(--warn)":"var(--ink-2)";
+  return `${dtBR(iso)}<span style="display:block;font-size:10px;color:${cor}">${
+    d==null?"":d<=0?"hoje":d===1?"há 1 dia":`há ${nf(d)} dias`}</span>`;
+}
+function metaGerente(nome){
+  const G=D.gerentes||{}, ms=mesesDoPeriodo(perGer);
+  for(const bloco of ["parcerias","plkGeral","lancadoras"]){
+    const x=(G[bloco]||[]).find(g=>kk(g.nome)===kk(nome));
+    if(x) return ms.reduce((s,i)=>s+((x.meta||[])[i]||0),0);
+  }
+  return null;
+}
+function pintaRankingGer(){
+  const {canal,lista,foraDoTime}=gerentesDoRecorte();
+  const total=lista.reduce((s,g)=>s+g.vgv,0)||1;
+  document.getElementById("gCorpo").innerHTML=`
+  <div class="card"><div class="hd"><div class="h">Ranking de gerentes · ${(VG.find(v=>v.id===vGer)||{}).rot}</div>
+    <div class="sub">Ordenado por VGV · clique na linha para as vendas, ou no
+      <b>gráfico mês a mês</b> para ampliar</div></div>
+    <div class="scroll"><table class="tb num"><thead><tr><th class="c">#</th><th class="stickyc">Gerente</th>
+      <th class="r">VGV</th><th class="r">Qtd</th><th class="r">Ticket médio</th>
+      <th class="r">Última venda</th><th class="r">Share</th>
+      <th class="r">Meta do período</th><th class="c">Atingimento</th><th>Mês a mês</th></tr></thead>
+    <tbody>${lista.map((g,i)=>{
+      const m=metaGerente(g.nome), a=m?g.vgv/m:null;
+      return `<tr data-g="${esc(g.nome)}"><td class="c" style="color:var(--muted)">${i+1}</td>
+        <td class="nm stickyc"><span class="lnk" data-abrir="1">${rotGer(g.nome)}</span></td>
+        <td class="r"><b>${moeda(g.vgv)}</b></td><td class="r">${nfu(g.qtd)}</td>
+        <td class="r">${g.qtd?moeda(g.vgv/g.qtd):"—"}</td>
+        <td class="r">${ultVenda(g.ult)}</td><td class="r">${pct1(g.vgv/total)}</td>
+        <td class="r">${m?moeda(m):"—"}</td><td class="c">${stPill(a)}</td>
+        <td><span class="spark" data-exp="1" title="Ampliar mês a mês">${spark(g.mes,"var(--s1)")}</span></td></tr>`;
+    }).join("")}
+      <tr class="tot"><td></td><td class="stickyc">Total</td><td class="r">${moeda(total)}</td>
+        <td class="r">${nfu(lista.reduce((s,g)=>s+g.qtd,0))}</td>
+        <td class="r">${total&&lista.reduce((s,g)=>s+g.qtd,0)?moeda(total/lista.reduce((s,g)=>s+g.qtd,0)):""}</td>
+        <td></td><td class="r">100%</td><td></td><td></td><td></td></tr>
+    </tbody></table></div>
+    ${foraDoTime>1?`<div class="sub" style="margin-top:11px;padding-top:11px;border-top:1px solid var(--grid)">
+      Mais <b>${moeda(foraDoTime)}</b> foram vendidos neste recorte por gerentes que não estão ativos
+      no cadastro. Use a <b>engrenagem</b> no topo para incluí-los.</div>`:""}
+    </div>`;
+  document.querySelectorAll("#gCorpo tr[data-g]").forEach(tr=>{
+    const g=tr.dataset.g;
+    tr.querySelector("[data-abrir]").addEventListener("click",()=>
+      modalVendas(g,`${(VG.find(v=>v.id===vGer)||{}).rot} · vendas do período`,filtrar({canal,gerente:g},perGer)));
+    tr.querySelector("[data-exp]").addEventListener("click",()=>{
+      const item=lista.find(x=>x.nome===g);
+      modalMensal(g,`${(VG.find(v=>v.id===vGer)||{}).rot} · VGV mês a mês`,
+        [{nome:"VGV realizado",valores:item.mes,cor:"var(--s1)"}],{canal,gerente:g},
+        false,{toggle:true,linha:true,per:perGer});
+    });
+  });
+}
+function pintaMatrizGer(){
+  const {canal,lista}=gerentesDoRecorte();
+  const ativos=new Set(lista.map(g=>kk(g.nome)));
+  const prods=PRODUTOS.filter(p=>TX.some(t=>t.produto===p));
+  const cel={},qtd={},totProd={},vgvProd={};
+  /* totProd é contado no MESMO recorte da matriz (canal, período, só gerentes
+     ativos, sem Interna). Se eu usasse o total geral do empreendimento as
+     colunas não fechariam 100% e a primeira pergunta seria "cadê o resto". */
+  filtrar({canal},perGer).forEach(t=>{ if(kk(t.gerente)==="INTERNA"||!ativos.has(kk(t.gerente))) return;
+    const k=t.gerente+"||"+t.produto; cel[k]=(cel[k]||0)+t.valor; qtd[k]=(qtd[k]||0)+(t.peso||0);
+    totProd[t.produto]=(totProd[t.produto]||0)+(t.peso||0); vgvProd[t.produto]=(vgvProd[t.produto]||0)+t.valor; });
+  const max=Math.max(1,...Object.values(cel));
+  const totQtd=Object.values(qtd).reduce((s,v)=>s+v,0)||1;
+  const totVgv=Object.values(cel).reduce((s,v)=>s+v,0);
+  document.getElementById("gCorpo").innerHTML=`
+  <div class="card"><div class="hd"><div class="h">Quem vendeu o quê</div>
+    <div class="sub">Quantidade de vendas e, abaixo, quanto o gerente representa dentro do
+      empreendimento · quanto mais escuro, maior o VGV · clique na célula para abrir as vendas</div></div>
+    <div class="scroll"><table class="tb num"><thead><tr><th class="stickyc">Gerente</th>
+      ${prods.map(p=>`<th class="c" style="font-size:9.5px;white-space:normal;max-width:82px">${esc(p)}
+        <span style="display:block;font-weight:400;opacity:.7">${nfu(totProd[p]||0)} unidade${(totProd[p]||0)===1?"":"s"}</span></th>`).join("")}
+      <th class="r">Total</th><th class="r">VGV</th></tr></thead>
+    <tbody>${lista.map(g=>{
+      const tq=prods.reduce((s,p)=>s+(qtd[g.nome+"||"+p]||0),0);
+      return `<tr><td class="nm stickyc">${rotGer(g.nome)}</td>
+      ${prods.map(p=>{ const k=g.nome+"||"+p, v=cel[k]||0, n=qtd[k]||0;
+        const sh=totProd[p]?n/totProd[p]:0;
+        const int=v?Math.round((0.12+0.88*(v/max))*72):0;
+        return `<td class="c" ${v?`style="cursor:pointer;padding:6px 8px;background:color-mix(in srgb,var(--s1) ${int}%,transparent)"
+          data-g="${esc(g.nome)}" data-p="${esc(p)}"
+          data-tip="<b>${esc(g.nome)}</b> → ${esc(p)}<br><b>${nfu(n)}</b> unidade(s) · <b>${pct1(sh)}</b> das unidades do empreendimento<br>VGV: <b>${moeda(v)}</b><br><span style='color:var(--muted)'>clique para abrir</span>">
+          <b style="font-size:13px">${nfu(n)}</b>
+          <span style="display:block;font-size:10px;color:var(--ink-2)">${pct1(sh)}</span>`
+          :'style="color:var(--muted)">·'}</td>`; }).join("")}
+      <td class="r"><b>${nfu(tq)}</b><span style="display:block;font-size:10px;color:var(--ink-2);font-weight:400">${pct1(tq/totQtd)}</span></td>
+      <td class="r"><b>${moeda(g.vgv)}</b></td></tr>`; }).join("")}
+      <tr class="tot"><td class="stickyc">Total</td>
+        ${prods.map(p=>`<td class="c">${nfu(totProd[p]||0)}<span style="display:block;font-size:10px;font-weight:400">100%</span></td>`).join("")}
+        <td class="r">${nfu(totQtd)}<span style="display:block;font-size:10px;font-weight:400">100%</span></td>
+        <td class="r">${moeda(totVgv)}</td></tr>
+    </tbody></table></div>
+    <div class="sub" style="margin-top:11px">O número grande em cada célula é a <b>quantidade de unidades</b>
+      e o percentual abaixo dele é a fatia daquele <b>empreendimento</b> que o gerente entregou — cada coluna
+      fecha 100%. O tom de fundo representa o <b>VGV</b>, então dá para ver quem vende muitas unidades
+      pequenas e quem vende poucas unidades grandes.</div></div>`;
+  bindTips(document.getElementById("gCorpo"));
+  document.querySelectorAll("#gCorpo td[data-g]").forEach(td=>td.addEventListener("click",()=>
+    modalVendas(`${td.dataset.g} · ${td.dataset.p}`,"Gerente × empreendimento",
+      filtrar({canal,gerente:td.dataset.g,produto:td.dataset.p},perGer))));
+}
+
+/* =====================================================================
+   6 · ORIGEM POR EMPREENDIMENTO
+   ===================================================================== */
+const CANAIS_MKT=["Salão","Online"];   // a análise de origem olha só os canais próprios
+const perOrigem=novoPeriodo();
+const VO=[{id:"porprod",rot:"Origem por empreendimento"},{id:"resumo",rot:"Resumo por empreendimento"},
+  {id:"plataforma",rot:"Plataformas"},{id:"origem",rot:"Ranking de origens"},
+  {id:"campanha",rot:"Campanhas"},{id:"matriz",rot:"Origem × empreendimento"}];
+let vOrig="porprod", prodSel="";
+
+/* ---- linha de campanha -------------------------------------------------
+   O nome da campanha carrega a linha criativa dentro dele, tipo
+   "Frei Caneca - Linha Investidor - Lookalike". Pegamos o trecho que começa
+   em "Linha" e vai até o próximo separador. Campanha sem "Linha" no nome
+   fica como "Sem linha identificada" — nada é inventado.                  */
+function linhaDaCampanha(c){
+  if(!c) return null;
+  const m=String(c).match(/linha\s+[^|\-–—]+/i);
+  return m ? m[0].trim().replace(/\s+/g," ") : null;
+}
+const kLinha=s=>kk(s).replace(/[()]/g,"");
+/* distância de edição, para avisar sobre nomes quase iguais na planilha */
+function dist(a,b){
+  if(Math.abs(a.length-b.length)>2) return 9;
+  const m=[...Array(a.length+1)].map((_,i)=>[i,...Array(b.length).fill(0)]);
+  for(let j=0;j<=b.length;j++) m[0][j]=j;
+  for(let i=1;i<=a.length;i++) for(let j=1;j<=b.length;j++)
+    m[i][j]=Math.min(m[i-1][j]+1,m[i][j-1]+1,m[i-1][j-1]+(a[i-1]===b[j-1]?0:1));
+  return m[a.length][b.length];
+}
+/* ---------------------------------------------------------------------
+   Escopo da aba Origem — duas réguas, sempre as duas à vista.
+
+   A base é TODA venda de unidade do empreendimento (vaga, peso 0, fica de
+   fora: não nasce de captação nenhuma). Dentro dela, só Salão e Online têm
+   origem de captação — em Parcerias e Lançadora o campo Origem repete o
+   nome do canal, não é informação de captação. Por isso esses canais não
+   entram no ranking de origens, mas ENTRAM no denominador.
+
+   Sem isso o Online do Frei Caneca aparecia com 34,4%, que é a fatia dele
+   entre o que nós captamos; do empreendimento inteiro ele é 13,5%, porque
+   Parcerias sozinha responde por 58,2%. As duas leituras são verdadeiras —
+   o erro era mostrar uma sem dizer qual.
+
+   A classificação é pelo CANAL, nunca pelo texto do campo Origem: existe
+   venda de Salão com origem digitada como "Parcerias", e ela tem que
+   continuar contando como captação nossa.
+   --------------------------------------------------------------------- */
+const soMkt=t=>CANAIS_MKT.includes(t.canal)&&!!t.peso;   // captação própria
+const naBase=t=>!!t.peso;                                 // toda unidade vendida
+const semCap=t=>naBase(t)&&!soMkt(t);                     // canal sem captação
+const canaisSemCap=rows=>Array.from(new Set(rows.filter(semCap).map(t=>t.canal)));
+/* "Parcerias, Lançadora e Interna" — vírgula até o penúltimo, "e" no último */
+const listaPt=a=>a.length<2?(a[0]||""):a.slice(0,-1).join(", ")+" e "+a[a.length-1];
+
+function agrupar(rows,campoFn){
+  const acc={};
+  rows.forEach(t=>{ const k=campoFn(t); if(k==null) return;
+    (acc[k]=acc[k]||{nome:k,vgv:0,vendas:0}); acc[k].vgv+=t.valor; acc[k].vendas+=(t.peso||0); });
+  return Object.values(acc).map(x=>({...x,ticket:x.vgv/x.vendas})).sort((a,b)=>b.vgv-a.vgv);
+}
+function rOrigem(){
+  $("#p-origem").innerHTML=`
+    <div class="card" style="margin-bottom:13px"><div class="periodo" id="poSel"></div>
+      <div class="sub" style="margin-top:8px">Os percentuais são calculados sobre <b>todas as vendas</b> do
+        recorte. <b>Parcerias, Lançadora e Interna entram na conta, mas não no ranking de origens</b>:
+        nesses canais o campo Origem só repete o nome do canal, não diz de onde veio o cliente.
+        Cada tabela traz as duas réguas — share do total e share da captação própria.</div></div>
+    <div id="poCorpo"></div>`;
+  seletorPeriodo("poSel",perOrigem,pintaOrigem);
+  pintaOrigem();
+}
+function pintaOrigem(){
+  sincHoje(perOrigem);
+  document.getElementById("poCorpo").innerHTML=`
+  <div class="card">
+    <div class="hd" style="display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap">
+      <div><div class="h" id="oT"></div><div class="sub" id="oS"></div></div>
+      <div class="tgl" id="oTgl" style="margin-left:auto">
+        ${VO.map(v=>`<button class="${v.id===vOrig?"on":""}" data-v="${v.id}">${v.rot}</button>`).join("")}</div></div>
+    <div id="oC"></div>
+  </div>`;
+  document.getElementById("oTgl").addEventListener("click",e=>{
+    const b=e.target.closest("button"); if(!b) return;
+    document.querySelectorAll("#oTgl button").forEach(x=>x.classList.remove("on"));
+    b.classList.add("on"); vOrig=b.dataset.v; pintaVistaOrigem();
+  });
+  pintaVistaOrigem();
+}
+function tabAgg(itens,rot,campo,cor,extraFiltro,bases){
+  const total=itens.reduce((s,i)=>s+i.vgv,0)||1, max=Math.max(1,...itens.map(i=>i.vgv));
+  const B=bases||{};   // {total: unidades de tudo, cap: unidades da captação}
+  return {html:`<div class="scroll"><table class="tb num"><thead><tr><th class="stickyc">${rot}</th>
+      <th class="r">Vendas</th>${B.total?'<th class="r">Share do total</th>':""}
+      ${B.cap?'<th class="r">Share da captação</th>':""}
+      <th class="r">VGV</th><th class="r">Ticket médio</th>
+      <th class="r">Share VGV</th><th></th></tr></thead>
+    <tbody>${itens.map(i=>`<tr class="clickable" data-k="${esc(i.nome)}">
+      <td class="nm stickyc">${esc(i.nome)}</td><td class="r"><b>${nfu(i.vendas)}</b></td>
+      ${B.total?`<td class="r"><b>${pct1(i.vendas/B.total)}</b></td>`:""}
+      ${B.cap?`<td class="r" style="color:var(--ink-2)">${pct1(i.vendas/B.cap)}</td>`:""}
+      <td class="r">${moeda(i.vgv)}</td><td class="r">${moeda(i.ticket)}</td>
+      <td class="r">${pct1(i.vgv/total)}</td>
+      <td style="width:150px"><div class="track" style="height:7px">
+        <div class="barfill" style="width:${(i.vgv/max)*100}%;background:${cor||"var(--s1)"}"></div></div></td>
+      </tr>`).join("")}${B.linhaSemCap||""}</tbody></table></div>`,
+    ligar(root){ root.querySelectorAll("tr[data-k]").forEach(tr=>tr.addEventListener("click",()=>{
+      const f=Object.assign({},extraFiltro||{}); f[campo]=tr.dataset.k;
+      modalVendas(tr.dataset.k,`${rot} · ${ANO}`,filtrar(f,perOrigem).filter(soMkt)); })); }};
+}
+/* Tabela de representatividade.
+   `total` é o denominador principal (todas as vendas do recorte) e `cap` o da
+   captação própria. `semCap` é a linha do que não tem origem — ela existe para
+   a coluna fechar 100%: share que não soma é a primeira coisa que gera dúvida. */
+function tabelaShare(itens,rotulo,total,cor,opts){
+  const o=opts||{};
+  const totV=itens.reduce((s,i)=>s+i.vgv,0)+(o.semCap?o.semCap.vgv:0)||1;
+  const max=Math.max(1,...itens.map(i=>i.vendas));
+  if(!itens.length&&!o.semCap) return `<div class="empty">Nada registrado neste recorte.</div>`;
+  const colCap=o.cap!=null;
+  return `<div class="scroll"><table class="tb num"><thead><tr>
+      <th class="stickyc">${rotulo}</th><th class="r">Vendas</th><th class="r">Share do total</th>
+      ${colCap?'<th class="r">Share da captação</th>':""}
+      <th class="r">VGV</th><th class="r">Ticket</th><th></th></tr></thead>
+    <tbody>${itens.map(i=>`<tr class="clickable" data-k="${esc(i.nome)}">
+      <td class="nm stickyc">${esc(i.nome)}</td>
+      <td class="r"><b>${nfu(i.vendas)}</b></td>
+      <td class="r"><b>${pct1(i.vendas/total)}</b></td>
+      ${colCap?`<td class="r" style="color:var(--ink-2)">${o.cap?pct1(i.vendas/o.cap):"—"}</td>`:""}
+      <td class="r">${moeda(i.vgv)}</td>
+      <td class="r">${moeda(i.ticket)}</td>
+      <td style="width:140px"><div class="track" style="height:7px">
+        <div class="barfill" style="width:${(i.vendas/max)*100}%;background:${cor}"></div></div></td>
+    </tr>`).join("")}
+    ${o.semCap?`<tr class="clickable" data-semcap="1" style="background:var(--card-2)">
+      <td class="nm stickyc" style="font-style:italic;color:var(--ink-2)">Sem origem de captação
+        <span style="display:block;font-size:10.5px;color:var(--muted);font-style:normal">${esc(o.semCap.canais)}</span></td>
+      <td class="r" style="color:var(--ink-2)">${nfu(o.semCap.vendas)}</td>
+      <td class="r" style="color:var(--ink-2)"><b>${pct1(o.semCap.vendas/total)}</b></td>
+      ${colCap?'<td class="r" style="color:var(--muted)">—</td>':""}
+      <td class="r" style="color:var(--ink-2)">${moeda(o.semCap.vgv)}</td>
+      <td class="r" style="color:var(--ink-2)">${o.semCap.vendas?moeda(o.semCap.vgv/o.semCap.vendas):"—"}</td>
+      <td></td></tr>`:""}
+    <tr class="tot"><td class="stickyc">Total</td><td class="r">${nfu(total)}</td><td class="r">100%</td>
+      ${colCap?'<td class="r"></td>':""}
+      <td class="r">${moeda(totV)}</td><td class="r">${total?moeda(totV/total):"—"}</td><td></td></tr>
+    </tbody></table></div>`;
+}
+
+/* Aviso padrão da aba: quanto do recorte não tem origem de captação. */
+function avisoSemCap(rows){
+  const fora=rows.filter(semCap), tot=unid(rows);
+  if(!fora.length||!tot) return "";
+  return `<div class="sub" style="margin-bottom:12px;padding:9px 11px;border-radius:9px;
+    background:var(--warn-bg);color:var(--warn)"><b>${pct1(unid(fora)/tot)}</b> das vendas deste recorte
+    vieram de <b>${listaPt(canaisSemCap(rows))}</b> e não têm origem de captação — entram no denominador,
+    mas ficam fora do ranking de origens.</div>`;
+}
+function pintaVistaOrigem(){
+  const el=document.getElementById("oC");
+  const todas=filtrar({},perOrigem).filter(naBase), mkt=todas.filter(soMkt);
+  const BT=unid(todas)||1, BC=unid(mkt);
+  const T=(t,s)=>{document.getElementById("oT").textContent=t;document.getElementById("oS").innerHTML=s;};
+  if(vOrig==="porprod"){ pintaOrigemPorProduto(el,todas,mkt,T); return; }
+  if(vOrig==="origem"){
+    T("Ranking de origens","Share do total considera Parcerias e Lançadora no denominador · clique na linha para abrir as vendas");
+    const fora=todas.filter(semCap);
+    const linhaSemCap=fora.length?`<tr class="clickable" data-k="__semcap" style="background:var(--card-2)">
+      <td class="nm stickyc" style="font-style:italic;color:var(--ink-2)">Sem origem de captação
+        <span style="display:block;font-size:10.5px;color:var(--muted);font-style:normal">${esc(canaisSemCap(todas).join(", "))}</span></td>
+      <td class="r" style="color:var(--ink-2)"><b>${nfu(unid(fora))}</b></td>
+      <td class="r" style="color:var(--ink-2)"><b>${pct1(unid(fora)/BT)}</b></td>
+      <td class="r" style="color:var(--muted)">—</td>
+      <td class="r" style="color:var(--ink-2)">${moeda(soma(fora))}</td>
+      <td class="r" style="color:var(--ink-2)">${moeda(soma(fora)/unid(fora))}</td>
+      <td class="r"></td><td></td></tr>`:"";
+    const t=tabAgg(agrupar(mkt,x=>x.origem||"Não informada"),"Origem","origem","var(--s1)",null,
+      {total:BT,cap:BC,linhaSemCap});
+    el.innerHTML=avisoSemCap(todas)+t.html; t.ligar(el);
+    const tr=el.querySelector('tr[data-k="__semcap"]');
+    if(tr) tr.addEventListener("click",()=>modalVendas("Sem origem de captação",
+      canaisSemCap(todas).join(", "),fora));
+  } else if(vOrig==="campanha"){
+    T("Campanhas","Vendas atribuídas a cada campanha · clique na linha para abrir as vendas");
+    const it=agrupar(mkt.filter(x=>x.campanha),x=>x.campanha);
+    if(!it.length){ el.innerHTML=`<div class="empty">Nenhuma campanha atribuída no período.</div>`; return; }
+    const t=tabAgg(it,"Campanha","campanha","var(--s3)",null,{total:BT,cap:BC});
+    el.innerHTML=avisoSemCap(todas)+t.html; t.ligar(el);
+  } else if(vOrig==="plataforma"){
+    T("Plataformas de mídia","Onde o lead entrou · clique na linha para abrir as vendas");
+    const it=agrupar(mkt.filter(x=>x.plataforma),x=>x.plataforma);
+    if(!it.length){ el.innerHTML=`<div class="empty">Nenhuma plataforma registrada no período.</div>`; return; }
+    const t=tabAgg(it,"Plataforma","plataforma","var(--s3)",null,{total:BT,cap:BC});
+    el.innerHTML=avisoSemCap(todas)+t.html; t.ligar(el);
+  } else if(vOrig==="resumo"){
+    T("Resumo por empreendimento",
+      "Unidades totais do empreendimento e, ao lado, o que a captação própria puxou · clique para abrir as vendas");
+    const linhasR=PRODUTOS.filter(p=>todas.some(t=>t.produto===p)).map(p=>{
+      const tud=todas.filter(t=>t.produto===p), r=tud.filter(soMkt);
+      const top=a=>{const g=agrupar(r,a);return g.length?g[0]:null;};
+      const pl=top(t=>t.plataforma), o=top(t=>t.origem), cp=top(t=>t.campanha);
+      const uT=unid(tud), uC=unid(r);
+      const cel=x=>x?`<b>${esc(x.nome)}</b><span style="color:var(--muted);display:block;font-size:11px">
+        ${nfu(x.vendas)} un. · ${pct1(x.vendas/uT)} do total</span>`:'<span style="color:var(--muted)">—</span>';
+      return `<tr class="clickable" data-p="${esc(p)}">
+        <td class="nm stickyc">${esc(p)}</td><td class="r"><b>${nfu(uT)}</b></td>
+        <td class="r">${moeda(soma(tud))}</td>
+        <td class="r">${nfu(uC)}<span style="display:block;font-size:10px;color:var(--ink-2)">${pct1(uT?uC/uT:0)}</span></td>
+        <td>${cel(o)}</td><td>${cel(pl)}</td><td>${cel(cp)}</td></tr>`;
+    });
+    el.innerHTML=avisoSemCap(todas)+`<div class="scroll"><table class="tb num">
+      <thead><tr><th class="stickyc">Empreendimento</th>
+      <th class="r">Unidades</th><th class="r">VGV</th><th class="r">Captação própria</th>
+      <th>Melhor origem</th><th>Melhor plataforma</th><th>Melhor campanha</th></tr></thead>
+      <tbody>${linhasR.join("")}</tbody></table></div>
+      <div class="sub" style="margin-top:11px">"Melhor origem" olha só a captação própria — Parcerias e
+      Lançadora não têm origem para ranquear —, mas o percentual embaixo dela é sobre o
+      <b>total do empreendimento</b>, para não inflar a leitura.</div>`;
+    el.querySelectorAll("tr[data-p]").forEach(tr=>tr.addEventListener("click",()=>
+      modalVendas(tr.dataset.p,"Todas as vendas do empreendimento",
+        filtrar({produto:tr.dataset.p},perOrigem).filter(naBase))));
+  } else {
+    T("Origem × empreendimento",
+      "Unidades e, abaixo, o share sobre TODAS as vendas do empreendimento · cada coluna fecha 100% · clique na célula para abrir as vendas");
+    const ors=agrupar(mkt,t=>t.origem||"Não informada").map(o=>o.nome);
+    const prods=PRODUTOS.filter(p=>todas.some(t=>t.produto===p));
+    const cel={}, totProd={}, semP={};
+    /* denominador da coluna = TODAS as unidades do empreendimento; o que não
+       tem captação vira uma linha própria, para a coluna fechar 100%. */
+    todas.forEach(t=>{ const p=t.produto;
+      totProd[p]=(totProd[p]||0)+(t.peso||0);
+      if(soMkt(t)) cel[(t.origem||"Não informada")+"||"+p]=(cel[(t.origem||"Não informada")+"||"+p]||0)+(t.peso||0);
+      else semP[p]=(semP[p]||0)+(t.peso||0); });
+    const max=Math.max(1,...Object.values(cel));
+    const totGeral=unid(todas)||1;
+    const totSem=unid(todas.filter(semCap));
+    el.innerHTML=`<div class="scroll"><table class="tb num"><thead><tr><th class="stickyc">Origem</th>
+      ${prods.map(p=>`<th class="c" style="font-size:9.5px;white-space:normal;max-width:88px">${esc(p)}
+        <span style="display:block;font-weight:400;opacity:.7">${nfu(totProd[p]||0)} unidade${(totProd[p]||0)===1?"":"s"}</span></th>`).join("")}
+      <th class="r">Total</th></tr></thead>
+      <tbody>${ors.map(o=>{
+        const tot=prods.reduce((s,p)=>s+(cel[o+"||"+p]||0),0);
+        return `<tr><td class="nm stickyc">${esc(o)}</td>
+        ${prods.map(p=>{const n=cel[o+"||"+p]||0, sh=totProd[p]?n/totProd[p]:0;
+          return `<td class="c" ${n?`style="cursor:pointer;padding:6px 8px;background:color-mix(in srgb,var(--s1) ${Math.round((0.12+0.88*(n/max))*66)}%,transparent)"
+            data-o="${esc(o)}" data-p="${esc(p)}"
+            data-tip="<b>${esc(o)}</b> → ${esc(p)}<br><b>${nfu(n)}</b> unidade(s) · <b>${pct1(sh)}</b> das unidades do empreendimento<br><span style='color:var(--muted)'>clique para abrir</span>">
+            <b style="font-size:13px">${nfu(n)}</b>
+            <span style="display:block;font-size:10px;color:var(--ink-2)">${pct1(sh)}</span>`
+            :'style="color:var(--muted)">·'}</td>`;}).join("")}
+        <td class="r"><b>${nfu(tot)}</b><span style="display:block;font-size:10px;color:var(--ink-2);font-weight:400">${pct1(tot/totGeral)}</span></td></tr>`;}).join("")}
+        ${totSem?`<tr style="background:var(--card-2)">
+          <td class="nm stickyc" style="font-style:italic;color:var(--ink-2)">Sem origem de captação
+            <span style="display:block;font-size:10.5px;color:var(--muted);font-style:normal">${esc(canaisSemCap(todas).join(", "))}</span></td>
+          ${prods.map(p=>{const n=semP[p]||0, sh=totProd[p]?n/totProd[p]:0;
+            return `<td class="c" style="color:var(--ink-2)">${n?`<b style="font-size:13px">${nfu(n)}</b>
+              <span style="display:block;font-size:10px">${pct1(sh)}</span>`:"·"}</td>`;}).join("")}
+          <td class="r" style="color:var(--ink-2)"><b>${nfu(totSem)}</b>
+            <span style="display:block;font-size:10px;font-weight:400">${pct1(totSem/totGeral)}</span></td></tr>`:""}
+        <tr class="tot"><td class="stickyc">Total</td>
+          ${prods.map(p=>`<td class="c">${nfu(totProd[p]||0)}<span style="display:block;font-size:10px;font-weight:400">100%</span></td>`).join("")}
+          <td class="r">${nfu(totGeral)}<span style="display:block;font-size:10px;font-weight:400">100%</span></td></tr>
+      </tbody></table></div>`;
+    el.innerHTML=avisoSemCap(todas)+el.innerHTML;
+    bindTips(el);
+    el.querySelectorAll("td[data-o]").forEach(td=>td.addEventListener("click",()=>
+      modalVendas(`${td.dataset.o} · ${td.dataset.p}`,"Origem × empreendimento",
+        filtrar({origem:td.dataset.o,produto:td.dataset.p},perOrigem).filter(soMkt))));
+  }
+}
+
+/* ---------- Origem por empreendimento: a visão principal da aba ---------- */
+function pintaOrigemPorProduto(el,todas,mkt,T){
+  const comVenda=PRODUTOS.filter(p=>todas.some(t=>t.produto===p));
+  if(prodSel && !comVenda.includes(prodSel)) prodSel="";
+  const tudo=prodSel?todas.filter(t=>t.produto===prodSel):todas;   // base: todas as vendas
+  const escopo=tudo.filter(soMkt);                                  // só a captação própria
+  const fora=tudo.filter(semCap);
+  T("Origem por empreendimento",
+    "De onde nasceu cada venda · o share é sobre todas as vendas do empreendimento, com Parcerias e Lançadora no denominador");
+
+  const total=unid(tudo)||1;      // denominador principal
+  const totalCap=unid(escopo);    // denominador da captação
+  const origens=agrupar(escopo,t=>t.origem||"Não informada");
+  const lider=origens[0];
+  const comCamp=escopo.filter(t=>t.campanha);
+  const camps=agrupar(comCamp,t=>t.campanha);
+  // linhas de campanha, agrupadas por nome normalizado
+  const porLinha={};
+  comCamp.forEach(t=>{
+    const l=linhaDaCampanha(t.campanha)||"Sem linha identificada";
+    const k=kLinha(l);
+    porLinha[k]=porLinha[k]||{nome:l,vendas:0,vgv:0,variantes:{}};
+    porLinha[k].vendas+=(t.peso||0); porLinha[k].vgv+=t.valor;
+    porLinha[k].variantes[l]=(porLinha[k].variantes[l]||0)+1;
+  });
+  const linhasC=Object.values(porLinha).map(x=>({...x,ticket:x.vgv/x.vendas}))
+    .sort((a,b)=>b.vendas-a.vendas);
+  // avisa sobre nomes quase iguais (erro de digitação na planilha)
+  const chaves=Object.keys(porLinha).filter(k=>k!==kLinha("Sem linha identificada"));
+  const parecidos=[];
+  for(let i=0;i<chaves.length;i++) for(let j=i+1;j<chaves.length;j++)
+    if(dist(chaves[i],chaves[j])<=2) parecidos.push([porLinha[chaves[i]].nome,porLinha[chaves[j]].nome]);
+
+  const chip=(v,r,n)=>`<button class="preset ${prodSel===v?"on":""}" data-p="${esc(v)}"
+    style="${prodSel===v?"background:var(--gold);border-color:var(--gold);color:#14161a;font-weight:700":""}">
+    ${esc(r)}${n!=null?` <span style="opacity:.7">${n}</span>`:""}</button>`;
+
+  el.innerHTML=`
+  <div style="display:flex;gap:7px;flex-wrap:wrap;margin-bottom:14px">
+    ${chip("","Todos os empreendimentos",nfu(unid(todas)))}
+    ${comVenda.map(p=>chip(p,p,nfu(unid(todas.filter(t=>t.produto===p))))).join("")}
+  </div>
+
+  ${avisoSemCap(tudo)}
+
+  <div class="grid g3" style="margin-bottom:14px">
+    <div class="card kpi" style="background:var(--card-2)"><div class="lab">${prodSel?esc(prodSel):"Todos os empreendimentos"}</div>
+      <div class="val sm">${nfu(total)} unidades</div>
+      <div class="sub">${moeda(soma(tudo))} em VGV · <b>${nfu(totalCap)}</b> de captação própria
+        (<b>${pct1(totalCap/total)}</b>)</div></div>
+    <div class="card kpi" style="background:var(--card-2)"><div class="lab">Origem que mais gerou venda</div>
+      <div class="val sm">${lider?esc(lider.nome):"—"}</div>
+      <div class="sub">${lider?`<b>${nfu(lider.vendas)}</b> unidades · <b>${pct1(lider.vendas/total)}</b> do
+        empreendimento · ${pct1(totalCap?lider.vendas/totalCap:0)} da captação`:""}</div></div>
+    <div class="card kpi" style="background:var(--card-2)"><div class="lab">Vendas atribuídas a campanha</div>
+      <div class="val sm">${nfu(unid(comCamp))}</div>
+      <div class="sub"><b>${pct1(unid(comCamp)/total)}</b> do empreendimento · ${nf(camps.length)} campanhas
+        e ${nf(linhasC.length)} linhas distintas</div></div>
+  </div>
+
+  <div class="card" style="margin-bottom:13px">
+    <div class="hd"><div class="h">Todas as origens${prodSel?` · ${esc(prodSel)}`:""}</div>
+      <div class="sub">Share do total inclui Parcerias e Lançadora no denominador; share da captação
+        olha só Salão e Online · clique na linha para abrir as vendas</div></div>
+    <div id="opOrig"></div>
+  </div>
+
+  <div class="grid g2">
+    <div class="card"><div class="hd"><div class="h">Campanhas</div>
+      <div class="sub">Composição das <b>${nf(comCamp.length)}</b> vendas com campanha registrada</div></div>
+      <div id="opCamp"></div></div>
+    <div class="card"><div class="hd"><div class="h">Linhas de campanha</div>
+      <div class="sub">A linha criativa extraída do nome da campanha · "sem linha" são campanhas
+        cujo nome não traz uma linha, como Site Planik e Google Adwords</div></div>
+      <div id="opLinha"></div>
+      ${parecidos.length?`<div class="sub" style="margin-top:11px;color:var(--warn)">
+        <b>Atenção ao cadastro.</b> Estes nomes são quase idênticos e por isso contam separado:
+        ${parecidos.map(([a,b])=>`"${esc(a)}" e "${esc(b)}"`).join("; ")}.
+        Padronizar o nome na planilha consolida as duas linhas numa só.</div>`:""}
+    </div>
+  </div>`;
+
+  document.getElementById("opOrig").innerHTML=tabelaShare(origens,"Origem",total,"var(--s1)",
+    {cap:totalCap, semCap: fora.length?{vendas:unid(fora),vgv:soma(fora),canais:canaisSemCap(tudo).join(", ")}:null});
+  document.getElementById("opCamp").innerHTML=comCamp.length
+    ? tabelaShare(camps,"Campanha",unid(comCamp),"var(--s3)")
+    : `<div class="empty">Nenhuma venda com campanha registrada neste recorte.</div>`;
+  document.getElementById("opLinha").innerHTML=comCamp.length
+    ? tabelaShare(linhasC,"Linha",unid(comCamp),"var(--s3)")
+    : `<div class="empty">Nenhuma venda com campanha registrada neste recorte.</div>`;
+
+  el.querySelectorAll("[data-p]").forEach(b=>b.addEventListener("click",()=>{
+    prodSel=b.dataset.p; pintaVistaOrigem(); }));
+  const base=prodSel?{produto:prodSel}:{};
+  document.querySelectorAll("#opOrig tr[data-k]").forEach(tr=>tr.addEventListener("click",()=>
+    modalVendas(`${tr.dataset.k}${prodSel?" · "+prodSel:""}`,"Origem · captação própria",
+      escopo.filter(t=>(t.origem||"Não informada")===tr.dataset.k))));
+  const trSem=document.querySelector("#opOrig tr[data-semcap]");
+  if(trSem) trSem.addEventListener("click",()=>modalVendas(
+    `Sem origem de captação${prodSel?" · "+prodSel:""}`,canaisSemCap(tudo).join(", "),fora));
+  document.querySelectorAll("#opCamp tr[data-k]").forEach(tr=>tr.addEventListener("click",()=>
+    modalVendas(`${tr.dataset.k}${prodSel?" · "+prodSel:""}`,"Campanha · Salão e Online",
+      escopo.filter(t=>t.campanha===tr.dataset.k))));
+  document.querySelectorAll("#opLinha tr[data-k]").forEach(tr=>tr.addEventListener("click",()=>{
+    const alvo=kLinha(tr.dataset.k);
+    modalVendas(`${tr.dataset.k}${prodSel?" · "+prodSel:""}`,"Linha de campanha · Salão e Online",
+      escopo.filter(t=>t.campanha &&
+        kLinha(linhaDaCampanha(t.campanha)||"Sem linha identificada")===alvo));
+  }));
+}
+
+/* =====================================================================
+   7 · VSO
+   ===================================================================== */
+const perVSO=novoPeriodo();
+
+/* ---------------------------------------------------------------------
+   Linhas de produto. Os nomes são casados por chave normalizada (kk), então
+   NIK/Nik/NIK FREI CANECA dão no mesmo. Empreendimento novo que não estiver
+   em nenhuma linha continua aparecendo em "Todas" e é avisado na tela — some
+   da visão por linha, mas não some do relatório em silêncio.
+   --------------------------------------------------------------------- */
+const LINHAS=[
+  {id:"todas",rot:"Todas as linhas",itens:null},
+  {id:"nik",  rot:"Linha NIK", itens:["NIK Paulista","NIK Paradiso","NIK Sunset Paulista",
+     "NIK Estilo Paulista","NIK Faria Lima","NIK Vila Mariana","NIK Frei Caneca"]},
+  {id:"medio",rot:"Médio alto", itens:["Core Klabin","Linn Vila Mariana"]},
+  {id:"alto", rot:"Alto padrão", itens:["Taj Ibirapuera","Nuv Moema"]},
+];
+let vLinha="todas";
+/* produtos da linha escolhida, na ordem oficial */
+function prodsDaLinha(id){
+  const L=LINHAS.find(x=>x.id===(id||vLinha));
+  if(!L||!L.itens) return PRODUTOS.slice();
+  const alvo=new Set(L.itens.map(kk));
+  return PRODUTOS.filter(p=>alvo.has(kk(p)));
+}
+/* empreendimentos que não caíram em nenhuma linha */
+const SEMLINHA=(function(){
+  const cobertos=new Set(LINHAS.filter(l=>l.itens).flatMap(l=>l.itens.map(kk)));
+  return PRODUTOS.filter(p=>!cobertos.has(kk(p)));
+})();
+
+function rVSO(){
+  sincHoje(perVSO);
+  $("#p-vso").innerHTML=`
+    <div class="card" style="margin-bottom:13px">
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+        <div class="periodo" id="pvSel"></div>
+        <div class="tgl" id="pvLinha" style="margin-left:auto">
+          ${LINHAS.map(l=>`<button data-l="${l.id}" class="${l.id===vLinha?"on":""}">${l.rot}</button>`).join("")}
+        </div>
+      </div>
+      <div class="sub" style="margin-top:8px">O VSO do período compara as vendas do recorte com o estoque
+        disponível no início do ano. Os meses fora do período aparecem esmaecidos.${
+        SEMLINHA.length?` <b style="color:var(--warn)">${SEMLINHA.join(", ")}</b> ainda não
+        ${SEMLINHA.length>1?"estão":"está"} em nenhuma linha e só aparece${SEMLINHA.length>1?"m":""}
+        em "Todas as linhas".`:""}</div></div>
+    <div id="pvCorpo"></div>`;
+  seletorPeriodo("pvSel",perVSO,pintaVSO,{presets:[{k:"ytd",r:"YTD"},{k:"t1",r:"1º tri"},
+    {k:"t2",r:"2º tri"},{k:"t3",r:"3º tri"},{k:"t4",r:"4º tri"}]});
+  document.getElementById("pvLinha").addEventListener("click",e=>{
+    const b=e.target.closest("button[data-l]"); if(!b||b.dataset.l===vLinha) return;
+    vLinha=b.dataset.l;
+    document.querySelectorAll("#pvLinha button").forEach(x=>x.classList.toggle("on",x.dataset.l===vLinha));
+    pintaVSO();
+  });
+  pintaVSO();
+}
+function pintaVSO(){
+  const V=D.vso||{};
+  const esc0=(v,f)=>{ if(v==null) return null; const k=fatiaAto(f); return k==null?0:v*k; };
+  const LIN=prodsDaLinha();               // universo da linha escolhida
+  const naLinha=p=>LIN.includes(p);
+  /* VSO da linha mês a mês: soma vendido e soma disponível dos produtos da
+     linha e divide. Média de VSO não é VSO — por isso guardamos disponível e
+     vendido de cada mês no extrator em vez de só a razão. Com "Todas as
+     linhas" o resultado bate célula a célula com a linha Total da planilha. */
+  const DISP=V.mensalDisponivel||{}, VEND=V.mensalVendido||{};
+  const mensalT=Array.from({length:12},(_,i)=>{
+    let d=0,v=0,tem=false;
+    LIN.forEach(p=>{ const dd=(DISP[p]||[])[i], vv=(VEND[p]||[])[i];
+      if(dd==null) return; tem=true; d+=dd; v+=(vv||0); });
+    if(!tem||!d) return null;
+    return esc0(v/d,{produto:LIN,mes:i});
+  });
+  const anual=Object.fromEntries(Object.entries(V.anoYTD||{}).map(([p,a])=>{
+    const f=(p==="TOTAL"||p==="Total")?{}:{produto:p};
+    return [p,Object.assign({},a,{vso:esc0(a.vso,f),vendas:soma(filtrar(f))})];
+  }));
+  const porProd=Object.fromEntries(Object.entries(V.mensalPorProduto||{})
+    .map(([p,s])=>[p,(s||[]).map((v,i)=>esc0(v,{produto:p,mes:i}))]));
+  const ms=new Set(mesesDoPeriodo(perVSO));
+  const mensal=mensalT.map((v,i)=>ms.has(i)?v:null);
+  const unidades={}; filtrar({produto:LIN},perVSO).forEach(t=>{ if(!t.peso) return;
+    unidades[t.produto]=(unidades[t.produto]||0)+t.peso; });
+  const prods=LIN.filter(p=>anual[p]||porProd[p]||unidades[p]);
+  const rank=prods.slice().sort((a,b)=>(unidades[b]||0)-(unidades[a]||0));
+  const maisLiq=rank[0], menosLiq=rank[rank.length-1];
+  const iMax=mensal.reduce((b,v,i)=>(v!=null&&v>0&&(b<0||v>mensal[b]))?i:b,-1);
+  /* VSO do ano cheio da linha: somatório de vendas sobre somatório de estoque
+     inicial dos produtos dela — nunca a linha TOTAL da planilha, que é do ano
+     inteiro de todos os empreendimentos. */
+  const iniTot=prods.reduce((s,p)=>s+((anual[p]||{}).inicio||0),0);
+  const vendAno=prods.reduce((s,p)=>s+((anual[p]||{}).vendas||0),0);
+  const tot=iniTot?{inicio:iniTot,vendas:vendAno,vso:vendAno/iniTot}:null;
+  /* VSO do período: vendas do recorte sobre o estoque disponível no início do ano */
+  const vsoPer=p=>{ const ini=(anual[p]||{}).inicio; if(!ini) return null;
+    return soma(filtrar({produto:p},perVSO))/ini; };
+  const vsoTotPer=iniTot?soma(filtrar({produto:prods},perVSO))/iniTot:null;
+
+  document.getElementById("pvCorpo").innerHTML=`
+  <div class="grid g4" style="margin-bottom:13px">
+    <div class="card kpi"><div class="lab">VSO do período</div>
+      <div class="val lg">${vsoTotPer!=null?nf(vsoTotPer*100,1)+"%":"—"}</div>
+      <div class="sub">Vendas de <b>${moeda(soma(filtrar({produto:prods},perVSO)))}</b><br>
+        sobre estoque inicial de <b>${moeda(iniTot)}</b><br>
+        VSO do ano cheio: <b>${tot&&tot.vso!=null?nf(tot.vso*100,1)+"%":"—"}</b></div></div>
+    <div class="card kpi"><div class="lab">Melhor mês</div>
+      ${iMax<0?'<div class="val">—</div>':`<div class="val">${nf(mensal[iMax]*100,1)}%</div>
+      <div class="sub"><b>${MESL[iMax]}</b> foi o mês de maior velocidade de vendas</div>`}</div>
+    <div class="card kpi"><div class="lab">Mais líquido · em unidades</div>
+      <div class="val sm">${esc(maisLiq||"—")}</div>
+      <div class="sub"><b>${nf(unidades[maisLiq]||0)}</b> unidades vendidas no período<br>
+        VSO do período <b>${vsoPer(maisLiq)!=null?nf(vsoPer(maisLiq)*100,1)+"%":"—"}</b></div></div>
+    <div class="card kpi"><div class="lab">Menos líquido · em unidades</div>
+      <div class="val sm">${esc(menosLiq||"—")}</div>
+      <div class="sub"><b>${nf(unidades[menosLiq]||0)}</b> unidades vendidas no período<br>
+        VSO do período <b>${vsoPer(menosLiq)!=null?nf(vsoPer(menosLiq)*100,1)+"%":"—"}</b></div></div>
+  </div>
+  <div class="card" style="margin-bottom:13px">
+    <div class="hd"><div class="h">VSO mês a mês · carteira consolidada</div>
+      <div class="sub">Percentual do estoque disponível vendido em cada mês</div></div><div id="vsoG"></div></div>
+  <div class="card"><div class="hd"><div class="h">VSO por empreendimento</div>
+    <div class="sub">Do mais antigo para o mais novo · clique no nome para as vendas, ou no
+      <b>gráfico</b> para ampliar a evolução</div></div>
+    <div class="scroll"><table class="tb num"><thead><tr><th class="stickyc">Empreendimento</th>
+      <th class="r">Unidades no período</th><th class="r">Estoque inicial</th><th class="r">Vendas no período</th>
+      <th class="r">VSO período</th><th class="r">VSO ano</th><th>Evolução</th>
+      ${MES.map(m=>`<th class="c">${m}</th>`).join("")}</tr></thead>
+    <tbody>${prods.map(p=>{ const a=anual[p]||{}, s=porProd[p]||[], vp=vsoPer(p);
+      return `<tr data-p="${esc(p)}"><td class="nm stickyc"><span class="lnk" data-abrir="1">${esc(p)}</span></td>
+        <td class="r"><b>${nf(unidades[p]||0)}</b></td>
+        <td class="r">${a.inicio!=null?moeda(a.inicio):"—"}</td>
+        <td class="r">${moeda(soma(filtrar({produto:p},perVSO)))}</td>
+        <td class="r"><b>${vp!=null?nf(vp*100,1)+"%":"—"}</b></td>
+        <td class="r" style="color:var(--muted)">${a.vso!=null?nf(a.vso*100,1)+"%":"—"}</td>
+        <td><span class="spark" data-exp="1" title="Ampliar">${spark(s.map(v=>v==null?0:v*1000),"var(--s1)")}</span></td>
+        ${s.concat(Array(12).fill(null)).slice(0,12).map((v,i)=>`<td class="c" style="font-size:11.5px;${v==null||!ms.has(i)?"color:var(--muted);opacity:.55":""}">${v==null?"·":nf(v*100,1)+"%"}</td>`).join("")}
+      </tr>`; }).join("")}</tbody></table></div></div>`;
+
+  const W=780,H=250,pad={t:22,r:14,b:28,l:56};
+  const iw=W-pad.l-pad.r, ih=H-pad.t-pad.b;
+  const max=Math.max(0.01,...mensalT.filter(v=>v!=null))*1.22;   // escala pelo ano inteiro
+  const band=iw/12, x=i=>pad.l+band*i, y=v=>pad.t+ih-((v||0)/max)*ih;
+  let g=eixoY([],pad,W,ih,max,v=>nf(v*100,1)+"%");
+  g.push(`<line class="axis" x1="${pad.l}" y1="${y(0)}" x2="${W-pad.r}" y2="${y(0)}"/>`);
+  const bw=Math.min(26,band*.5);
+  mensal.forEach((v,i)=>{ if(v==null||v<=0) return;
+    const yy=y(v),h=Math.max(y(0)-yy,0);
+    g.push(`<rect x="${x(i)+(band-bw)/2}" y="${yy}" width="${bw}" height="${h}" rx="4" fill="var(--s1)"
+      class="hit" data-tip="<b>${MESL[i]}</b><br>VSO: <b>${nf(v*100,2)}%</b>"/>`);
+    g.push(`<text class="dlab" x="${x(i)+band/2}" y="${yy-6}" text-anchor="middle">${nf(v*100,1)}%</text>`); });
+  for(let i=0;i<12;i++) g.push(`<text class="axislab" x="${x(i)+band/2}" y="${H-8}" text-anchor="middle"
+    ${i===MESREF-1?'style="fill:var(--ink);font-weight:700"':""}>${MES[i]}</text>`);
+  for(let i=0;i<12;i++) if(!ms.has(i)&&mensalT[i]!=null&&mensalT[i]>0){
+    const yy=y(mensalT[i]);
+    g.push(`<rect x="${x(i)+(band-bw)/2}" y="${yy}" width="${bw}" height="${Math.max(y(0)-yy,0)}" rx="4"
+      fill="var(--s1)" opacity=".22" class="hit"
+      data-tip="<b>${MESL[i]}</b><br>VSO: <b>${nf(mensalT[i]*100,2)}%</b><br><span style='color:var(--muted)'>fora do período</span>"/>`); }
+  document.getElementById("vsoG").innerHTML=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="VSO mensal">${g.join("")}</svg>`;
+  bindTips(document.getElementById("vsoG"));
+
+  document.querySelectorAll("#pvCorpo tr[data-p]").forEach(tr=>{
+    const p=tr.dataset.p;
+    tr.querySelector("[data-abrir]").addEventListener("click",()=>
+      modalVendas(p,`Vendas do período`,filtrar({produto:p},perVSO)));
+    tr.querySelector("[data-exp]").addEventListener("click",()=>{
+      const s=(porProd[p]||[]).map(v=>v==null?null:v*100);
+      abrir({titulo:p,sub:"VSO mês a mês · percentual do estoque disponível vendido",
+        html:`<div style="padding:16px 17px"><div id="vsoM"></div>
+          <div class="legend"><span class="it"><span class="dot" style="background:var(--s1)"></span>VSO (%)</span>
+          <span class="it" style="color:var(--muted)">clique num ponto para abrir as vendas do mês</span></div></div>`,
+        rodape:`<span>VSO do ano <b>${anual[p]&&anual[p].vso!=null?nf(anual[p].vso*100,1)+"%":"—"}</b></span>
+                <span>Unidades vendidas <b>${nf(unidades[p]||0)}</b></span>`,
+        render(){ const el=document.getElementById("vsoM");
+          const W=760,H=270,pad={t:20,r:16,b:28,l:56}, iw=W-pad.l-pad.r, ih=H-pad.t-pad.b;
+          const mx=Math.max(0.5,...s.filter(v=>v!=null))*1.2, band=iw/12;
+          const X=i=>pad.l+band*i+band/2, Y=v=>pad.t+ih-((v||0)/mx)*ih;
+          let gg=eixoY([],pad,W,ih,mx,v=>nf(v,1)+"%");
+          gg.push(`<polyline points="${s.map((v,i)=>v==null?null:`${X(i)},${Y(v)}`).filter(Boolean).join(" ")}"
+            fill="none" stroke="var(--s1)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>`);
+          s.forEach((v,i)=>{ if(v!=null){
+            gg.push(`<circle cx="${X(i)}" cy="${Y(v)}" r="4" fill="var(--s1)" stroke="var(--card)" stroke-width="2"/>`);
+            if(v>0) gg.push(`<text class="dlab" x="${X(i)}" y="${Y(v)-9}" text-anchor="middle">${nf(v,1)}%</text>`); }});
+          for(let i=0;i<12;i++){
+            gg.push(`<text class="axislab" x="${X(i)}" y="${H-8}" text-anchor="middle">${MES[i]}</text>`);
+            gg.push(`<rect class="hit" x="${pad.l+band*i}" y="${pad.t}" width="${band}" height="${ih}" fill="transparent"
+              data-mes="${i}" data-tip="<b>${MESL[i]}</b><br>VSO: <b>${s[i]==null?"—":nf(s[i],2)+"%"}</b><br><span style='color:var(--muted)'>clique para ver as vendas</span>"/>`); }
+          el.innerHTML=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="VSO de ${p}">${gg.join("")}</svg>`;
+          bindTips(el);
+          el.querySelectorAll("[data-mes]").forEach(r=>{ r.style.cursor="pointer";
+            r.addEventListener("click",()=>modalVendas(`${MESL[+r.dataset.mes]} · ${p}`,"Vendas do mês",
+              filtrar({produto:p,mes:+r.dataset.mes}),true)); });
+        }});
+    });
+  });
+}
+
+/* =====================================================================
+   NAVEGAÇÃO
+   ===================================================================== */
+const R={sintese:rSintese,geral:rGeral,vendas:rVendas,desconto:rDesconto,canais:rCanais,
+         gerentes:rGerentes,origem:rOrigem,vso:rVSO};
+const feito={};
+const PERIODOS={geral:perGeral,gerentes:perGer,origem:perOrigem,desconto:perDesc,vso:perVSO};
+/* Se o dia virou com a página aberta, as abas cujo período termina "hoje"
+   são marcadas para redesenhar na próxima vez que forem abertas. */
+function sincronizaDia(){
+  Object.keys(PERIODOS).forEach(k=>{ if(sincHoje(PERIODOS[k])) delete feito[k]; });
+}
+function mostrar(p){
+  sincronizaDia();
+  $$(".tab").forEach(t=>t.classList.toggle("on",t.dataset.p===p));
+  $$(".panel").forEach(s=>s.classList.toggle("on",s.id==="p-"+p));
+  if(!feito[p]){ try{R[p]();}catch(e){console.error("render "+p,e);} feito[p]=true; }
+  window.scrollTo({top:0,behavior:"instant"});
+}
+$("#tabs").addEventListener("click",e=>{ const b=e.target.closest(".tab"); if(b) mostrar(b.dataset.p); });
+$("#tgl").addEventListener("click",()=>{
+  const r=document.documentElement;
+  r.setAttribute("data-theme",r.getAttribute("data-theme")==="dark"?"light":"dark");
+  Object.keys(feito).forEach(k=>{ if(feito[k]) try{R[k]();}catch(e){} });
+  if(pilha.length) pintaModal();
+});
+$("#cfgBtn").addEventListener("click",abrirCfg);
+pintaAcessos();
+
+/* --- Recorte Geral x Ato pago -------------------------------------------
+   Troca o modo, marca a página e repinta tudo que já estava desenhado.
+   Não recarrega a página de propósito: o período escolhido, a aba aberta e
+   os filtros das tabelas continuam onde estavam. */
+function pintaAto(){
+  document.documentElement.setAttribute("data-ato",ATO);
+  $$("#atoTgl button").forEach(b=>b.classList.toggle("on",b.dataset.a===ATO));
+  const c=$("#ftAto");
+  if(c) c.textContent=ATO==="pago"
+    ? `Recorte ATO PAGO · ${nf(TXPEND.length)} venda(s) pendente(s) fora da conta`
+    : "";
+}
+$("#atoTgl").addEventListener("click",e=>{
+  const b=e.target.closest("button[data-a]"); if(!b||b.dataset.a===ATO) return;
+  ATO=b.dataset.a;
+  try{ localStorage.setItem("plk_ato",ATO); }catch(err){}
+  pintaAto(); fechar(); reRender();
+});
+pintaAto();
+
+carregarTimeDoBanco();
+carregarAcessosDoBanco();
+$("#hdPeriodo").textContent=`Janeiro a Dezembro de ${ANO}`;
+$("#hdUpd").textContent="Atualizado em "+((D.meta&&D.meta.atualizado)||"—");
+$("#ftUpd").textContent="Última atualização da planilha: "+((D.meta&&D.meta.atualizado)||"—");
+$("#ftVer").textContent=`Inteligência Comercial ${ANO} · v31`;
+$("#hdTitle").textContent=`Inteligência Comercial ${ANO}`;
+
+window.initDashboard=function(){ Object.keys(feito).forEach(k=>delete feito[k]);
+  pintaAcessos(); fechar(); mostrar("sintese"); };
+let rt; window.addEventListener("resize",()=>{ clearTimeout(rt); rt=setTimeout(()=>{
+  if(!window.currentUser) return;
+  Object.keys(feito).forEach(k=>{ if(feito[k]) try{R[k]();}catch(e){} }); },220); });
+setInterval(()=>{ if(!window.currentUser) return;
+  sincronizaDia();
+  const atual=($$(".tab.on")[0]||{}).dataset;
+  if(atual&&!feito[atual.p]) mostrar(atual.p);
+},60000);
+window.initDashboard();
+};
+</script>
+</body>
+</html>
