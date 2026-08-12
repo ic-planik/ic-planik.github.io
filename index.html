@@ -244,9 +244,14 @@ svg{display:block;width:100%;height:auto;overflow:hidden}
    input abre espaco para ele nao cobrir o que a pessoa digita */
 .senha{position:relative}
 .senha input{padding-right:46px}
-.olho{position:absolute;top:50%;right:6px;transform:translateY(-50%);width:34px;height:34px;
+/* O Edge desenha um olho proprio dentro do campo. Desligado aqui para nao
+   ficarem dois — o nosso e igual em todo navegador, o nativo so existe em alguns. */
+.senha input::-ms-reveal,
+.senha input::-ms-clear{display:none;width:0;height:0}
+.olho{position:absolute;top:50%;right:8px;transform:translateY(-50%);width:32px;height:32px;
   display:flex;align-items:center;justify-content:center;background:none;border:0;border-radius:8px;
-  cursor:pointer;font-size:16px;line-height:1;opacity:.55;color:#3c3d41}
+  cursor:pointer;padding:0;opacity:.6;color:#3c3d41}
+.olho svg{width:21px;height:21px;display:block}
 .olho:hover{opacity:1;background:#efece4}
 .olho:focus-visible{outline:2px solid #B08A2E;outline-offset:-1px;opacity:1}
 .olho[aria-pressed="true"]{opacity:1;color:#B08A2E}
@@ -309,7 +314,7 @@ footer{border-top:1px solid var(--border);margin-top:40px;padding:16px 0 24px;fo
         <div class="senha">
           <input id="li_pass" type="password" placeholder="sua senha" autocomplete="current-password">
           <button type="button" id="li_olho" class="olho" aria-label="Mostrar senha"
-            aria-pressed="false" title="Mostrar senha">👁</button>
+            aria-pressed="false" title="Mostrar senha"></button>
         </div></div>
       <button type="button" id="li_btn" class="btn">Entrar</button>
       <div class="err" id="li_err"></div>
@@ -379,13 +384,17 @@ footer{border-top:1px solid var(--border);margin-top:40px;padding:16px 0 24px;fo
 <script>
 /* ===================== AUTENTICAÇÃO ===================== */
 (function(){
+  /* Config REAL do app "Dashboard Planik", copiada de Configuracoes do projeto
+     no console do Firebase (12/08/2026). Nao editar de memoria: se precisar
+     trocar, copie de novo do console. Uma config parecida mas errada faz o
+     login falhar com auth/api-key-not-valid, que nao parece problema de config. */
   var firebaseConfig = {
-    apiKey: "AIzaSyBqQm4vJDdmHqLKcU8bDXdyPvVNI2Yy3Jk",
+    apiKey: "AIzaSyB2s7BvWSiNjTN5bCB13bjTE9HSwpE8rwE",
     authDomain: "planik-dashboard.firebaseapp.com",
     projectId: "planik-dashboard",
     storageBucket: "planik-dashboard.firebasestorage.app",
-    messagingSenderId: "486512975614",
-    appId: "1:486512975614:web:0b3a4c9e2e6f8d1a7c5f21"
+    messagingSenderId: "273296687410",
+    appId: "1:273296687410:web:74bf51ba8ee85c6fb0972b"
   };
   /* Contas ativas. O login é só o que vem antes do @; o domínio é acrescentado
      automaticamente. As SENHAS ficam no Firebase Auth — nunca neste arquivo.
@@ -522,17 +531,29 @@ footer{border-top:1px solid var(--border);margin-top:40px;padding:16px 0 24px;fo
     /* Olho da senha. O foco volta para o campo e o cursor para o fim, senao a
        pessoa clica no olho e perde o lugar onde estava digitando. */
     var o=$("li_olho");
-    if(o) o.addEventListener("click",function(){
-      var c=$("li_pass"); if(!c) return;
-      var ver=c.type==="password";
-      c.type=ver?"text":"password";
-      o.setAttribute("aria-pressed",ver?"true":"false");
-      o.setAttribute("aria-label",ver?"Ocultar senha":"Mostrar senha");
-      o.title=ver?"Ocultar senha":"Mostrar senha";
-      o.textContent=ver?"🙈":"👁";
-      c.focus();
-      try{ var n=c.value.length; c.setSelectionRange(n,n); }catch(_){}
-    });
+    var SVG_ABERTO='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"'
+      +' stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'
+      +'<path d="M1.8 12S5.4 5.4 12 5.4 22.2 12 22.2 12 18.6 18.6 12 18.6 1.8 12 1.8 12Z"/>'
+      +'<circle cx="12" cy="12" r="3.1"/></svg>';
+    var SVG_CORTADO='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"'
+      +' stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'
+      +'<path d="M9.8 5.7A9.8 9.8 0 0 1 12 5.4c6.6 0 10.2 6.6 10.2 6.6a19 19 0 0 1-2.8 3.7"/>'
+      +'<path d="M6.4 7.8A18.6 18.6 0 0 0 1.8 12S5.4 18.6 12 18.6c1.6 0 3-.3 4.2-.9"/>'
+      +'<path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/><path d="M3 3l18 18"/></svg>';
+    if(o){
+      o.innerHTML=SVG_ABERTO;
+      o.addEventListener("click",function(){
+        var c=$("li_pass"); if(!c) return;
+        var ver=c.type==="password";
+        c.type=ver?"text":"password";
+        o.setAttribute("aria-pressed",ver?"true":"false");
+        o.setAttribute("aria-label",ver?"Ocultar senha":"Mostrar senha");
+        o.title=ver?"Ocultar senha":"Mostrar senha";
+        o.innerHTML=ver?SVG_CORTADO:SVG_ABERTO;
+        c.focus();
+        try{ var n=c.value.length; c.setSelectionRange(n,n); }catch(_){}
+      });
+    }
   }
   if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",wire); else wire();
 })();
@@ -3048,7 +3069,7 @@ carregarAcessosDoBanco();
 $("#hdPeriodo").textContent=`Janeiro a Dezembro de ${ANO}`;
 $("#hdUpd").textContent="Atualizado em "+((D.meta&&D.meta.atualizado)||"—");
 $("#ftUpd").textContent="Última atualização da planilha: "+((D.meta&&D.meta.atualizado)||"—");
-$("#ftVer").textContent=`Inteligência Comercial ${ANO} · v33`;
+$("#ftVer").textContent=`Inteligência Comercial ${ANO} · v34`;
 $("#hdTitle").textContent=`Inteligência Comercial ${ANO}`;
 
 window.initDashboard=function(){ Object.keys(feito).forEach(k=>delete feito[k]);
