@@ -23,23 +23,47 @@ jobs:
       - name: Instalar dependencias
         run: pip install openpyxl firebase-admin
 
+      # O SharePoint devolve 403 para cliente que nao parece navegador, mesmo com
+      # link anonimo valido. Por isso o User-Agent de Chrome. E tentamos duas
+      # formas de URL: o proprio link com download=1 e o endpoint download.aspx
+      # derivado do token do compartilhamento. Basta uma funcionar.
       - name: Baixar planilha do OneDrive
         env:
           EXCEL_URL: ${{ secrets.EXCEL_URL }}
         run: |
-          curl -L --fail --silent --show-error -o planilha.xlsx "${EXCEL_URL}&download=1"
-          echo "Tamanho baixado:"; ls -la planilha.xlsx
-          if [ "$(head -c 2 planilha.xlsx)" != "PK" ]; then
-            echo "ERRO: o download nao e um arquivo Excel valido (provavel pagina de login/erro)."
-            echo "Primeiros 400 caracteres do que veio:"; head -c 400 planilha.xlsx; echo
-            exit 1
+          UA='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36'
+          baixar () {
+            curl -L --silent --show-error -A "$UA" -o planilha.xlsx -w '%{http_code}' "$1" || true
+          }
+          valido () {
+            [ -s planilha.xlsx ] && [ "$(head -c 2 planilha.xlsx)" = "PK" ]
+          }
+
+          SEP='?'
+          case "$EXCEL_URL" in *\?*) SEP='&' ;; esac
+          COD=$(baixar "${EXCEL_URL}${SEP}download=1")
+          echo "Tentativa 1 (download=1): HTTP $COD"
+          if valido; then
+            echo "OK pela tentativa 1"; ls -la planilha.xlsx; exit 0
           fi
-          echo "OK: arquivo Excel valido."
+
+          HOST=$(printf '%s' "$EXCEL_URL" | sed -E 's#^(https://[^/]+)/.*#\1#')
+          USUARIO=$(printf '%s' "$EXCEL_URL" | sed -E 's#.*/personal/([^/]+)/.*#\1#')
+          TOKEN=$(printf '%s' "$EXCEL_URL" | sed -E 's#\?.*##; s#.*/##')
+          COD=$(baixar "$HOST/personal/$USUARIO/_layouts/15/download.aspx?share=$TOKEN")
+          echo "Tentativa 2 (download.aspx): HTTP $COD"
+          if valido; then
+            echo "OK pela tentativa 2"; ls -la planilha.xlsx; exit 0
+          fi
+
+          echo "ERRO: nao consegui baixar a planilha sem autenticacao."
+          echo "Primeiros 400 caracteres do que veio:"
+          head -c 400 planilha.xlsx; echo
+          exit 1
 
       # Extrair e publicar sao passos SEPARADOS de proposito. Se a planilha mudar
-      # de estrutura (aba renomeada, coluna removida), o extrator sai com codigo 2,
-      # o passo de publicacao nem roda e o site continua com o ultimo dado bom.
-      # Foi assim que o robo antigo passou semanas publicando dados velhos sem avisar.
+      # de estrutura, o extrator sai com codigo 2, a publicacao nem roda e o site
+      # continua com o ultimo dado bom em vez de um dado quebrado.
       - name: Extrair a planilha
         run: python planik_extract.py planilha.xlsx payload.json
 
