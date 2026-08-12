@@ -1,0 +1,49 @@
+name: Atualizar dashboard (planilha -> Firebase)
+
+on:
+  workflow_dispatch: {}
+  schedule:
+    - cron: '17,47 * * * *'   # ~a cada 30 min (17 e 47 p/ fugir do horario de pico)
+
+permissions:
+  contents: read
+
+jobs:
+  atualizar:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Baixar codigo do repositorio
+        uses: actions/checkout@v4
+
+      - name: Preparar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Instalar dependencias
+        run: pip install openpyxl firebase-admin
+
+      - name: Baixar planilha do OneDrive
+        env:
+          EXCEL_URL: ${{ secrets.EXCEL_URL }}
+        run: |
+          curl -L --fail --silent --show-error -o planilha.xlsx "${EXCEL_URL}&download=1"
+          echo "Tamanho baixado:"; ls -la planilha.xlsx
+          if [ "$(head -c 2 planilha.xlsx)" != "PK" ]; then
+            echo "ERRO: o download nao e um arquivo Excel valido (provavel pagina de login/erro)."
+            echo "Primeiros 400 caracteres do que veio:"; head -c 400 planilha.xlsx; echo
+            exit 1
+          fi
+          echo "OK: arquivo Excel valido."
+
+      # Extrair e publicar sao passos SEPARADOS de proposito. Se a planilha mudar
+      # de estrutura (aba renomeada, coluna removida), o extrator sai com codigo 2,
+      # o passo de publicacao nem roda e o site continua com o ultimo dado bom.
+      # Foi assim que o robo antigo passou semanas publicando dados velhos sem avisar.
+      - name: Extrair a planilha
+        run: python planik_extract.py planilha.xlsx payload.json
+
+      - name: Publicar no Firestore
+        env:
+          FIREBASE_KEY: ${{ secrets.FIREBASE_KEY }}
+        run: python publicar_firebase.py payload.json
