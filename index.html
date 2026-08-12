@@ -240,9 +240,16 @@ svg{display:block;width:100%;height:auto;overflow:hidden}
 .btn:hover{background:#9c7826}
 .btn:disabled{opacity:.6;cursor:default}
 .err{color:#C0392B;font-size:12.5px;min-height:18px;margin-top:9px;text-align:center}
-.note{font-size:12px;color:#5b5c60;margin-top:20px;line-height:1.65;background:#f6f4ef;
-  border:1px solid #e8e4d9;border-radius:9px;padding:12px 14px}
-.note b{color:#16171a}
+/* olho de revelar a senha: fica dentro do campo, e o padding a direita do
+   input abre espaco para ele nao cobrir o que a pessoa digita */
+.senha{position:relative}
+.senha input{padding-right:46px}
+.olho{position:absolute;top:50%;right:6px;transform:translateY(-50%);width:34px;height:34px;
+  display:flex;align-items:center;justify-content:center;background:none;border:0;border-radius:8px;
+  cursor:pointer;font-size:16px;line-height:1;opacity:.55;color:#3c3d41}
+.olho:hover{opacity:1;background:#efece4}
+.olho:focus-visible{outline:2px solid #B08A2E;outline-offset:-1px;opacity:1}
+.olho[aria-pressed="true"]{opacity:1;color:#B08A2E}
 .txtbtn{background:var(--card-2);border:1px solid var(--border);border-radius:8px;padding:7px 13px;
   cursor:pointer;font-size:12.5px;font-weight:600;color:var(--ink-2);white-space:nowrap}
 .txtbtn:hover{border-color:var(--gold);color:var(--ink)}
@@ -299,12 +306,14 @@ footer{border-top:1px solid var(--border);margin-top:40px;padding:16px 0 24px;fo
         <input id="li_user" placeholder="seu usuário" autocomplete="username"
                autocapitalize="none" autocorrect="off" spellcheck="false"></div>
       <div class="fld"><label for="li_pass">Senha</label>
-        <input id="li_pass" type="password" placeholder="sua senha" autocomplete="current-password"></div>
+        <div class="senha">
+          <input id="li_pass" type="password" placeholder="sua senha" autocomplete="current-password">
+          <button type="button" id="li_olho" class="olho" aria-label="Mostrar senha"
+            aria-pressed="false" title="Mostrar senha">👁</button>
+        </div></div>
       <button type="button" id="li_btn" class="btn">Entrar</button>
       <div class="err" id="li_err"></div>
     </form>
-    <div class="note">Use seu <b>usuário</b> e <b>senha</b> Planik — só o que vem antes do <b>@</b>.<br>
-      A diretoria (<b>admin</b>) vê tudo e edita o cadastro do time; os demais acessos apenas consultam.</div>
   </div>
 </div>
 <div id="dataStatus"><div id="dataStatusMsg">Carregando dados…</div></div>
@@ -470,10 +479,27 @@ footer{border-top:1px solid var(--border);margin-top:40px;padding:16px 0 24px;fo
     busy(true,"");
     auth.signInWithEmailAndPassword(u+DOMAIN,p).then(function(){busy(false,"");})
       .catch(function(err){ busy(false,"");
-        var m="Usuário ou senha inválidos.";
-        if(err&&err.code==="auth/too-many-requests") m="Muitas tentativas. Aguarde um instante.";
-        else if(err&&err.code==="auth/network-request-failed") m="Falha de rede. Verifique a internet.";
-        if(e) e.textContent=m; });
+        /* Nunca mais colapsar tudo em "senha inválida". Em 12/08 o login falhou
+           por dominio nao autorizado no Firebase e a tela dizia senha errada —
+           gastamos meia hora trocando senha de uma conta que estava correta.
+           Erro que a pessoa nao pode resolver sozinha mostra o codigo tecnico. */
+        var cod=(err&&err.code)||"desconhecido";
+        var M={
+          "auth/invalid-credential":  "Usuário ou senha inválidos.",
+          "auth/wrong-password":      "Usuário ou senha inválidos.",
+          "auth/user-not-found":      "Usuário ou senha inválidos.",
+          "auth/invalid-email":       "Usuário inválido.",
+          "auth/user-disabled":       "Esta conta está desativada. Fale com a Inteligência Comercial.",
+          "auth/too-many-requests":   "Muitas tentativas. Aguarde um instante e tente de novo.",
+          "auth/network-request-failed":"Falha de rede. Verifique a internet.",
+          "auth/unauthorized-domain": "Este endereço não está autorizado no Firebase. Avise a Inteligência Comercial.",
+          "auth/operation-not-allowed":"Login por e-mail e senha está desligado no Firebase.",
+          "auth/api-key-not-valid":   "Chave do Firebase inválida para este endereço."
+        };
+        var m=M[cod];
+        if(!m) m="Não foi possível entrar. Código do erro: "+cod+" — mande este código para a Inteligência Comercial.";
+        if(e) e.textContent=m;
+        try{ console.error("[login] falhou:",cod,err&&err.message); }catch(_){} });
     return false;
   };
   window.doLogout=function(){
@@ -493,6 +519,20 @@ footer{border-top:1px solid var(--border);margin-top:40px;padding:16px 0 24px;fo
     var p=$("li_pass"); if(p)p.addEventListener("keydown",function(e){if(e.key==="Enter"){e.preventDefault();window.doLogin();}});
     var u=$("li_user"); if(u)u.addEventListener("keydown",function(e){if(e.key==="Enter"){e.preventDefault();var q=$("li_pass");if(q)q.focus();}});
     var l=$("logoutBtn"); if(l)l.addEventListener("click",window.doLogout);
+    /* Olho da senha. O foco volta para o campo e o cursor para o fim, senao a
+       pessoa clica no olho e perde o lugar onde estava digitando. */
+    var o=$("li_olho");
+    if(o) o.addEventListener("click",function(){
+      var c=$("li_pass"); if(!c) return;
+      var ver=c.type==="password";
+      c.type=ver?"text":"password";
+      o.setAttribute("aria-pressed",ver?"true":"false");
+      o.setAttribute("aria-label",ver?"Ocultar senha":"Mostrar senha");
+      o.title=ver?"Ocultar senha":"Mostrar senha";
+      o.textContent=ver?"🙈":"👁";
+      c.focus();
+      try{ var n=c.value.length; c.setSelectionRange(n,n); }catch(_){}
+    });
   }
   if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",wire); else wire();
 })();
@@ -2309,7 +2349,7 @@ function pintaRankingGer(){
     </tbody></table></div>
     ${foraDoTime>1?`<div class="sub" style="margin-top:11px;padding-top:11px;border-top:1px solid var(--grid)">
       Mais <b>${moeda(foraDoTime)}</b> foram vendidos neste recorte por gerentes que não estão ativos
-      no cadastro. Use a <b>engrenagem</b> no topo para incluí-los.</div>`:""}
+      no cadastro.${podeEditarCfg()?" Use a <b>engrenagem</b> no topo para incluí-los.":""}</div>`:""}
     </div>`;
   document.querySelectorAll("#gCorpo tr[data-g]").forEach(tr=>{
     const g=tr.dataset.g;
@@ -2720,7 +2760,7 @@ function pintaOrigemPorProduto(el,todas,mkt,T){
       <div class="sub">A linha criativa extraída do nome da campanha · "sem linha" são campanhas
         cujo nome não traz uma linha, como Site Planik e Google Adwords</div></div>
       <div id="opLinha"></div>
-      ${parecidos.length?`<div class="sub" style="margin-top:11px;color:var(--warn)">
+      ${(parecidos.length&&podeEditarCfg())?`<div class="sub" style="margin-top:11px;color:var(--warn)">
         <b>Atenção ao cadastro.</b> Estes nomes são quase idênticos e por isso contam separado:
         ${parecidos.map(([a,b])=>`"${esc(a)}" e "${esc(b)}"`).join("; ")}.
         Padronizar o nome na planilha consolida as duas linhas numa só.</div>`:""}
@@ -3008,7 +3048,7 @@ carregarAcessosDoBanco();
 $("#hdPeriodo").textContent=`Janeiro a Dezembro de ${ANO}`;
 $("#hdUpd").textContent="Atualizado em "+((D.meta&&D.meta.atualizado)||"—");
 $("#ftUpd").textContent="Última atualização da planilha: "+((D.meta&&D.meta.atualizado)||"—");
-$("#ftVer").textContent=`Inteligência Comercial ${ANO} · v31`;
+$("#ftVer").textContent=`Inteligência Comercial ${ANO} · v33`;
 $("#hdTitle").textContent=`Inteligência Comercial ${ANO}`;
 
 window.initDashboard=function(){ Object.keys(feito).forEach(k=>delete feito[k]);
