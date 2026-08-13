@@ -281,6 +281,47 @@ svg{display:block;width:100%;height:auto;overflow:hidden}
 .grouphd{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--gold);
   margin:18px 0 4px}
 .cfgnote{font-size:11.5px;color:var(--muted);display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+/* ---------- Assistente ---------- */
+#chatBtn .pt{display:none}
+@media(min-width:900px){ #chatBtn{width:auto;padding:0 11px;gap:7px;display:flex;align-items:center}
+  #chatBtn .pt{display:inline;font-size:12.5px;font-weight:650} }
+#chatBtn svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.8;
+  stroke-linecap:round;stroke-linejoin:round;flex:0 0 auto}
+.chatwrap{display:flex;flex-direction:column;height:min(62vh,620px)}
+.chatlog{flex:1;overflow-y:auto;padding:16px 17px;display:flex;flex-direction:column;gap:14px}
+.chatvazio{color:var(--muted);font-size:13px;line-height:1.6;padding:6px 0 2px}
+.chatvazio b{color:var(--ink)}
+.sugs{display:flex;flex-wrap:wrap;gap:7px;margin-top:13px}
+.sug{font-size:12.5px;text-align:left;background:var(--card-2);border:1px solid var(--border);
+  border-radius:99px;padding:7px 13px;cursor:pointer;color:var(--ink-2)}
+.sug:hover{border-color:var(--gold);color:var(--ink)}
+.msg{max-width:min(760px,92%);font-size:14px;line-height:1.6}
+.msg.eu{align-self:flex-end;background:var(--card-2);border:1px solid var(--border);
+  border-radius:14px 14px 4px 14px;padding:10px 14px;white-space:pre-wrap}
+.msg.ia{align-self:flex-start}
+.msg.ia p{margin:0 0 10px}
+.msg.ia p:last-child{margin-bottom:0}
+.msg.ia ul{margin:0 0 10px;padding-left:19px}
+.msg.ia li{margin-bottom:4px}
+.msg.ia b{font-weight:650}
+.msg.err{align-self:flex-start;color:var(--bad);font-size:13px;background:var(--bad-bg);
+  border:1px solid var(--bad);border-radius:11px;padding:9px 13px}
+.pisca:after{content:"▍";animation:pisca 1s steps(2) infinite;color:var(--gold)}
+@keyframes pisca{50%{opacity:0}}
+.chatform{display:flex;gap:9px;align-items:flex-end;width:100%}
+.chatform textarea{flex:1;font:inherit;font-size:14px;resize:none;min-height:42px;max-height:130px;
+  padding:10px 12px;border:1px solid var(--border);border-radius:11px;background:var(--card);
+  color:var(--ink);line-height:1.45}
+.chatform textarea:focus{outline:none;border-color:var(--gold)}
+.chatenv{background:var(--ink);color:var(--bg);border:0;border-radius:11px;height:42px;padding:0 17px;
+  font-weight:650;font-size:14px;cursor:pointer;flex:0 0 auto}
+.chatenv[disabled]{opacity:.45;cursor:default}
+.chataviso{font-size:11px;color:var(--muted);width:100%;margin-top:2px;line-height:1.45}
+@media(max-width:640px){
+  .chatwrap{height:min(74vh,620px)} .chatlog{padding:13px}
+  .msg{max-width:100%} .chatenv{padding:0 13px}
+}
+
 #dataStatus{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:var(--bg);
   z-index:480;font-size:13.5px;color:var(--ink-2);text-align:center;padding:20px}
 footer{border-top:1px solid var(--border);margin-top:40px;padding:16px 0 24px;font-size:11.5px;color:var(--muted);
@@ -335,6 +376,10 @@ footer{border-top:1px solid var(--border);margin-top:40px;padding:16px 0 24px;fo
       <span class="chip" id="hdPeriodo"></span>
       <span class="chip" id="hdUpd"></span>
       <span class="userbadge" id="userBadge"></span>
+      <button class="iconbtn" id="chatBtn" title="Assistente do relatório"
+        aria-label="Abrir o assistente" style="display:none">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11.5a7.5 7.5 0 0 1-10.9 6.7L4 19.5l1.4-4.2A7.5 7.5 0 1 1 20 11.5Z"/><path d="M9 11.5h6M9 8.5h4"/></svg>
+        <span class="pt">Assistente</span></button>
       <button class="iconbtn" id="tgl" title="Tema claro/escuro" aria-label="Alternar tema">◐</button>
       <button class="iconbtn" id="cfgBtn" title="Cadastro do time" aria-label="Cadastro do time">⚙</button>
       <button class="txtbtn" id="logoutBtn">Sair</button>
@@ -411,7 +456,7 @@ footer{border-top:1px solid var(--border);margin-top:40px;padding:16px 0 24px;fo
      Para liberar alguém: crie o usuário no Firebase Auth (login@planik.app) e
      adicione o login pela engrenagem. Não precisa republicar o site. */
   window.PLK_ROLES = {
-    "admin":  {role:"admin", nome:"Diretoria / Admin", cfg:"edita"}
+    "admin":  {role:"admin", nome:"Diretoria / Admin", cfg:"edita", chat:true}
   };
   var DOMAIN="@planik.app";
   window.currentUser=null;
@@ -1301,8 +1346,10 @@ function ehAdmin(){ return window.currentUser && window.currentUser.role==="admi
 function cfgNivel(){ const u=window.currentUser; return (u&&u.cfg)||""; }
 function podeVerCfg(){ return cfgNivel()==="edita"||cfgNivel()==="le"; }
 function podeEditarCfg(){ return cfgNivel()==="edita"; }
+function podeUsarChat(){ const u=window.currentUser; return !!(u&&(u.chat||u.user==="admin")); }
 function pintaAcessos(){
   const b=$("#cfgBtn"); if(b) b.style.display=podeVerCfg()?"":"none";
+  const c=$("#chatBtn"); if(c) c.style.display=podeUsarChat()?"":"none";
 }
 
 /* =====================================================================
@@ -1329,9 +1376,10 @@ function aplicarAcessos(){
   /* base do arquivo + o que veio do banco; "admin" volta a edita sempre */
   const m=Object.assign({},ACESSO_BASE);
   Object.entries(ACESSOS).forEach(([u,c])=>{
-    m[u]=Object.assign({},m[u]||{role:"leitor"},{nome:c.nome||(m[u]||{}).nome||u,cfg:c.cfg||""});
+    m[u]=Object.assign({},m[u]||{role:"leitor"},
+      {nome:c.nome||(m[u]||{}).nome||u,cfg:c.cfg||"",chat:!!c.chat});
   });
-  if(m.admin) m.admin.cfg="edita";
+  if(m.admin){ m.admin.cfg="edita"; m.admin.chat=true; }
   window.PLK_ROLES=m;
   /* quem já está logado sente a mudança na hora, sem novo login */
   const u=window.currentUser;
@@ -1363,6 +1411,7 @@ function pintaListaAcessos(){
   const logins=Array.from(new Set(Object.keys(ACESSO_BASE).concat(Object.keys(ACESSOS))));
   const nivelDe=u=>u==="admin"?"edita":((ACESSOS[u]||{}).cfg!=null&&ACESSOS[u]?ACESSOS[u].cfg:(ACESSO_BASE[u]||{}).cfg||"");
   const nomeDe=u=>(ACESSOS[u]||{}).nome||(ACESSO_BASE[u]||{}).nome||u;
+  const chatDe=u=>u==="admin"?true:!!((ACESSOS[u]||ACESSO_BASE[u]||{}).chat);
   el.innerHTML=logins.map(u=>{
     const fixo=(u==="admin"), doArquivo=!!ACESSO_BASE[u];
     return `<div class="cfgrow" data-ac="${esc(u)}">
@@ -1372,6 +1421,10 @@ function pintaListaAcessos(){
       <select class="selin" data-niv="1" ${fixo||!cfgEdicao?"disabled":""} style="margin-left:auto">
         ${NIVEIS.map(n=>`<option value="${n.v}" ${nivelDe(u)===n.v?"selected":""}>${n.r}</option>`).join("")}
       </select>
+      <button class="sw ${chatDe(u)?"on":""}" data-acchat="1" ${fixo||!cfgEdicao?"disabled":""}
+        title="Libera o assistente para esta pessoa" aria-label="Assistente"></button>
+      <span class="swlab" style="font-size:11.5px;color:var(--muted);min-width:64px">
+        ${chatDe(u)?"Assistente":"sem chat"}</span>
       ${(cfgEdicao&&!doArquivo)?'<button class="txtbtn" data-acdel="1" title="Remover da lista">Remover</button>':""}
     </div>`;
   }).join("")
@@ -1380,9 +1433,12 @@ function pintaListaAcessos(){
       <input class="selin" id="acNome" placeholder="nome que aparece no topo" style="min-width:190px">
       <select class="selin" id="acNivel">
         ${NIVEIS.map(n=>`<option value="${n.v}">${n.r}</option>`).join("")}</select>
+      <label style="font-size:12px;color:var(--ink-2);display:flex;align-items:center;gap:6px">
+        <input type="checkbox" id="acChat"> assistente</label>
       <button class="txtbtn" id="acAdd">Adicionar</button></div>`:"")
   + `<div class="cfgnote" style="margin-top:9px">${esc(SYNCAC)} · O login precisa existir no
-      <b>Firebase Auth</b> como <code>login@planik.app</code>; esta lista decide quem entra e o que enxerga.
+      <b>Firebase Auth</b> como <code>login@planik.app</code>; esta lista decide quem entra, o que enxerga
+      e quem tem o <b>assistente</b>.
       <b>Quem não estiver nesta lista não entra</b> — mesmo com senha válida, a sessão é
       encerrada na entrada.</div>`;
 
@@ -1391,7 +1447,14 @@ function pintaListaAcessos(){
     const u=row.dataset.ac;
     const sel=row.querySelector("[data-niv]");
     if(sel) sel.addEventListener("change",()=>{
-      ACESSOS[u]=Object.assign({},ACESSOS[u]||{},{nome:nomeDe(u),cfg:sel.value});
+      ACESSOS[u]=Object.assign({},ACESSOS[u]||{},
+        {nome:nomeDe(u),cfg:sel.value,chat:chatDe(u)});
+      salvarAcessos();
+    });
+    const sw=row.querySelector("[data-acchat]");
+    if(sw&&!sw.disabled) sw.addEventListener("click",()=>{
+      ACESSOS[u]=Object.assign({},ACESSOS[u]||{},
+        {nome:nomeDe(u),cfg:nivelDe(u),chat:!chatDe(u)});
       salvarAcessos();
     });
     const del=row.querySelector("[data-acdel]");
@@ -1405,7 +1468,8 @@ function pintaListaAcessos(){
     const u=(document.getElementById("acNovo").value||"").trim().toLowerCase().replace(/@.*$/,"");
     if(!loginOk(u)){ alert("Login inválido. Use só letras, números, ponto, hífen ou sublinhado."); return; }
     const nome=(document.getElementById("acNome").value||"").trim()||u;
-    ACESSOS[u]={nome,cfg:document.getElementById("acNivel").value};
+    ACESSOS[u]={nome,cfg:document.getElementById("acNivel").value,
+                chat:!!(document.getElementById("acChat")||{}).checked};
     salvarAcessos();
   });
 }
@@ -3041,6 +3105,184 @@ $("#tgl").addEventListener("click",()=>{
   Object.keys(feito).forEach(k=>{ if(feito[k]) try{R[k]();}catch(e){} });
   if(pilha.length) pintaModal();
 });
+
+/* =====================================================================
+   ASSISTENTE DO RELATÓRIO
+
+   O navegador nunca fala com a Anthropic direto: a chave de API viveria no
+   HTML e qualquer pessoa a leria. Quem fala é um Worker no Cloudflare, que
+   confere o login do Firebase, confere a permissão em config/acessos e só
+   então chama o modelo.
+
+   A resposta chega em streaming (SSE) para o texto aparecer enquanto é
+   escrito — 15 segundos de tela parada passam sensação de travamento.
+   ===================================================================== */
+const CHAT_URL = "https://planik-assistente.jorge-lima.workers.dev";
+
+const SUGESTOES = [
+  "Qual o maior gargalo da operação hoje?",
+  "Quantas vendas tivemos no último trimestre?",
+  "Como o VSO é calculado?",
+  "Quais empreendimentos estão furando o teto de desconto?",
+  "Compare o desempenho de House e Parcerias"
+];
+
+let chatHist = [];        /* [{role, content}] — o que vai para o modelo */
+let chatOcupado = false;
+
+/* Formatação mínima e segura: escapa tudo primeiro, depois reconstrói só
+   negrito, parágrafo e lista. Nada de innerHTML com texto do modelo cru. */
+function fmtIA(t){
+  const e = esc(t);
+  const blocos = e.split(/\n{2,}/).map(b=>{
+    const linhas = b.split("\n");
+    if(linhas.every(l=>/^\s*[-•*]\s+/.test(l)) && linhas.length){
+      return "<ul>"+linhas.map(l=>"<li>"+l.replace(/^\s*[-•*]\s+/,"")+"</li>").join("")+"</ul>";
+    }
+    return "<p>"+linhas.join("<br>")+"</p>";
+  }).join("");
+  return blocos.replace(/\*\*([^*]+)\*\*/g,"<b>$1</b>");
+}
+
+function chatPinta(){
+  const log = $("#chatLog"); if(!log) return;
+  if(!chatHist.length){
+    log.innerHTML = `<div class="chatvazio">
+      Pergunte em português sobre os números deste relatório — vendas, metas,
+      atingimento, VSO, desconto, canais, gerentes e origem. As respostas saem da
+      planilha de <b>${esc((D.meta&&D.meta.atualizado)||"—")}</b>, no recorte
+      <b>Geral</b> de <b>${esc((D.meta&&D.meta.periodo)||"")}</b>.
+      <div class="sugs">${SUGESTOES.map(q=>
+        `<button class="sug" data-sug="${esc(q)}">${esc(q)}</button>`).join("")}</div>
+    </div>`;
+    log.querySelectorAll("[data-sug]").forEach(b=>
+      b.addEventListener("click",()=>chatEnviar(b.dataset.sug)));
+    return;
+  }
+  log.innerHTML = chatHist.map(m=> m.role==="user"
+    ? `<div class="msg eu">${esc(m.content)}</div>`
+    : `<div class="msg ${m.erro?"err":"ia"}">${m.erro?esc(m.content):fmtIA(m.content)}</div>`
+  ).join("");
+  log.scrollTop = log.scrollHeight;
+}
+
+async function chatEnviar(texto){
+  const t = String(texto||"").trim();
+  if(!t || chatOcupado) return;
+  const ta = $("#chatIn"); if(ta) ta.value="";
+  chatHist.push({role:"user",content:t});
+  chatHist.push({role:"assistant",content:""});
+  chatOcupado = true; chatBotao();
+  chatPinta();
+  const iAlvo = chatHist.length-1;
+  const pinta = txt => {
+    chatHist[iAlvo].content = txt;
+    const log=$("#chatLog"); if(!log) return;
+    const ult=log.lastElementChild;
+    if(ult){ ult.className="msg ia pisca"; ult.innerHTML=fmtIA(txt); log.scrollTop=log.scrollHeight; }
+  };
+
+  try{
+    if(/^__/.test(CHAT_URL)) throw new Error(
+      "O assistente ainda não foi ligado neste endereço. Fale com a Inteligência Comercial.");
+    const user = window.PLK_AUTH && window.PLK_AUTH.currentUser;
+    if(!user) throw new Error("SESSAO");
+    const idToken = await user.getIdToken();
+    /* falha de rede vira TypeError com texto em inglês ("Failed to fetch");
+       ninguém aqui deve ler isso, então traduzimos para algo acionável */
+    let r;
+    try{
+      r = await fetch(CHAT_URL,{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({idToken, mensagens: chatHist.slice(0,-1)})
+      });
+    }catch(e){
+      throw new Error("Não consegui falar com o assistente. Verifique a conexão e tente de novo.");
+    }
+
+    const tipo = r.headers.get("content-type")||"";
+    if(!r.ok || tipo.includes("application/json")){
+      let msg="O assistente está indisponível no momento.";
+      try{ const j=await r.json(); if(j&&j.erro) msg=j.erro; }catch(e){}
+      throw new Error(msg);
+    }
+
+    /* SSE: os pedaços chegam em blocos separados por linha em branco */
+    const leitor = r.body.getReader();
+    const dec = new TextDecoder();
+    let buf="", texto="";
+    while(true){
+      const {done,value} = await leitor.read();
+      if(done) break;
+      buf += dec.decode(value,{stream:true});
+      const partes = buf.split("\n\n"); buf = partes.pop();
+      for(const parte of partes){
+        for(const linha of parte.split("\n")){
+          if(!linha.startsWith("data:")) continue;
+          const cru = linha.slice(5).trim();
+          if(!cru || cru==="[DONE]") continue;
+          let ev; try{ ev=JSON.parse(cru); }catch(e){ continue; }
+          if(ev.type==="content_block_delta" && ev.delta && ev.delta.type==="text_delta"){
+            texto += ev.delta.text; pinta(texto);
+          }
+          if(ev.type==="error"){
+            throw new Error((ev.error&&ev.error.message)||"Falha ao gerar a resposta.");
+          }
+        }
+      }
+    }
+    if(!texto) throw new Error("O assistente não devolveu resposta. Tente perguntar de novo.");
+    chatHist[iAlvo].content = texto;
+  }catch(err){
+    const m = (err&&err.message)==="SESSAO"
+      ? "Sua sessão expirou. Recarregue a página e entre de novo."
+      : ((err&&err.message)||"Não foi possível falar com o assistente.");
+    chatHist[iAlvo] = {role:"assistant",content:m,erro:true};
+  }finally{
+    chatOcupado = false; chatBotao(); chatPinta();
+    const ta2=$("#chatIn"); if(ta2) ta2.focus();
+  }
+}
+
+function chatBotao(){
+  const b=$("#chatEnv"); if(!b) return;
+  b.disabled = chatOcupado;
+  b.textContent = chatOcupado ? "…" : "Enviar";
+}
+
+function abrirChat(){
+  if(!podeUsarChat()) return;
+  abrir({
+    titulo:"Assistente do relatório",
+    sub:`Responde com os números desta plataforma · planilha de <b>${
+      esc((D.meta&&D.meta.atualizado)||"—")}</b>`,
+    html:`<div class="chatwrap"><div class="chatlog" id="chatLog"></div></div>`,
+    rodape:`<form class="chatform" id="chatForm">
+        <textarea id="chatIn" rows="1" placeholder="Escreva sua pergunta…"
+          autocomplete="off"></textarea>
+        <button type="submit" class="chatenv" id="chatEnv">Enviar</button>
+      </form>
+      <div class="chataviso">O assistente lê apenas os dados deste relatório. Ele não
+        tem informação de mercado, de clientes nem de contratos, e pode errar —
+        confira os números nas abas antes de decidir.</div>`,
+    render(){
+      chatPinta(); chatBotao();
+      const f=$("#chatForm"), ta=$("#chatIn");
+      if(f) f.addEventListener("submit",ev=>{ ev.preventDefault(); chatEnviar(ta.value); });
+      if(ta){
+        ta.addEventListener("keydown",ev=>{
+          if(ev.key==="Enter" && !ev.shiftKey){ ev.preventDefault(); chatEnviar(ta.value); }
+        });
+        ta.addEventListener("input",()=>{ ta.style.height="auto";
+          ta.style.height=Math.min(ta.scrollHeight,130)+"px"; });
+        setTimeout(()=>ta.focus(),60);
+      }
+    }
+  });
+}
+$("#chatBtn").addEventListener("click",abrirChat);
+
 $("#cfgBtn").addEventListener("click",abrirCfg);
 pintaAcessos();
 
@@ -3069,7 +3311,7 @@ carregarAcessosDoBanco();
 $("#hdPeriodo").textContent=`Janeiro a Dezembro de ${ANO}`;
 $("#hdUpd").textContent="Atualizado em "+((D.meta&&D.meta.atualizado)||"—");
 $("#ftUpd").textContent="Última atualização da planilha: "+((D.meta&&D.meta.atualizado)||"—");
-$("#ftVer").textContent=`Inteligência Comercial ${ANO} · v34`;
+$("#ftVer").textContent=`Inteligência Comercial ${ANO} · v35 · assistente`;
 $("#hdTitle").textContent=`Inteligência Comercial ${ANO}`;
 
 window.initDashboard=function(){ Object.keys(feito).forEach(k=>delete feito[k]);
