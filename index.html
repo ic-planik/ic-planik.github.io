@@ -315,6 +315,11 @@ svg{display:block;width:100%;height:auto;overflow:hidden}
 .msg.ia{display:flex;gap:11px;align-items:flex-start}
 .msg.ia .ava{width:36px;height:36px;border-radius:50%;flex:0 0 auto;margin-top:-2px}
 .msg.ia .txt{min-width:0}
+/* aviso de recorte de acesso: explica a ausência em vez de deixar o buraco */
+.avisoacesso{margin:14px 17px 0;padding:10px 13px;border-radius:9px;font-size:12.5px;
+  line-height:1.55;color:var(--ink-2);background:var(--card-2);
+  border:1px solid var(--border);border-left:3px solid var(--gold)}
+.avisoacesso b{color:var(--ink)}
 /* resposta arquivada no log: mesma tipografia da conversa, sem o balão */
 .logresp{font-size:13.5px;line-height:1.62;color:var(--ink-2)}
 .logresp p{margin:0 0 10px}.logresp ul{margin:0 0 10px 18px}.logresp b{color:var(--ink)}
@@ -584,8 +589,15 @@ footer{border-top:1px solid var(--border);margin-top:40px;padding:16px 0 24px;fo
     if(window.__BOOTED__){ try{window.initDashboard();}catch(e){} return; }
     status("Carregando dados…",true);
     if(!window.PLK_DB){ status("Sem conexão com o banco. Verifique a internet e recarregue.",true); return; }
-    window.PLK_DB.collection("dados").doc("atual").get().then(function(s){
-      if(!s.exists){ status("Dados ainda não publicados. Avise a Inteligência Comercial.",true); return; }
+    /* Quem tem visão restrita pede OUTRO documento — o que já vem sem o valor
+       e o desconto das unidades dos outros canais. Não é a tela que filtra:
+       é o banco que entrega menos. A regra do Firestore fecha a porta do
+       documento completo para esses logins; isto aqui só evita bater nela. */
+    var qual=((window.currentUser||{}).visao==="parcerias")?"parcerias":"atual";
+    window.PLK_DB.collection("dados").doc(qual).get().then(function(s){
+      if(!s.exists){ status(qual==="parcerias"
+        ? "A visão restrita ainda não foi publicada. Avise a Inteligência Comercial."
+        : "Dados ainda não publicados. Avise a Inteligência Comercial.",true); return; }
       var d=s.data()||{};
       window.__PLK_DATA__ = d.payloadStr ? JSON.parse(d.payloadStr) : (d.payload||d);
       status("",false);
@@ -886,12 +898,49 @@ function mesesDoPeriodo(p){
 let ATO=(function(){ try{ return localStorage.getItem("plk_ato")==="pago"?"pago":"geral"; }
                      catch(e){ return "geral"; } })();
 const ehPago=t=>kk(t.ato||"")==="PAGO";
-const TXPEND=TX.filter(t=>!ehPago(t));
+
+/* ---------------------------------------------------------------------
+   Linha agregada (só existe no acesso com visão restrita)
+
+   No acesso do Diretor de Parcerias o servidor não manda as vendas dos
+   outros canais uma a uma: manda uma linha por empreendimento, canal e mês,
+   sem unidade, sem desconto e sem gerente. Os totais são idênticos aos do
+   relatório completo, mas não há como saber por quanto uma unidade saiu.
+
+   Como uma dessas linhas pode conter venda paga e venda pendente ao mesmo
+   tempo, ela carrega a parte paga por dentro (valorPago/pesoPago) em vez de
+   se dividir em duas — dividir isolaria a venda pendente e entregaria
+   justamente o valor dela.
+   --------------------------------------------------------------------- */
+const parcelaPaga=t=> t.agregado
+  ? {valor:t.valorPago||0, peso:t.pesoPago||0}
+  : (ehPago(t) ? {valor:t.valor||0, peso:t.peso||0} : {valor:0,peso:0});
+const parcelaPend=t=>{ const p=parcelaPaga(t);
+  return {valor:(t.valor||0)-p.valor, peso:(t.peso||0)-p.peso}; };
+/* quantas VENDAS a linha representa (a agregada vale por várias) */
+const vendasPend=t=> t.agregado ? ((t.linhas||0)-(t.linhasPagas||0)) : (ehPago(t)?0:1);
+const QTDPEND=TX.reduce((s,t)=>s+vendasPend(t),0);
 
 function filtrar(f,p,todos){
   f=f||{};
-  return TX.filter(t=>{
-    if(!todos&&ATO==="pago"&&!ehPago(t)) return false;
+  const pago=!todos&&ATO==="pago";
+  const rec=[];
+  TX.forEach(t=>{
+    if(pago){
+      if(!t.agregado){ if(!ehPago(t)) return; }
+      else{
+        const x=parcelaPaga(t);
+        if(!x.valor&&!x.peso) return;
+        /* clone com só a parte paga: soma, contagem e gráfico obedecem ao
+           recorte sem que nenhuma outra função precise saber disso */
+        if(x.valor!==t.valor||x.peso!==t.peso)
+          t=Object.assign({},t,{valor:x.valor,peso:x.peso,
+            linhas:t.linhasPagas,linhasPagas:t.linhasPagas});
+      }
+    }
+    rec.push(t);
+  });
+  return rec.filter(t=>{
     if(p&&!dentro(t,p)) return false;
     if(f.mes!=null&&t.mes!==f.mes) return false;
     if(f.canal){ if(Array.isArray(f.canal)){ if(!f.canal.includes(t.canal)) return false; }
@@ -1123,10 +1172,21 @@ function menuFiltro(campo,rows,est,alvo,redesenhar){
 }
 
 function modalVendas(titulo,sub,rows,empilhar){
+  /* Único lugar do site que lista venda por venda. Filtrar aqui basta: as
+     linhas somadas dos outros canais nunca chegam a uma tabela de unidades,
+     venha o clique de onde vier — empreendimento, canal, gerente ou mês. */
+  const todas=rows;
+  rows=todas.filter(detalhavel);
+  const somadas=todas.length-rows.length;
+  const vgvSomado=todas.filter(t=>!detalhavel(t)).reduce((s,t)=>s+(t.valor||0),0);
+  const uniSomada=todas.filter(t=>!detalhavel(t)).reduce((s,t)=>s+(t.peso||0),0);
   const est={ord:"data",dir:1,filtros:{},visiveis:rows};
   const cfg={titulo,sub,html:"",render(body){
     const desenha=()=>{
-      body.innerHTML=tabelaVendas(rows,est);
+      body.innerHTML=(somadas?`<div class="avisoacesso">Seu acesso detalha as vendas de
+        <b>${esc(CANAL_VISIVEL)}</b>. As <b>${nfu(uniSomada)}</b> unidades dos demais canais
+        neste recorte (<b>${moeda(vgvSomado)}</b>) entram nos totais do relatório, mas não são
+        abertas unidade a unidade.</div>`:"")+tabelaVendas(rows,est);
       const v=est.visiveis;
       const m2r=m2DoRecorte(v);
       const un=unid(v);
@@ -1137,6 +1197,9 @@ function modalVendas(titulo,sub,rows,empilhar){
            <span>Ticket médio <b>${un?moeda(soma(v)/un):"—"}</b></span>
            ${m2r?`<span>Valor do m² <b>${moeda(m2r)}</b></span>`:""}
            <span style="margin-left:auto">Clique no cabeçalho para ordenar e filtrar</span>`
+        : somadas
+        ? `<span>Nenhuma venda de <b>${esc(CANAL_VISIVEL)}</b> neste recorte</span>
+           <span style="margin-left:auto">${nfu(uniSomada)} unidade(s) de outros canais não são detalhadas</span>`
         : `<span>Nenhuma linha</span><span style="margin-left:auto">Use "Limpar" no filtro para voltar</span>`;
       body.querySelectorAll(".fh").forEach(h=>h.addEventListener("click",e=>{
         e.stopPropagation();
@@ -1418,9 +1481,43 @@ function cfgNivel(){ const u=window.currentUser; return (u&&u.cfg)||""; }
 function podeVerCfg(){ return cfgNivel()==="edita"||cfgNivel()==="le"; }
 function podeEditarCfg(){ return cfgNivel()==="edita"; }
 function podeUsarChat(){ const u=window.currentUser; return !!(u&&(u.chat||u.user==="admin")); }
+
+/* =====================================================================
+   VISÃO RESTRITA — Diretor de Parcerias
+
+   Ele acompanha o resultado inteiro da empresa, mas não pode ver por quanto
+   nem com que desconto uma unidade foi vendida por outro canal.
+
+   O que protege isso NÃO é este arquivo: é o servidor. Quem tem visão
+   "parcerias" recebe do Firestore um documento diferente, em que as vendas
+   dos outros canais já vêm somadas por mês, sem unidade, sem desconto e sem
+   gerente. O dado proibido não chega no computador dele — nem pelo F12.
+
+   O que este trecho faz é o acabamento: esconde as abas que perderam a
+   matéria-prima e avisa, onde falta detalhe, que falta por causa do acesso.
+   Se alguém marcasse a visão restrita aqui e esquecesse a regra do
+   Firestore, a tela ficaria certa e o dado continuaria exposto — por isso a
+   engrenagem avisa em vermelho quando isso acontece.
+   ===================================================================== */
+const ABAS_FORA_PARCERIAS=["desconto","origem","vso"];
+function visaoDe(){ const u=window.currentUser; return (u&&u.visao)||""; }
+function visaoRestrita(){ return visaoDe()==="parcerias"; }
+const CANAL_VISIVEL="Parcerias";
+/* a linha veio somada do servidor: existe para o total fechar, não para ser
+   aberta. Vale tanto para o extrato quanto para qualquer contagem de linha. */
+const detalhavel=t=>!t.agregado;
 function pintaAcessos(){
   const b=$("#cfgBtn"); if(b) b.style.display=podeVerCfg()?"":"none";
   const c=$("#chatBtn"); if(c) c.style.display=podeUsarChat()?"":"none";
+  const r=visaoRestrita();
+  ABAS_FORA_PARCERIAS.forEach(p=>{
+    const t=document.querySelector(`.tab[data-p="${p}"]`);
+    if(t) t.style.display=r?"none":"";
+  });
+  /* se a aba escondida era a que estava aberta, volta para a Síntese */
+  const ab=document.querySelector(".tab.on");
+  if(r&&ab&&ABAS_FORA_PARCERIAS.indexOf(ab.dataset.p)>=0&&typeof mostrar==="function")
+    mostrar("sintese");
 }
 
 /* =====================================================================
@@ -1439,6 +1536,9 @@ function pintaAcessos(){
    escrita indevida são as regras do Firestore.
    ===================================================================== */
 const NIVEIS=[{v:"edita",r:"Edita o cadastro"},{v:"le",r:"Vê a engrenagem"},{v:"",r:"Só o relatório"}];
+/* Quanto do DADO a pessoa recebe — não é o mesmo que o nível da engrenagem.
+   A visão decide qual documento o navegador dela pede ao Firestore. */
+const VISOES=[{v:"",r:"Vê tudo"},{v:"parcerias",r:"Diretor Parcerias"}];
 const ACESSO_BASE=JSON.parse(JSON.stringify(window.PLK_ROLES||{}));
 let ACESSOS={}, SYNCAC="Somente os acessos originais do arquivo.";
 const loginOk=s=>/^[a-z0-9._-]{2,40}$/.test(String(s||"").trim().toLowerCase());
@@ -1448,9 +1548,10 @@ function aplicarAcessos(){
   const m=Object.assign({},ACESSO_BASE);
   Object.entries(ACESSOS).forEach(([u,c])=>{
     m[u]=Object.assign({},m[u]||{role:"leitor"},
-      {nome:c.nome||(m[u]||{}).nome||u,cfg:c.cfg||"",chat:!!c.chat});
+      {nome:c.nome||(m[u]||{}).nome||u,cfg:c.cfg||"",chat:!!c.chat,visao:c.visao||""});
+    if(c.visao==="parcerias") m[u].role="diretor_parcerias";
   });
-  if(m.admin){ m.admin.cfg="edita"; m.admin.chat=true; }
+  if(m.admin){ m.admin.cfg="edita"; m.admin.chat=true; m.admin.visao=""; }
   window.PLK_ROLES=m;
   /* quem já está logado sente a mudança na hora, sem novo login */
   const u=window.currentUser;
@@ -1483,6 +1584,8 @@ function pintaListaAcessos(){
   const nivelDe=u=>u==="admin"?"edita":((ACESSOS[u]||{}).cfg!=null&&ACESSOS[u]?ACESSOS[u].cfg:(ACESSO_BASE[u]||{}).cfg||"");
   const nomeDe=u=>(ACESSOS[u]||{}).nome||(ACESSO_BASE[u]||{}).nome||u;
   const chatDe=u=>u==="admin"?true:!!((ACESSOS[u]||ACESSO_BASE[u]||{}).chat);
+  const visaoDeU=u=>u==="admin"?"":((ACESSOS[u]||ACESSO_BASE[u]||{}).visao||"");
+  const restritos=logins.filter(u=>visaoDeU(u)==="parcerias");
   el.innerHTML=logins.map(u=>{
     const fixo=(u==="admin"), doArquivo=!!ACESSO_BASE[u];
     return `<div class="cfgrow" data-ac="${esc(u)}">
@@ -1491,6 +1594,10 @@ function pintaListaAcessos(){
         ${doArquivo?'<span class="badge-novo" style="background:var(--card-2);color:var(--muted)">do arquivo</span>':""}</span>
       <select class="selin" data-niv="1" ${fixo||!cfgEdicao?"disabled":""} style="margin-left:auto">
         ${NIVEIS.map(n=>`<option value="${n.v}" ${nivelDe(u)===n.v?"selected":""}>${n.r}</option>`).join("")}
+      </select>
+      <select class="selin" data-vis="1" ${fixo||!cfgEdicao?"disabled":""}
+        title="Quanto do dado esta pessoa recebe do servidor">
+        ${VISOES.map(n=>`<option value="${n.v}" ${visaoDeU(u)===n.v?"selected":""}>${n.r}</option>`).join("")}
       </select>
       <button class="sw ${chatDe(u)?"on":""}" data-acchat="1" ${fixo||!cfgEdicao?"disabled":""}
         title="Libera o assistente para esta pessoa" aria-label="Assistente"></button>
@@ -1504,12 +1611,22 @@ function pintaListaAcessos(){
       <input class="selin" id="acNome" placeholder="nome que aparece no topo" style="min-width:190px">
       <select class="selin" id="acNivel">
         ${NIVEIS.map(n=>`<option value="${n.v}">${n.r}</option>`).join("")}</select>
+      <select class="selin" id="acVisao">
+        ${VISOES.map(n=>`<option value="${n.v}">${n.r}</option>`).join("")}</select>
       <label style="font-size:12px;color:var(--ink-2);display:flex;align-items:center;gap:6px">
         <input type="checkbox" id="acChat"> assistente</label>
       <button class="txtbtn" id="acAdd">Adicionar</button></div>`:"")
+  + (restritos.length?`<div class="avisoacesso" style="margin:11px 0 0">
+      <b>Visão restrita ligada para ${restritos.map(u=>esc(u)+"@planik.app").join(", ")}.</b>
+      Esta lista sozinha não protege nada: ela decide o que a tela desenha. O que impede o
+      dado de sair do servidor é a regra do Firestore. Confirme que
+      <code>${restritos.map(u=>esc(u)+"@planik.app").join(", ")}</code> está na lista de
+      <code>visaoRestrita()</code> das regras — sem isso, o navegador continua recebendo
+      a planilha inteira e o desconto dos outros canais fica ao alcance de um F12.</div>`:"")
   + `<div class="cfgnote" style="margin-top:9px">${esc(SYNCAC)} · O login precisa existir no
       <b>Firebase Auth</b> como <code>login@planik.app</code>; esta lista decide quem entra, o que enxerga
-      e quem tem o <b>assistente</b>.
+      e quem tem o <b>assistente</b>. A coluna de <b>visão</b> decide qual documento do banco
+      o navegador da pessoa pede.
       <b>Quem não estiver nesta lista não entra</b> — mesmo com senha válida, a sessão é
       encerrada na entrada.</div>`;
 
@@ -1519,13 +1636,19 @@ function pintaListaAcessos(){
     const sel=row.querySelector("[data-niv]");
     if(sel) sel.addEventListener("change",()=>{
       ACESSOS[u]=Object.assign({},ACESSOS[u]||{},
-        {nome:nomeDe(u),cfg:sel.value,chat:chatDe(u)});
+        {nome:nomeDe(u),cfg:sel.value,chat:chatDe(u),visao:visaoDeU(u)});
+      salvarAcessos();
+    });
+    const vis=row.querySelector("[data-vis]");
+    if(vis) vis.addEventListener("change",()=>{
+      ACESSOS[u]=Object.assign({},ACESSOS[u]||{},
+        {nome:nomeDe(u),cfg:nivelDe(u),chat:chatDe(u),visao:vis.value});
       salvarAcessos();
     });
     const sw=row.querySelector("[data-acchat]");
     if(sw&&!sw.disabled) sw.addEventListener("click",()=>{
       ACESSOS[u]=Object.assign({},ACESSOS[u]||{},
-        {nome:nomeDe(u),cfg:nivelDe(u),chat:!chatDe(u)});
+        {nome:nomeDe(u),cfg:nivelDe(u),chat:!chatDe(u),visao:visaoDeU(u)});
       salvarAcessos();
     });
     const del=row.querySelector("[data-acdel]");
@@ -1540,6 +1663,7 @@ function pintaListaAcessos(){
     if(!loginOk(u)){ alert("Login inválido. Use só letras, números, ponto, hífen ou sublinhado."); return; }
     const nome=(document.getElementById("acNome").value||"").trim()||u;
     ACESSOS[u]={nome,cfg:document.getElementById("acNivel").value,
+                visao:(document.getElementById("acVisao")||{}).value||"",
                 chat:!!(document.getElementById("acChat")||{}).checked};
     salvarAcessos();
   });
@@ -2027,8 +2151,12 @@ function reRender(){ Object.keys(feito).forEach(k=>{ if(feito[k]) try{R[k]();}ca
    --------------------------------------------------------------------- */
 function ajusteAto(produto){
   if(ATO!=="pago") return {vgv:0,uni:0};
-  const pend=TX.filter(t=>!ehPago(t)&&(!produto||t.produto===produto));
-  return {vgv:soma(pend),uni:unid(pend)};
+  let vgv=0,uni=0;
+  TX.forEach(t=>{
+    if(produto&&t.produto!==produto) return;
+    const x=parcelaPend(t); vgv+=x.valor; uni+=x.peso;
+  });
+  return {vgv,uni};
 }
 function rSintese(){
   const S=porOrdem(D.sintese||[]);
@@ -2064,7 +2192,7 @@ function rSintese(){
       <th class="stickyc">Empreendimento</th><th class="r">VGV total</th><th class="r">Vendido (vida)</th>
       <th class="r">Disponível</th><th class="r">Un. total</th><th class="r">Un. vendidas</th>
       <th class="r">Un. livres</th><th class="r">% Vendido (Unidades)</th><th class="r">% Vendido (VGV)</th>
-      <th class="r">Valor do m² (${ANO})</th></tr></thead>
+      ${visaoRestrita()?"":`<th class="r">Valor do m² (${ANO})</th>`}</tr></thead>
     <tbody>${S.map(s=>{ const aj=ajusteAto(s.produto); return `
       <tr class="clickable" data-produto="${esc(s.produto)}">
         <td class="nm stickyc">${esc(s.produto)}</td>
@@ -2073,13 +2201,13 @@ function rSintese(){
         <td class="r">${nfu(s.uniVendidasVida-aj.uni)}</td><td class="r">${nfu(s.uniLivres+aj.uni)}</td>
         <td class="r"><b>${pct1(s.uniTotal?(s.uniVendidasVida-aj.uni)/s.uniTotal:null)}</b></td>
         <td class="r"><b>${pct1(s.vgvTotal?(s.vgvVendidoVida-aj.vgv)/s.vgvTotal:null)}</b></td>
-        <td class="r">${M2[s.produto]?moeda(M2[s.produto].valorM2):"—"}</td>
+        ${visaoRestrita()?"":`<td class="r">${M2[s.produto]?moeda(M2[s.produto].valorM2):"—"}</td>`}
       </tr>`; }).join("")}
       <tr class="tot"><td class="stickyc">Total</td><td class="r">${moeda(t.vgv)}</td>
         <td class="r">${moeda(t.vend)}</td><td class="r">${moeda(t.disp)}</td>
         <td class="r">${nf(t.uni)}</td><td class="r">${nfu(t.uv)}</td><td class="r">${nfu(t.livres)}</td>
         <td class="r">${pct1(t.uv/t.uni)}</td><td class="r">${pct1(t.vend/t.vgv)}</td>
-        <td class="r">${moeda(m2g)}</td></tr>
+        ${visaoRestrita()?"":`<td class="r">${moeda(m2g)}</td>`}</tr>
     </tbody></table></div>
   </div>`;
   $$("#p-sintese tr[data-produto]").forEach(tr=>tr.addEventListener("click",()=>{
@@ -2279,7 +2407,10 @@ function realProdCanal(canal,per){
   const real={},qtd={};
   filtrar(canal?{canal}:{},per).forEach(t=>{
     if(!real[t.produto]){ real[t.produto]=Array(12).fill(0); qtd[t.produto]=Array(12).fill(0); }
-    if(t.mes!=null){ real[t.produto][t.mes]+=t.valor; qtd[t.produto][t.mes]++; }
+    /* soma o PESO, não a linha: uma venda Fifith são duas linhas de meia
+       unidade, e uma linha somada da visão restrita vale por várias vendas.
+       Contar linha faria o balãozinho discordar do resto do relatório. */
+    if(t.mes!=null){ real[t.produto][t.mes]+=t.valor; qtd[t.produto][t.mes]+=(t.peso||0); }
   });
   return {real,qtd};
 }
@@ -2363,7 +2494,7 @@ function pintaVendas(){
       <td class="nm stickyc"><span class="lnk" data-prod="${esc(p.produto)}">${esc(p.produto)}</span></td>
       ${meses.map(i=>{ const r=p.real[i]||0;
         return `<td class="r" ${r>0?`style="cursor:pointer" data-cel="${i}" data-p="${esc(p.produto)}"
-          data-tip="<b>${esc(p.produto)}</b> · ${MESL[i]}<br>Vendas: <b>${moeda(r)}</b><br>Qtd: <b>${nf(p.qtd[i]||0)}</b><br><span style='color:var(--muted)'>clique para ver as vendas</span>"`:""}>
+          data-tip="<b>${esc(p.produto)}</b> · ${MESL[i]}<br>Vendas: <b>${moeda(r)}</b><br>Qtd: <b>${nfu(p.qtd[i]||0)}</b><br><span style='color:var(--muted)'>clique para ver as vendas</span>"`:""}>
           ${r>0?moeda(r):'<span style="color:var(--muted)">—</span>'}</td>`; }).join("")}
       <td class="r" style="border-left:1.5px solid var(--border)"><b>${moeda(p.real.reduce((a,b)=>a+b,0))}</b></td>
     </tr>`).join("");
@@ -2703,12 +2834,43 @@ function rGerentes(){
     const b=e.target.closest("button"); if(!b) return; vGerModo=b.dataset.m; rGerentes(); });
   vGerModo==="matriz"?pintaMatrizGer():pintaRankingGer();
 }
+/* No acesso restrito as vendas dos outros canais chegam somadas e sem
+   gerente — então o gerente de House não sai do extrato, sai do bloco de
+   metas e realizado, que é mensal. A diferença aparece em duas coisas, e as
+   duas são avisadas na tela: não há data da última venda, e um período que
+   corta o mês pela metade conta o mês inteiro. */
+function gerDeBloco(){
+  const ms=mesesDoPeriodo(perGer);
+  const por={}; let fora=0;
+  (D.gerenteMes||[]).forEach(x=>{
+    if(x.bloco!=="House") return;            // Lançadora e Interna não entram na aba
+    const mes=Array(12).fill(0);
+    ms.forEach(i=>{ mes[i]=(x.mes||[])[i]||0; });
+    const vgv=mes.reduce((a,b)=>a+b,0);
+    if(!vgv) return;
+    /* mesma regra do extrato: quem não está ativo no cadastro não aparece no
+       ranking, mas o VGV dele continua contado em "fora do time" */
+    if(!ativo(x.nome)){ fora+=vgv; return; }
+    por[x.nome]={vgv, qtd:ms.reduce((s,i)=>s+(((x.qtd||[])[i])||0),0),
+      mes, ult:null, semData:true};
+  });
+  return {por,fora};
+}
 function gerentesDoRecorte(){
   const canal=(VG.find(v=>v.id===vGer)||{}).canal;
   const rows=filtrar({canal},perGer);
   const por={};
   let foraDoTime=0;
-  rows.forEach(t=>{ const g=t.gerente||"—"; if(kk(g)==="INTERNA") return;
+  const restrito=visaoRestrita();
+  if(restrito&&vGer!=="parc"){
+    const b=gerDeBloco();
+    Object.assign(por,b.por); foraDoTime+=b.fora;
+  }
+  rows.forEach(t=>{
+    /* linha somada não tem gerente: já entrou pelo bloco, não pode entrar
+       de novo aqui nem cair em "fora do time" */
+    if(restrito&&!detalhavel(t)) return;
+    const g=t.gerente||"—"; if(kk(g)==="INTERNA") return;
     if(!ativo(g)){ foraDoTime+=t.valor; return; }          // só gerentes ativos no cadastro
     (por[g]=por[g]||{vgv:0,qtd:0,mes:Array(12).fill(0),ult:null});
     por[g].vgv+=t.valor; por[g].qtd+=(t.peso||0); if(t.mes!=null) por[g].mes[t.mes]+=t.valor;
@@ -2727,7 +2889,9 @@ function gerentesDoRecorte(){
    tela, não contra hoje: olhando o 1º trimestre, "há 200 dias" não diria nada.
    Passa de 30 dias sem vender e o número fica em vermelho — é o sinal que a
    diretoria procura quando pergunta quem não está entregando. */
-function ultVenda(iso){
+function ultVenda(iso,semData){
+  if(semData) return '<span style="color:var(--muted)" title="Fora de Parcerias o seu acesso'
+    +' recebe o resultado por mês fechado, sem a data de cada venda">não detalhada</span>';
   if(!iso) return '<span style="color:var(--muted)">sem venda</span>';
   const ref=(perGer.fim>hojeISO()?hojeISO():perGer.fim);
   const d=diasEntre(iso,ref);
@@ -2760,7 +2924,7 @@ function pintaRankingGer(){
         <td class="nm stickyc"><span class="lnk" data-abrir="1">${rotGer(g.nome)}</span></td>
         <td class="r"><b>${moeda(g.vgv)}</b></td><td class="r">${nfu(g.qtd)}</td>
         <td class="r">${g.qtd?moeda(g.vgv/g.qtd):"—"}</td>
-        <td class="r">${ultVenda(g.ult)}</td><td class="r">${pct1(g.vgv/total)}</td>
+        <td class="r">${ultVenda(g.ult,g.semData)}</td><td class="r">${pct1(g.vgv/total)}</td>
         <td class="r">${m?moeda(m):"—"}</td><td class="c">${stPill(a)}</td>
         <td><span class="spark" data-exp="1" title="Ampliar mês a mês">${spark(g.mes,"var(--s1)")}</span></td></tr>`;
     }).join("")}
@@ -2786,6 +2950,20 @@ function pintaRankingGer(){
   });
 }
 function pintaMatrizGer(){
+  /* Gerente × Empreendimento é o cruzamento mais fino da aba. Fora de
+     Parcerias o acesso restrito não tem esse cruzamento — e não tem de
+     propósito: reconstruí-lo exigiria mandar o VGV de cada gerente em cada
+     empreendimento, e é justamente aí que uma venda única volta a aparecer
+     sozinha, com o valor à mostra. O ranking continua completo. */
+  if(visaoRestrita()&&vGer!=="parc"){
+    document.getElementById("gCorpo").innerHTML=`
+    <div class="card"><div class="hd"><div class="h">Quem vendeu o quê</div></div>
+      <div class="avisoacesso" style="margin:0">O cruzamento de gerente por empreendimento
+        está disponível no seu acesso apenas para <b>${esc(CANAL_VISIVEL)}</b> — escolha
+        <b>Parcerias</b> no seletor acima. O <b>Ranking</b> mostra todos os gerentes, de
+        todos os canais, com VGV, quantidade, meta e atingimento.</div></div>`;
+    return;
+  }
   const {canal,lista}=gerentesDoRecorte();
   const ativos=new Set(lista.map(g=>kk(g.nome)));
   const prods=PRODUTOS.filter(p=>TX.some(t=>t.produto===p));
@@ -3429,6 +3607,8 @@ function sincronizaDia(){
   Object.keys(PERIODOS).forEach(k=>{ if(sincHoje(PERIODOS[k])) delete feito[k]; });
 }
 function mostrar(p){
+  /* a aba escondida também não abre por chamada direta nem pelo endereço */
+  if(visaoRestrita()&&ABAS_FORA_PARCERIAS.indexOf(p)>=0) p="sintese";
   sincronizaDia();
   $$(".tab").forEach(t=>t.classList.toggle("on",t.dataset.p===p));
   $$(".panel").forEach(s=>s.classList.toggle("on",s.id==="p-"+p));
@@ -3662,7 +3842,7 @@ function pintaAto(){
   $$("#atoTgl button").forEach(b=>b.classList.toggle("on",b.dataset.a===ATO));
   const c=$("#ftAto");
   if(c) c.textContent=ATO==="pago"
-    ? `Recorte ATO PAGO · ${nf(TXPEND.length)} venda(s) pendente(s) fora da conta`
+    ? `Recorte ATO PAGO · ${nf(QTDPEND)} venda(s) pendente(s) fora da conta`
     : "";
 }
 $("#atoTgl").addEventListener("click",e=>{
@@ -3678,7 +3858,7 @@ carregarAcessosDoBanco();
 $("#hdPeriodo").textContent=`Janeiro a Dezembro de ${ANO}`;
 $("#hdUpd").textContent="Atualizado em "+((D.meta&&D.meta.atualizado)||"—");
 $("#ftUpd").textContent="Última atualização da planilha: "+((D.meta&&D.meta.atualizado)||"—");
-$("#ftVer").textContent=`Inteligência Comercial ${ANO} · v36 · assistente e log`;
+$("#ftVer").textContent=`Inteligência Comercial ${ANO} · v37 · assistente, log e visão por canal`;
 $("#hdTitle").textContent=`Inteligência Comercial ${ANO}`;
 
 window.initDashboard=function(){ Object.keys(feito).forEach(k=>delete feito[k]);
