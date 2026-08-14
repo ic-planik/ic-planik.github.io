@@ -50,6 +50,11 @@ header.top{background:var(--card);border-bottom:1px solid var(--border);position
 .brand .ttl{font-size:14px;font-weight:600;color:var(--ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .chip{font-size:11.5px;color:var(--muted);background:var(--card-2);border:1px solid var(--border);
   border-radius:99px;padding:4px 10px;white-space:nowrap}
+/* Em tela menor o "Sair" caía sozinho numa segunda linha do cabeçalho. A data
+   da planilha é a informação mais dispensável ali — ela continua no rodapé e
+   dentro de cada modal. Some ela primeiro; o período, depois. */
+@media(max-width:1220px){ #hdUpd{display:none} }
+@media(max-width:1080px){ #hdPeriodo{display:none} }
 .iconbtn{background:var(--card-2);border:1px solid var(--border);border-radius:8px;width:34px;height:34px;
   cursor:pointer;display:grid;place-items:center;font-size:14px;flex:0 0 auto}
 .iconbtn:hover{border-color:var(--gold)}
@@ -189,7 +194,10 @@ svg{display:block;width:100%;height:auto;overflow:hidden}
 .modal .mb{padding:0;max-height:min(70vh,720px);overflow:auto}
 .modal .mf{padding:10px 17px;border-top:1px solid var(--border);background:var(--card-2);font-size:12px;
   color:var(--muted);display:flex;gap:14px;flex-wrap:wrap}
+/* o display:block anulava o atributo hidden e sobrava um quadrado de 46px em
+   todo modal sem avatar — o [hidden] tem de vencer, e por isso vem depois */
 .ovava{width:46px;height:46px;border-radius:50%;flex:0 0 auto;display:block;margin-top:1px}
+.ovava[hidden]{display:none}
 @media(max-width:640px){ .ovava{width:40px;height:40px} }
 .x{margin-left:auto;background:none;border:0;font-size:22px;line-height:1;cursor:pointer;color:var(--muted);padding:0 3px}
 .crumb{background:none;border:0;padding:0;cursor:pointer;color:var(--gold);font-size:12.5px;font-weight:600}
@@ -307,6 +315,9 @@ svg{display:block;width:100%;height:auto;overflow:hidden}
 .msg.ia{display:flex;gap:11px;align-items:flex-start}
 .msg.ia .ava{width:36px;height:36px;border-radius:50%;flex:0 0 auto;margin-top:-2px}
 .msg.ia .txt{min-width:0}
+/* resposta arquivada no log: mesma tipografia da conversa, sem o balão */
+.logresp{font-size:13.5px;line-height:1.62;color:var(--ink-2)}
+.logresp p{margin:0 0 10px}.logresp ul{margin:0 0 10px 18px}.logresp b{color:var(--ink)}
 .chatwrap{display:flex;flex-direction:column;height:min(62vh,620px)}
 .chatlog{flex:1;overflow-y:auto;padding:16px 17px;display:flex;flex-direction:column;gap:14px}
 .chatvazio{color:var(--muted);font-size:13px;line-height:1.6;padding:6px 0 2px}
@@ -494,6 +505,33 @@ footer{border-top:1px solid var(--border);margin-top:40px;padding:16px 0 24px;fo
       fbReady=true;
     }
   }catch(e){ console.log("firebase init:",e); }
+  /* ------------------------------------------------------------------
+     REGISTRO DE USO (coleção "log")
+
+     Grava dois tipos de evento: entrada na plataforma e pergunta feita ao
+     assistente, com a resposta. Só o admin lê e só o admin apaga — quem
+     escreve não consegue nem ler o que escreveu, e isso está nas regras do
+     Firestore, não só aqui na tela.
+
+     O campo "mes" existe para a limpeza: apagar um mês inteiro é uma
+     consulta por igualdade, sem índice composto e sem varrer a coleção.
+
+     Falha de escrita é engolida de propósito. O log serve à gestão; se ele
+     cair, o relatório e o assistente continuam funcionando normalmente —
+     ninguém pode ficar sem responder à diretoria porque o log falhou.
+     ------------------------------------------------------------------ */
+  window.PLK_LOG=function(dados){
+    try{
+      if(!window.PLK_DB) return;
+      var u=window.currentUser||{};
+      var d=new Date(), p=function(x){return (x<10?"0":"")+x;};
+      var dia=d.getFullYear()+"-"+p(d.getMonth()+1)+"-"+p(d.getDate());
+      window.PLK_DB.collection("log").add(Object.assign({
+        ts:Date.now(), dia:dia, mes:dia.slice(0,7),
+        user:u.user||"?", nome:u.nome||u.user||"?"
+      },dados||{})).catch(function(){});
+    }catch(e){}
+  };
   var LABEL={admin:"Admin",diretor_online:"Diretor House",diretor_parcerias:"Diretor Parcerias",
              gerente:"Gerente",leitor:"Leitor"};
   function roleFor(u){ var r=window.PLK_ROLES[u];
@@ -530,6 +568,14 @@ footer{border-top:1px solid var(--border);margin-top:40px;padding:16px 0 24px;fo
     if(b) b.innerHTML="👤 "+f.nome+'<span class="role">'+(LABEL[f.role]||"Leitor")+"</span>";
     document.body.classList.remove("locked");
     var o=$("loginOverlay"); if(o) o.style.display="none";
+    /* uma linha por abertura da plataforma, não por recarga de aba: o
+       onAuthStateChanged dispara de novo a cada F5 e o log viraria ruído */
+    try{
+      if(!sessionStorage.getItem("plk_acesso")){
+        sessionStorage.setItem("plk_acesso","1");
+        window.PLK_LOG({tipo:"acesso"});
+      }
+    }catch(e){ window.PLK_LOG({tipo:"acesso"}); }
     load();
   }
   function status(m,s){ var a=$("dataStatus"),b=$("dataStatusMsg");
@@ -1513,11 +1559,274 @@ function abrirCfg(){
         <div id="acBody"></div></div>`,
     rodape:`<span class="cfgnote" id="cfgSync"></span>
             <span style="margin-left:auto;display:flex;gap:7px;flex-wrap:wrap">
+              ${podeVerLog()?'<button class="txtbtn" id="cfgLog">Log de acessos</button>':""}
               <button class="txtbtn" id="cfgConf">Conferir com o Excel</button>
               <button class="txtbtn" id="cfgExp">Exportar</button>
               <button class="txtbtn" id="cfgImp">Importar</button>
               <button class="txtbtn" id="cfgRst">Restaurar da planilha</button></span>`,
     render(){ pintaCfg(); pintaListaAcessos(); }});
+}
+
+/* =====================================================================
+   LOG DE USO — só o Admin
+
+   Duas perguntas de gestão que o relatório não respondia: quem realmente
+   abre a plataforma, e o que estão perguntando ao assistente. A segunda é
+   a mais valiosa: a lista de perguntas é o mapa do que a diretoria quer
+   saber e o relatório ainda não mostra na tela.
+
+   A porta de verdade é a regra do Firestore (leitura e exclusão só para
+   admin@planik.app). O teste daqui esconde o botão; não é ele que protege.
+
+   A consulta usa faixa de data sobre "ts" e ordena pelo mesmo campo —
+   assim o Firestore resolve com o índice que já existe, sem pedir índice
+   composto no console. Filtro de tipo e de pessoa é feito depois, na tela,
+   sobre o que já veio.
+   ===================================================================== */
+function podeVerLog(){ return ((window.currentUser||{}).user==="admin"); }
+
+let LOG=[], LOGST="", LOGCARREGANDO=false, LOGCONFIRMA="";
+const LOGF={de:"",ate:"",tipo:"",quem:""};
+const TETO_LOG=2000;
+
+function dtHora(ts){
+  const d=new Date(ts), p=x=>(x<10?"0":"")+x;
+  return p(d.getDate())+"/"+p(d.getMonth()+1)+"/"+d.getFullYear()
+    +" "+p(d.getHours())+":"+p(d.getMinutes());
+}
+function isoHoje(dias){
+  const d=new Date(); if(dias) d.setDate(d.getDate()-dias);
+  const p=x=>(x<10?"0":"")+x;
+  return d.getFullYear()+"-"+p(d.getMonth()+1)+"-"+p(d.getDate());
+}
+const MESNOME=["janeiro","fevereiro","março","abril","maio","junho","julho",
+               "agosto","setembro","outubro","novembro","dezembro"];
+function mesPorExtenso(m){            /* "2026-07" → "julho de 2026" */
+  const p=String(m||"").split("-");
+  return (MESNOME[(+p[1]||1)-1]||"?")+" de "+(p[0]||"?");
+}
+
+function carregarLog(){
+  if(!window.PLK_DB){ LOGST="Sem conexão com o banco."; pintaLog(); return; }
+  LOGCARREGANDO=true; LOGCONFIRMA=""; pintaLog();
+  const ini=new Date(LOGF.de+"T00:00:00").getTime();
+  const fim=new Date(LOGF.ate+"T23:59:59").getTime();
+  window.PLK_DB.collection("log")
+    .where("ts",">=",ini).where("ts","<=",fim)
+    .orderBy("ts","desc").limit(TETO_LOG).get()
+    .then(sn=>{
+      LOG=[]; sn.forEach(d=>LOG.push(Object.assign({_id:d.id},d.data())));
+      LOGST = LOG.length>=TETO_LOG
+        ? `Mostrando os ${nf(TETO_LOG)} registros mais recentes do período — estreite as datas para ver o resto.`
+        : `${nf(LOG.length)} registro(s) no período.`;
+      LOGCARREGANDO=false; pintaLog();
+    })
+    .catch(e=>{
+      LOG=[]; LOGCARREGANDO=false;
+      LOGST = String((e&&e.code)||"").indexOf("permission")>=0
+        ? "O banco recusou a leitura. Falta publicar a regra do Firestore para a coleção log."
+        : "Não consegui ler o log agora. Tente de novo em instantes.";
+      pintaLog();
+    });
+}
+
+function apagarMes(mes){
+  if(!window.PLK_DB) return;
+  LOGST="Apagando "+mesPorExtenso(mes)+"…"; LOGCARREGANDO=true; pintaLog();
+  let total=0;
+  const rodada=()=>window.PLK_DB.collection("log").where("mes","==",mes).limit(300).get()
+    .then(sn=>{
+      if(sn.empty){
+        LOGCARREGANDO=false; LOGCONFIRMA="";
+        LOGST=total?`${nf(total)} registro(s) de ${mesPorExtenso(mes)} apagados.`
+                   :`Não havia registro de ${mesPorExtenso(mes)}.`;
+        carregarLog(); return;
+      }
+      const lote=window.PLK_DB.batch();
+      sn.forEach(d=>lote.delete(d.ref));
+      total+=sn.size;
+      return lote.commit().then(rodada);          /* de 300 em 300 até zerar */
+    })
+    .catch(()=>{
+      LOGCARREGANDO=false;
+      LOGST="O banco recusou a exclusão. Confira a regra do Firestore para a coleção log.";
+      pintaLog();
+    });
+  rodada();
+}
+
+/* Prévia de uma linha: o markdown do assistente vira texto corrido. Sem isso a
+   tabela mostra "**O Core Klabin é o gargalo.**" com os asteriscos à mostra. */
+function resumoResp(t){
+  return String(t||"").replace(/\*\*/g,"").replace(/^[\s>#-]+/gm,"")
+    .replace(/\s+/g," ").trim().slice(0,150);
+}
+function logFiltrado(){
+  return LOG.filter(r=>
+    (!LOGF.tipo || r.tipo===LOGF.tipo) &&
+    (!LOGF.quem || r.user===LOGF.quem));
+}
+
+function pintaLog(){
+  const el=document.getElementById("logBody"); if(!el) return;
+  const linhas=logFiltrado();
+  const perg=linhas.filter(r=>r.tipo==="pergunta");
+  const aces=linhas.filter(r=>r.tipo==="acesso");
+  const pessoas=new Set(linhas.map(r=>r.user)).size;
+  const falhas=perg.filter(r=>r.erro).length;
+  const tempo=perg.filter(r=>r.segundos).reduce((s,r)=>s+r.segundos,0);
+  const medio=perg.filter(r=>r.segundos).length
+    ? tempo/perg.filter(r=>r.segundos).length : null;
+
+  /* quem apareceu no período, para o seletor de pessoa */
+  const quens={}; LOG.forEach(r=>{ quens[r.user]=r.nome||r.user; });
+  /* meses presentes, para a limpeza — só se oferece apagar o que existe */
+  const meses=Array.from(new Set(LOG.map(r=>r.mes).filter(Boolean))).sort().reverse();
+
+  const cartao=(rot,val,sub,cor)=>`<div class="card kpi" style="${cor?`border-color:${cor}`:""}">
+    <div class="lab">${rot}</div><div class="val"${cor?` style="color:${cor}"`:""}>${val}</div>
+    <div class="sub">${sub}</div></div>`;
+
+  el.innerHTML=`
+    <div class="cfgrow" style="border-bottom:0;gap:9px">
+      <label style="font-size:12px;color:var(--ink-2)">De
+        <input type="date" class="selin" id="logDe" value="${LOGF.de}" style="margin-left:5px"></label>
+      <label style="font-size:12px;color:var(--ink-2)">Até
+        <input type="date" class="selin" id="logAte" value="${LOGF.ate}" style="margin-left:5px"></label>
+      <select class="selin" id="logTipo">
+        <option value="">Tudo</option>
+        <option value="acesso" ${LOGF.tipo==="acesso"?"selected":""}>Só acessos</option>
+        <option value="pergunta" ${LOGF.tipo==="pergunta"?"selected":""}>Só perguntas</option>
+      </select>
+      <select class="selin" id="logQuem">
+        <option value="">Todas as pessoas</option>
+        ${Object.keys(quens).sort().map(u=>
+          `<option value="${esc(u)}" ${LOGF.quem===u?"selected":""}>${esc(quens[u])}</option>`).join("")}
+      </select>
+      <button class="txtbtn" id="logAplica">Aplicar</button>
+      <span style="margin-left:auto;display:flex;gap:7px">
+        <button class="txtbtn" data-logdias="7">7 dias</button>
+        <button class="txtbtn" data-logdias="30">30 dias</button>
+        <button class="txtbtn" data-logdias="365">Ano</button></span>
+    </div>
+
+    <div class="grid g3" style="margin:12px 0 14px">
+      ${cartao("Acessos",nf(aces.length),`${nf(pessoas)} pessoa(s) diferente(s)`)}
+      ${cartao("Perguntas ao assistente",nf(perg.length),
+        medio!=null?`${nf(medio,1)} s de resposta em média`:"—")}
+      ${cartao("Perguntas com erro",nf(falhas),
+        perg.length?`${nf(perg.length?falhas/perg.length*100:0,1)}% das perguntas`:"—",
+        falhas?"var(--warn)":"")}
+    </div>
+
+    ${linhas.length?`<div class="scroll"><table class="tb"><thead><tr>
+      <th style="white-space:nowrap">Quando</th><th>Pessoa</th><th>Evento</th>
+      <th style="width:52%">Conteúdo</th></tr></thead><tbody>
+      ${linhas.map((r,i)=>`<tr class="${r.tipo==="pergunta"?"clickable":""}" data-logi="${i}">
+        <td class="r" style="color:var(--muted)">${dtHora(r.ts)}</td>
+        <td class="nm">${esc(r.nome||r.user||"?")}
+          <span style="display:block;font-size:10.5px;color:var(--muted);font-weight:400">${esc(r.user||"")}</span></td>
+        <td>${r.tipo==="acesso"?"Entrou na plataforma"
+              :`Perguntou${r.erro?' <span class="selo erro" style="width:18px;height:18px;font-size:11px">!</span>':""}`}</td>
+        <td style="white-space:normal">${r.tipo==="acesso"?'<span style="color:var(--muted)">—</span>'
+          :`<b>${esc(String(r.pergunta||"").slice(0,180))}</b>
+            <span style="display:block;color:var(--muted);font-size:11.5px;margin-top:3px">
+              ${esc(resumoResp(r.resposta))}${
+                String(r.resposta||"").length>150?"… <b>ver completa</b>":""}</span>`}</td>
+      </tr>`).join("")}
+      </tbody></table></div>`
+    :`<div class="cfgnote" style="padding:18px 2px">${LOGCARREGANDO?"Carregando…":"Nenhum registro com esses filtros."}</div>`}
+
+    <div class="grouphd" style="margin-top:18px">Limpeza</div>
+    <div class="sub" style="margin:-4px 0 9px">Apaga o mês inteiro, de todas as pessoas.
+      Não tem como desfazer — exporte antes se for precisar depois.</div>
+    <div class="cfgrow" style="border-bottom:0">
+      <select class="selin" id="logMes" ${meses.length?"":"disabled"}>
+        ${meses.length?meses.map(m=>`<option value="${m}" ${LOGCONFIRMA===m?"selected":""}>${mesPorExtenso(m)}</option>`).join("")
+                     :'<option>nenhum mês carregado</option>'}
+      </select>
+      <button class="txtbtn" id="logDel" ${meses.length&&!LOGCARREGANDO?"":"disabled"}
+        style="${LOGCONFIRMA?"border-color:var(--bad);color:var(--bad)":""}">
+        ${LOGCONFIRMA?"Confirmar exclusão de "+mesPorExtenso(LOGCONFIRMA):"Apagar o mês"}</button>
+      ${LOGCONFIRMA?'<button class="txtbtn" id="logCanc">Cancelar</button>':""}
+      <span class="cfgnote" style="margin-left:auto">Só os meses que apareceram na consulta acima.</span>
+    </div>`;
+
+  document.getElementById("logAplica").addEventListener("click",()=>{
+    LOGF.de=document.getElementById("logDe").value||LOGF.de;
+    LOGF.ate=document.getElementById("logAte").value||LOGF.ate;
+    LOGF.tipo=document.getElementById("logTipo").value;
+    LOGF.quem=document.getElementById("logQuem").value;
+    carregarLog();
+  });
+  el.querySelectorAll("[data-logdias]").forEach(b=>b.addEventListener("click",()=>{
+    LOGF.de=isoHoje(+b.dataset.logdias); LOGF.ate=isoHoje(0); carregarLog();
+  }));
+  ["logTipo","logQuem"].forEach(id=>{
+    const s=document.getElementById(id);
+    if(s) s.addEventListener("change",()=>{
+      LOGF.tipo=document.getElementById("logTipo").value;
+      LOGF.quem=document.getElementById("logQuem").value;
+      pintaLog();                                  /* filtro de tela, sem ir ao banco */
+    });
+  });
+  el.querySelectorAll("tr[data-logi]").forEach(tr=>tr.addEventListener("click",()=>{
+    const r=linhas[+tr.dataset.logi]; if(!r||r.tipo!=="pergunta") return;
+    abrirLogItem(r);
+  }));
+  const del=document.getElementById("logDel");
+  if(del) del.addEventListener("click",()=>{
+    const m=(document.getElementById("logMes")||{}).value;
+    if(!m) return;
+    if(LOGCONFIRMA===m) apagarMes(m);              /* segundo clique confirma */
+    else { LOGCONFIRMA=m; pintaLog(); }
+  });
+  const canc=document.getElementById("logCanc");
+  if(canc) canc.addEventListener("click",()=>{ LOGCONFIRMA=""; pintaLog(); });
+  const sy=document.getElementById("logSync"); if(sy) sy.textContent=LOGST;
+}
+
+function abrirLogItem(r){
+  abrir({titulo:"Pergunta de "+(r.nome||r.user||"?"),
+    sub:`${dtHora(r.ts)} · ${r.segundos?nf(r.segundos,1)+" s de resposta":"tempo não registrado"}${
+      r.erro?' · <b style="color:var(--bad)">terminou em erro</b>':""}`,
+    html:`<div style="padding:16px 17px">
+      <div class="grouphd">Pergunta</div>
+      <div style="margin:6px 0 16px;font-weight:600">${esc(r.pergunta||"—")}</div>
+      <div class="grouphd">Resposta</div>
+      <div class="logresp">${fmtIA(String(r.resposta||"—"))}</div></div>`,
+    rodape:`<span>Registro de <b>${esc(r.user||"?")}</b></span>
+            <span style="margin-left:auto">turno ${r.turno||1} da conversa</span>`},
+  true);
+}
+
+function abrirLog(){
+  if(!podeVerLog()) return;                         // porta fechada na chamada direta
+  if(!LOGF.de){ LOGF.de=isoHoje(30); LOGF.ate=isoHoje(0); }
+  abrir({titulo:"Log de uso da plataforma",
+    sub:"Entradas na plataforma e perguntas feitas ao assistente. Visível só para o Admin.",
+    html:`<div id="logBody" style="padding:14px 17px"></div>`,
+    rodape:`<span class="cfgnote" id="logSync"></span>
+            <span style="margin-left:auto;display:flex;gap:7px">
+              <button class="txtbtn" id="logCsv">Exportar CSV</button>
+              <button class="txtbtn" id="logRec">Recarregar</button></span>`,
+    render(){
+      pintaLog(); carregarLog();
+      document.getElementById("logRec").addEventListener("click",carregarLog);
+      document.getElementById("logCsv").addEventListener("click",()=>{
+        const asp=v=>'"'+String(v==null?"":v).replace(/"/g,'""')+'"';
+        const linhas=[["Data e hora","Login","Nome","Evento","Pergunta","Resposta","Segundos","Erro"]]
+          .concat(logFiltrado().map(r=>[dtHora(r.ts),r.user,r.nome,
+            r.tipo==="acesso"?"Acesso":"Pergunta",r.pergunta||"",r.resposta||"",
+            r.segundos==null?"":String(r.segundos).replace(".",","),r.erro?"sim":""]));
+        /* BOM para o Excel abrir os acentos certos */
+        const b=new Blob(["﻿"+linhas.map(l=>l.map(asp).join(";")).join("\r\n")],
+          {type:"text/csv;charset=utf-8"});
+        const a=document.createElement("a"); a.href=URL.createObjectURL(b);
+        a.download=`log_planik_${LOGF.de}_a_${LOGF.ate}.csv`; a.click();
+      });
+    }},
+  true);
 }
 
 /* =====================================================================
@@ -1676,6 +1985,9 @@ function pintaCfg(){
   const cnf=document.getElementById("cfgConf");
   if(cnf&&!cnf.dataset.lig){ cnf.dataset.lig=1;
     cnf.addEventListener("click",abrirConferencia); }
+  const lg=document.getElementById("cfgLog");
+  if(lg&&!lg.dataset.lig){ lg.dataset.lig=1;
+    lg.addEventListener("click",abrirLog); }
   const exp=document.getElementById("cfgExp");
   if(exp&&!exp.dataset.lig){ exp.dataset.lig=1;
     exp.addEventListener("click",()=>{
@@ -3204,6 +3516,7 @@ async function chatEnviar(texto){
   chatOcupado = true; chatBotao();
   chatPinta();
   const iAlvo = chatHist.length-1;
+  const t0 = Date.now();
   const pinta = txt => {
     chatHist[iAlvo].content = txt;
     const log=$("#chatLog"); if(!log) return;
@@ -3284,6 +3597,15 @@ async function chatEnviar(texto){
     chatHist[iAlvo] = {role:"assistant",content:m,erro:true};
   }finally{
     chatOcupado = false; chatBotao(); chatPinta();
+    /* a pergunta e a resposta ficam registradas para o admin. Erro também
+       entra: uma sequência de falhas é justamente o que a gestão precisa ver. */
+    const fim = chatHist[iAlvo]||{};
+    if(window.PLK_LOG) window.PLK_LOG({
+      tipo:"pergunta", pergunta:t.slice(0,2000),
+      resposta:String(fim.content||"").slice(0,20000),
+      erro:!!fim.erro, segundos:Math.round((Date.now()-t0)/100)/10,
+      turno:Math.ceil(chatHist.length/2)
+    });
     const ta2=$("#chatIn"); if(ta2) ta2.focus();
   }
 }
@@ -3309,7 +3631,8 @@ function abrirChat(){
       </form>
       <div class="chataviso">Jorge é o assistente da Inteligência Comercial. Ele lê
         apenas os dados deste relatório — não tem informação de mercado, de clientes
-        nem de contratos — e pode errar. Confira os números nas abas antes de decidir.</div>`,
+        nem de contratos — e pode errar. Confira os números nas abas antes de decidir.
+        As perguntas e as respostas ficam registradas para a Inteligência Comercial.</div>`,
     render(){
       chatPinta(); chatBotao();
       const f=$("#chatForm"), ta=$("#chatIn");
@@ -3355,7 +3678,7 @@ carregarAcessosDoBanco();
 $("#hdPeriodo").textContent=`Janeiro a Dezembro de ${ANO}`;
 $("#hdUpd").textContent="Atualizado em "+((D.meta&&D.meta.atualizado)||"—");
 $("#ftUpd").textContent="Última atualização da planilha: "+((D.meta&&D.meta.atualizado)||"—");
-$("#ftVer").textContent=`Inteligência Comercial ${ANO} · v35 · assistente`;
+$("#ftVer").textContent=`Inteligência Comercial ${ANO} · v36 · assistente e log`;
 $("#hdTitle").textContent=`Inteligência Comercial ${ANO}`;
 
 window.initDashboard=function(){ Object.keys(feito).forEach(k=>delete feito[k]);
