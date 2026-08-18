@@ -1325,9 +1325,13 @@ function barrasMes(el,series,o){
   const dentroF=mi=>!foco||foco.has(mi);
   const W=780,H=o.altura||280,pad={t:o.ating?28:18,r:12,b:28,l:o.padL||86};
   const iw=W-pad.l-pad.r, ih=H-pad.t-pad.b, n=meses.length;
-  /* o piso do eixo era fixo em 1, o que achatava qualquer série em fração
-     (VSO em 0,26 virava uma barra rente ao chão). Agora quem chama diz. */
-  const max=Math.max(o.minimo!=null?o.minimo:1,
+  /* O piso do eixo era 1. Em gráfico de reais isso é inofensivo — um real não
+     muda escala nenhuma quando o eixo vai a milhões. Em gráfico de FRAÇÃO é
+     desastre: o VSO, que vai a 0,071, era desenhado num eixo que ia até 1,14,
+     ou seja 114%, e as barras viravam tracinhos no chão. O piso agora é
+     praticamente zero: serve só para não dividir por zero numa série vazia,
+     e deixa a escala seguir o dado em qualquer unidade. */
+  const max=Math.max(o.minimo!=null?o.minimo:1e-9,
     ...series.flatMap(s=>meses.map(i=>s.valores[i]||0)))*1.14;
   const fmtv=o.fmtv||(v=>nf(v,0)), fmtt=o.fmtt||moeda;
   const band=iw/n, x=k=>pad.l+band*k, y=v=>pad.t+ih-(v/max)*ih;
@@ -1372,7 +1376,7 @@ function linhas(el,series,o){
   const W=o.largura||(o.rotulos?1060:780);
   const H=o.altura||280, pad={t:o.rotulos?32:20,r:o.rotulos?34:20,b:28,l:o.padL||86};
   const iw=W-pad.l-pad.r, ih=H-pad.t-pad.b, n=meses.length;
-  const max=Math.max(o.minimo!=null?o.minimo:1,
+  const max=Math.max(o.minimo!=null?o.minimo:1e-9,   /* mesmo motivo do barrasMes */
     ...series.flatMap(s=>meses.map(i=>s.valores[i]||0)))*1.14;
   const fmtv=o.fmtv||(v=>nf(v,0)), fmtt=o.fmtt||moeda;
   const band=iw/n, x=k=>pad.l+band*k+band/2, y=v=>pad.t+ih-(v/max)*ih;
@@ -4254,7 +4258,7 @@ carregarAcessosDoBanco();
 $("#hdPeriodo").textContent=`Janeiro a Dezembro de ${ANO}`;
 $("#hdUpd").textContent="Atualizado em "+((D.meta&&D.meta.atualizado)||"—");
 $("#ftUpd").textContent="Última atualização da planilha: "+((D.meta&&D.meta.atualizado)||"—");
-$("#ftVer").textContent=`Inteligência Comercial ${ANO} · v38 · celular, VSO da planilha e visão por canal`;
+$("#ftVer").textContent=`Inteligência Comercial ${ANO} · v38.1 · celular, VSO da planilha e visão por canal`;
 $("#hdTitle").textContent=`Inteligência Comercial ${ANO}`;
 
 window.initDashboard=function(){ Object.keys(feito).forEach(k=>delete feito[k]);
