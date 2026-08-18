@@ -542,6 +542,7 @@ footer{border-top:1px solid var(--border);margin-top:40px;padding:16px 0 24px;fo
       <button class="tab" data-p="desconto">Desconto por Empreendimento</button>
       <button class="tab" data-p="canais">Canais</button>
       <button class="tab" data-p="gerentes">Gerentes</button>
+      <button class="tab" data-p="parceiros">Parceiros</button>
       <button class="tab" data-p="origem">Origem por Empreendimento</button>
       <button class="tab" data-p="vso">VSO</button>
     </nav>
@@ -554,6 +555,7 @@ footer{border-top:1px solid var(--border);margin-top:40px;padding:16px 0 24px;fo
   <section class="panel" id="p-desconto"></section>
   <section class="panel" id="p-canais"></section>
   <section class="panel" id="p-gerentes"></section>
+  <section class="panel" id="p-parceiros"></section>
   <section class="panel" id="p-origem"></section>
   <section class="panel" id="p-vso"></section>
   <footer><span id="ftVer">Inteligência Comercial 2026</span>
@@ -1185,6 +1187,10 @@ const COLS=[
   {k:"corretor",t:"Corretor", f:v=>v||"—"},
   {k:"gerente", t:"Gerente"},
   {k:"canal",   t:"Canal"},
+  /* Só o canal Parcerias tem parceiro; nos outros a coluna fica em "—" de
+     propósito, porque lá a venda é nossa e não há imobiliária externa. */
+  {k:"parceiro",t:"Parceiro", nm:true, f:v=>{const s=String(v==null?"":v).trim();
+     return (!s||/^[-–—·.]+$/.test(s))?"—":s;}},
   {k:"origem",  t:"Origem", f:v=>v||"—"},
   {k:"metragem",t:"Metragem (m²)", r:true, f:v=>v==null?"—":nf(v,2)},
   {k:"valorM2", t:"Valor do m²", r:true, f:v=>v==null?"—":moeda(v)},
@@ -3137,7 +3143,464 @@ function pintaMatrizGer(){
 }
 
 /* =====================================================================
-   6 · ORIGEM POR EMPREENDIMENTO
+   6 · PARCEIROS
+
+   Parcerias não vende sozinha: quem leva o cliente até a mesa é uma
+   imobiliária externa. A coluna "Parceiro" da Base é o nome dessa
+   imobiliária, e ela só existe nas vendas do canal Parcerias — nos outros
+   canais o campo vem vazio, porque lá a venda é nossa.
+
+   Esta aba responde quatro perguntas que a diretoria faz sempre:
+
+     · quem vende mais — o ranking, com todos os parceiros da planilha;
+     · o que cada um vende — parceiro × empreendimento, no mesmo desenho
+       do "Quem vendeu o quê" dos gerentes;
+     · com quem cada um trabalha — parceiro × gerente;
+     · quem é o principal parceiro de cada gerente, e o quanto o gerente
+       depende dele.
+
+   Uma observação de leitura que muda decisão: concentração não é elogio.
+   Um gerente com 90% do VGV num parceiro só tem um resultado ótimo e um
+   risco de carteira inteira; a aba mostra os dois lados no mesmo cartão.
+
+   As vendas sem parceiro preenchido aparecem como "Sem parceiro". Elas
+   contam no total — o dinheiro entrou — mas ficam fora do ranking e do
+   pódio, porque "Sem parceiro" não é uma imobiliária com quem negociar.
+   ===================================================================== */
+const perParc=novoPeriodo();
+const VP=[{id:"ranking",rot:"Ranking de parceiros"},
+          {id:"prod",   rot:"Parceiro × Empreendimento"},
+          {id:"ger",    rot:"Parceiro × Gerente"},
+          {id:"mes",    rot:"Parceiro × Mês"},
+          {id:"dono",   rot:"Principal parceiro de cada gerente"}];
+let vParc="ranking", fParcGer="", fParcProd="", parcTodos=false;
+
+const SEM_PARC="Sem parceiro";
+/* "-", "—", vazio: tudo isso é ausência de parceiro, não um parceiro chamado
+   traço. Normalizar aqui evita três linhas diferentes para a mesma coisa. */
+const nomeParc=t=>{ const p=String(t.parceiro==null?"":t.parceiro).trim();
+  return (!p||/^[-–—·.]+$/.test(p))?SEM_PARC:p; };
+const semParc=n=>n===SEM_PARC;
+
+/* O recorte da aba: canal Parcerias, período escolhido e, se o usuário
+   pediu, um gerente e/ou um empreendimento. Todo número da tela sai daqui —
+   se o filtro está ligado, ele vale para o ranking, para as matrizes e para
+   os cartões, sem exceção. */
+function linhasParc(){
+  const f={canal:"Parcerias"};
+  if(fParcGer) f.gerente=fParcGer;
+  if(fParcProd) f.produto=fParcProd;
+  return filtrar(f,perParc);
+}
+function agregaParc(rows){
+  const acc={};
+  rows.forEach(t=>{
+    const n=nomeParc(t);
+    const a=acc[n]||(acc[n]={nome:n,vgv:0,qtd:0,mes:Array(12).fill(0),ult:null,pri:null,
+                             gers:{},prods:{},linhas:0});
+    a.vgv+=t.valor; a.qtd+=(t.peso||0); a.linhas++;
+    if(t.mes!=null) a.mes[t.mes]+=t.valor;
+    if(t.data){ if(!a.ult||t.data>a.ult) a.ult=t.data;
+                if(!a.pri||t.data<a.pri) a.pri=t.data; }
+    const g=t.gerente||"—";
+    a.gers[g]=(a.gers[g]||0)+t.valor;
+    a.prods[t.produto]=(a.prods[t.produto]||0)+t.valor;
+  });
+  return Object.values(acc).sort((a,b)=>b.vgv-a.vgv);
+}
+/* maior chave de um objeto {nome: valor} */
+const maiorDe=o=>{ const e=Object.entries(o||{}).sort((a,b)=>b[1]-a[1]); return e.length?e[0]:null; };
+/* Quantos parceiros somam 80% do VGV — a régua de concentração de carteira.
+   O denominador é o VGV do CANAL, incluindo o que está sem parceiro
+   preenchido: é o mesmo total da coluna "Share" da tabela e o mesmo que a
+   base do assistente usa, então a resposta na tela e a resposta do chat não
+   podem divergir. */
+function concentracao(lista,alvo,total){
+  const tot=total!=null?total:lista.reduce((s,p)=>s+p.vgv,0);
+  if(!tot) return {n:0,tot:0};
+  let ac=0,n=0;
+  for(const p of lista){ ac+=p.vgv; n++; if(ac/tot>=(alvo||0.8)) break; }
+  return {n,tot};
+}
+/* Só os parceiros de verdade concorrem no ranking. "Sem parceiro" fica de
+   fora daqui e volta no rodapé da tabela e nos totais. */
+const soParceiros=l=>l.filter(p=>!semParc(p.nome));
+
+function rParceiros(){
+  sincHoje(perParc);
+  const rows=linhasParc();
+  const lista=agregaParc(rows);
+  const reais=soParceiros(lista);
+  const semp=lista.find(p=>semParc(p.nome));
+  const totVgv=lista.reduce((s,p)=>s+p.vgv,0);
+  const totQtd=lista.reduce((s,p)=>s+p.qtd,0);
+  const conc=concentracao(reais,0.8,totVgv);
+  const top5=reais.slice(0,5).reduce((s,p)=>s+p.vgv,0);
+  const gers=Array.from(new Set(filtrar({canal:"Parcerias"},perParc).map(t=>t.gerente||"—"))).sort();
+  const prods=PRODUTOS.filter(p=>TX.some(t=>t.canal==="Parcerias"&&t.produto===p));
+
+  $("#p-parceiros").innerHTML=`
+  <div class="card" style="margin-bottom:13px"><div class="periodo" id="pparcSel"></div>
+    <div class="sub" style="margin-top:8px">A coluna <b>Parceiro</b> da Base só é preenchida no canal
+      <b>Parcerias</b> — esta aba é a leitura desse canal por imobiliária externa.</div></div>
+
+  <div class="grid g4" style="margin-bottom:13px">
+    <div class="card kpi"><div class="lab">VGV por parceiros</div>
+      <div class="val">${moeda(totVgv)}</div>
+      <div class="sub">${nfu(totQtd)} unidade${totQtd===1?"":"s"} ·
+        ticket médio <b>${totQtd?moeda(totVgv/totQtd):"—"}</b></div></div>
+    <div class="card kpi"><div class="lab">Parceiros que venderam</div>
+      <div class="val">${nf(reais.length)}</div>
+      <div class="sub">${semp?`mais <b>${moeda(semp.vgv)}</b> em ${nfu(semp.qtd)} unidade(s) sem parceiro preenchido`
+        :"todas as vendas do período têm parceiro preenchido"}</div></div>
+    <div class="card kpi"><div class="lab">Concentração</div>
+      <div class="val">${nf(conc.n)}</div>
+      <div class="sub">parceiro${conc.n===1?"":"s"} respondem por <b>80%</b> do VGV ·
+        os 5 maiores fazem <b>${pct1(totVgv?top5/totVgv:null)}</b></div></div>
+    <div class="card kpi"><div class="lab">Maior parceiro</div>
+      <div class="val" style="font-size:17px;line-height:1.25">${esc(reais.length?reais[0].nome:"—")}</div>
+      <div class="sub">${reais.length?`<b>${moeda(reais[0].vgv)}</b> · ${nfu(reais[0].qtd)} un ·
+        <b>${pct1(totVgv?reais[0].vgv/totVgv:null)}</b> do canal`:"sem venda no período"}</div></div>
+  </div>
+
+  <div class="card" style="margin-bottom:13px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+    <div class="tgl" id="pV">${VP.map(v=>`<button class="${v.id===vParc?"on":""}" data-v="${v.id}">${v.rot}</button>`).join("")}</div>
+    <span class="lbl" style="margin-left:auto">Gerente</span>
+    <select id="pFg"><option value="">Todos</option>
+      ${gers.map(g=>`<option value="${esc(g)}" ${g===fParcGer?"selected":""}>${esc(g)}</option>`).join("")}</select>
+    <span class="lbl">Empreendimento</span>
+    <select id="pFp"><option value="">Todos</option>
+      ${prods.map(p=>`<option value="${esc(p)}" ${p===fParcProd?"selected":""}>${esc(p)}</option>`).join("")}</select>
+    ${(fParcGer||fParcProd)?`<button class="preset" id="pFlimpa">Limpar filtros</button>`:""}
+  </div>
+  <div id="pCorpo"></div>`;
+
+  seletorPeriodo("pparcSel",perParc,rParceiros);
+  document.getElementById("pV").addEventListener("click",e=>{
+    const b=e.target.closest("button"); if(!b) return; vParc=b.dataset.v; rParceiros(); });
+  document.getElementById("pFg").addEventListener("change",e=>{ fParcGer=e.target.value; rParceiros(); });
+  document.getElementById("pFp").addEventListener("change",e=>{ fParcProd=e.target.value; rParceiros(); });
+  const lp=document.getElementById("pFlimpa");
+  if(lp) lp.addEventListener("click",()=>{ fParcGer=""; fParcProd=""; rParceiros(); });
+
+  const ctx={rows,lista,reais,semp,totVgv,totQtd,conc};
+  ({ranking:pintaRankingParc, prod:pintaMatrizParcProd, ger:pintaMatrizParcGer,
+    mes:pintaMatrizParcMes, dono:pintaDonoParc})[vParc](ctx);
+  bindTips(document.getElementById("pCorpo"));
+}
+
+/* rótulo do recorte, para os títulos de modal não mentirem quando há filtro */
+function rotParc(){
+  const p=[];
+  if(fParcGer) p.push(fParcGer);
+  if(fParcProd) p.push(fParcProd);
+  return p.length?" · "+p.join(" · "):"";
+}
+function filtroParc(extra){
+  return Object.assign({canal:"Parcerias"},
+    fParcGer?{gerente:fParcGer}:{}, fParcProd?{produto:fParcProd}:{}, extra||{});
+}
+/* abre as vendas de um parceiro respeitando os filtros da aba */
+function vendasDoParceiro(nome,extra){
+  const f=filtroParc(extra);
+  return filtrar(f,perParc).filter(t=>nomeParc(t)===nome);
+}
+
+/* ---- 6.1 · ranking ---------------------------------------------------- */
+function pintaRankingParc(c){
+  const {reais,semp,totVgv,totQtd,conc}=c;
+  const ref=(perParc.fim>hojeISO()?hojeISO():perParc.fim);
+  /* Leitura rápida: o que um especialista olharia primeiro na tabela.
+     "Parado" só interessa entre os parceiros que fazem o resultado. Numa
+     carteira de 64 nomes, dezenas venderam uma unidade em janeiro e nunca
+     mais — listar todos vira ruído. O aviso útil é quando alguém do núcleo
+     que sustenta 80% do VGV parou de girar. */
+  const nucleo=reais.slice(0,conc.n);
+  const parados=nucleo.filter(p=>{ const d=diasEntre(p.ult,ref); return d!=null&&d>60; });
+  const dep=totVgv&&reais.length?reais[0].vgv/totVgv:null;
+  const podio=reais.slice(0,3);
+
+  const linha=(p,i)=>{
+    const g=maiorDe(p.gers), sh=totVgv?p.vgv/totVgv:0;
+    return `<tr data-parc="${esc(p.nome)}" class="${semParc(p.nome)?"":"clickable"}">
+      <td class="c" style="color:var(--muted)">${i==null?"—":i+1}</td>
+      <td class="nm stickyc">${semParc(p.nome)
+        ? `<span style="color:var(--muted)">${SEM_PARC}</span>`
+        : `<span class="lnk" data-abrir="1">${esc(p.nome)}</span>`}</td>
+      <td class="r"><b>${moeda(p.vgv)}</b></td>
+      <td class="r">${nfu(p.qtd)}</td>
+      <td class="r">${p.qtd?moeda(p.vgv/p.qtd):"—"}</td>
+      <td class="r">${pct1(sh)}</td>
+      <td class="r">${nf(Object.keys(p.prods).length)}</td>
+      <td class="r">${nf(Object.keys(p.gers).length)}</td>
+      <td class="nm">${g?`${esc(g[0])}<span style="display:block;font-size:10px;color:var(--ink-2)">${pct1(p.vgv?g[1]/p.vgv:null)} do parceiro</span>`:"—"}</td>
+      <td class="r">${ultVendaRef(p.ult,ref)}</td>
+      <td><span class="spark" data-exp="1" title="Ampliar mês a mês">${spark(p.mes,"var(--s3)")}</span></td></tr>`;
+  };
+
+  document.getElementById("pCorpo").innerHTML=`
+  ${podio.length?`<div class="grid g3" style="margin-bottom:13px">
+    ${podio.map((p,i)=>`<div class="card" style="border-top:3px solid ${["var(--s1)","var(--s2)","var(--s3)"][i]}">
+      <div class="lab">${i+1}º lugar</div>
+      <div style="font-weight:700;font-size:15px;line-height:1.3;margin:3px 0 7px">${esc(p.nome)}</div>
+      <div class="val" style="font-size:19px">${moeda(p.vgv)}</div>
+      <div class="sub">${nfu(p.qtd)} unidade${p.qtd===1?"":"s"} · ${pct1(c.totVgv?p.vgv/c.totVgv:null)} do canal ·
+        ticket ${p.qtd?moeda(p.vgv/p.qtd):"—"}<br>
+        Principal gerente: <b>${esc((maiorDe(p.gers)||["—"])[0])}</b> ·
+        ${nf(Object.keys(p.prods).length)} empreendimento(s)</div>
+      <div class="track" style="margin-top:9px"><div class="barfill"
+        style="width:${Math.min(c.totVgv?p.vgv/c.totVgv:0,1)*100}%;background:${["var(--s1)","var(--s2)","var(--s3)"][i]}"></div></div>
+    </div>`).join("")}</div>`:""}
+
+  <div class="card" style="margin-bottom:13px"><div class="hd"><div class="h">Leitura rápida</div></div>
+    <div class="sub" style="font-size:12.5px;line-height:1.65">
+      ${reais.length?`A carteira tem <b>${nf(reais.length)}</b> parceiro${reais.length===1?"":"s"} com venda no período e
+      <b>${nf(conc.n)}</b> deles concentra${conc.n===1?"":"m"} 80% do VGV.
+      O maior sozinho responde por <b>${pct1(dep)}</b> — ${dep>=0.35
+        ? "é dependência alta: uma troca de time nesse parceiro mexe no resultado do canal inteiro, e vale ter um segundo nome sendo construído para o mesmo produto."
+        : dep>=0.2 ? "é uma liderança saudável, sem dependência crítica."
+        : "a carteira está pulverizada, o que protege o resultado mas encarece o relacionamento."}
+      ${parados.length?`<br>Dentro desse núcleo, <b>${nf(parados.length)}</b> parceiro${parados.length===1?" está":"s estão"} sem vender há mais
+        de 60 dias (${parados.slice(0,3).map(p=>esc(p.nome)+" · "+moeda(p.vgv)).join("; ")}${parados.length>3?` e mais ${nf(parados.length-3)}`:""}).
+        São relacionamentos que já provaram que convertem e pararam de girar — reativar costuma custar
+        menos e fechar mais rápido do que prospectar nome novo.`
+        :`<br>Nenhum parceiro do núcleo está parado há mais de 60 dias: a carteira que sustenta o resultado
+        segue girando.`}
+      ${c.semp?`<br><b>${moeda(c.semp.vgv)}</b> em ${nfu(c.semp.qtd)} unidade(s) estão sem parceiro preenchido na Base:
+        entram no total do canal, mas ficam fora do ranking porque não dá para negociar com um campo em branco.`:""}`
+      :"Nenhuma venda de Parcerias neste recorte."}
+    </div></div>
+
+  <div class="card" data-cart="parceiros"><div class="hd"><div class="h">Ranking de parceiros${esc(rotParc())}</div>
+    <div class="sub">Todos os parceiros com venda no período, ordenados por VGV · clique no nome para as vendas,
+      ou no <b>gráfico mês a mês</b> para ampliar</div></div>
+    <div class="scroll"><table class="tb num"><thead><tr><th class="c">#</th><th class="stickyc">Parceiro</th>
+      <th class="r">VGV</th><th class="r">Unid.</th><th class="r">Ticket médio</th><th class="r">Share</th>
+      <th class="r">Empr.</th><th class="r">Gerentes</th><th>Principal gerente</th>
+      <th class="r">Última venda</th><th>Mês a mês</th></tr></thead>
+    <tbody>${reais.map((p,i)=>linha(p,i)).join("")}
+      ${semp?linha(semp,null):""}
+      <tr class="tot"><td></td><td class="stickyc">Total</td><td class="r">${moeda(totVgv)}</td>
+        <td class="r">${nfu(totQtd)}</td><td class="r">${totQtd?moeda(totVgv/totQtd):"—"}</td>
+        <td class="r">100%</td><td></td><td></td><td></td><td></td><td></td></tr>
+    </tbody></table></div>
+    <div class="sub" style="margin-top:11px"><b>Share</b> é a fatia do VGV de Parcerias no período —
+      inclusive o que está sem parceiro preenchido, por isso a soma dos parceiros nomeados não fecha 100%.
+      <b>Principal gerente</b> é quem mais vendeu com aquele parceiro, e o percentual abaixo diz o quanto
+      daquele parceiro passa por ele.</div></div>`;
+
+  document.querySelectorAll("#pCorpo tr[data-parc]").forEach(tr=>{
+    const n=tr.dataset.parc;
+    const ab=tr.querySelector("[data-abrir]");
+    if(ab) ab.addEventListener("click",()=>modalVendas(n,`Parcerias${rotParc()} · vendas do período`,
+      vendasDoParceiro(n)));
+    const ex=tr.querySelector("[data-exp]");
+    if(ex) ex.addEventListener("click",()=>{
+      const item=(c.lista||[]).find(x=>x.nome===n);
+      abrir({titulo:n,sub:`Parcerias${rotParc()} · VGV mês a mês`,
+        html:`<div style="padding:16px 17px">
+          <div style="display:flex;justify-content:flex-end;margin-bottom:10px">${btnForma("pmG")}</div>
+          <div id="pmG"></div></div>`,
+        render(){ desenhaForma("pmG",{series:[{nome:"VGV realizado",valores:item.mes,cor:"var(--s3)"}],
+          aria:n,aoClicar:mi=>modalVendas(`${n} · ${MESL[mi]}`,"Vendas do mês",
+            vendasDoParceiro(n,{mes:mi}),true)}); }},true);
+    });
+  });
+}
+/* mesma régua de "há N dias" dos gerentes, mas com a data de referência
+   passada de fora — aqui o período é outro */
+function ultVendaRef(iso,ref){
+  if(!iso) return '<span style="color:var(--muted)">sem venda</span>';
+  const d=diasEntre(iso,ref);
+  const cor=d==null?"var(--muted)":d>60?"var(--bad)":d>30?"var(--warn)":"var(--ink-2)";
+  return `${dtBR(iso)}<span style="display:block;font-size:10px;color:${cor}">${
+    d==null?"":d<=0?"hoje":d===1?"há 1 dia":`há ${nf(d)} dias`}</span>`;
+}
+
+/* ---- 6.2 · matrizes ---------------------------------------------------
+   As três matrizes são o mesmo desenho do "Quem vendeu o quê": número
+   grande = unidades, percentual = fatia da coluna, fundo = VGV. Escrever
+   uma função só evita que elas comecem iguais e terminem diferentes.
+
+   Uma matriz de 65 linhas não se lê. Por padrão mostra os 20 maiores e um
+   botão abre o resto — o total do rodapé é sempre do recorte inteiro, para
+   ninguém somar a tela e achar que falta dinheiro.                        */
+function matrizParc(o){
+  const {lista,semp}=o.ctx;
+  const reais=soParceiros(lista);
+  const todos=reais.concat(semp?[semp]:[]);
+  const mostra=(parcTodos||todos.length<=20)?todos:todos.slice(0,20);
+  const escondidos=todos.length-mostra.length;
+  const cols=o.cols;
+  const cel={},qtd={},totCol={},vgvCol={};
+  o.ctx.rows.forEach(t=>{
+    const cc=o.colDe(t); if(cc==null||cols.indexOf(cc)<0) return;
+    const k=nomeParc(t)+"||"+cc;
+    cel[k]=(cel[k]||0)+t.valor; qtd[k]=(qtd[k]||0)+(t.peso||0);
+    totCol[cc]=(totCol[cc]||0)+(t.peso||0); vgvCol[cc]=(vgvCol[cc]||0)+t.valor;
+  });
+  const max=Math.max(1,...Object.values(cel));
+  const totQtd=Object.values(qtd).reduce((s,v)=>s+v,0)||1;
+  const totVgv=Object.values(cel).reduce((s,v)=>s+v,0);
+
+  document.getElementById("pCorpo").innerHTML=`
+  <div class="card"><div class="hd"><div class="h">${esc(o.titulo)}${esc(rotParc())}</div>
+    <div class="sub">${o.sub}</div></div>
+    <div class="scroll"><table class="tb num"><thead><tr><th class="stickyc">Parceiro</th>
+      ${cols.map(cc=>`<th class="c" style="font-size:9.5px;white-space:normal;max-width:88px">${esc(o.rotCol(cc))}
+        <span style="display:block;font-weight:400;opacity:.7">${nfu(totCol[cc]||0)} un</span></th>`).join("")}
+      <th class="r">Total</th><th class="r">VGV</th></tr></thead>
+    <tbody>${mostra.map(p=>{
+      const tq=cols.reduce((s,cc)=>s+(qtd[p.nome+"||"+cc]||0),0);
+      return `<tr><td class="nm stickyc" style="${semParc(p.nome)?"color:var(--muted)":""}">${esc(p.nome)}</td>
+      ${cols.map(cc=>{ const k=p.nome+"||"+cc, v=cel[k]||0, n=qtd[k]||0;
+        const sh=totCol[cc]?n/totCol[cc]:0;
+        const int=v?Math.round((0.12+0.88*(v/max))*72):0;
+        return `<td class="c" ${v?`style="cursor:pointer;padding:6px 8px;background:color-mix(in srgb,var(--s3) ${int}%,transparent)"
+          data-pc="${esc(p.nome)}" data-cc="${esc(String(cc))}"
+          data-tip="<b>${esc(p.nome)}</b> → ${esc(o.rotCol(cc))}<br><b>${nfu(n)}</b> unidade(s) · <b>${pct1(sh)}</b> ${esc(o.oQue)}<br>VGV: <b>${moeda(v)}</b><br><span style='color:var(--muted)'>clique para abrir</span>">
+          <b style="font-size:13px">${nfu(n)}</b>
+          <span style="display:block;font-size:10px;color:var(--ink-2)">${pct1(sh)}</span>`
+          :'style="color:var(--muted)">·'}</td>`; }).join("")}
+      <td class="r"><b>${nfu(tq)}</b><span style="display:block;font-size:10px;color:var(--ink-2);font-weight:400">${pct1(tq/totQtd)}</span></td>
+      <td class="r"><b>${moeda(p.vgv)}</b></td></tr>`; }).join("")}
+      <tr class="tot"><td class="stickyc">Total</td>
+        ${cols.map(cc=>`<td class="c">${nfu(totCol[cc]||0)}<span style="display:block;font-size:10px;font-weight:400">100%</span></td>`).join("")}
+        <td class="r">${nfu(totQtd)}<span style="display:block;font-size:10px;font-weight:400">100%</span></td>
+        <td class="r">${moeda(totVgv)}</td></tr>
+    </tbody></table></div>
+    ${escondidos>0?`<div style="margin-top:11px"><button class="preset" id="pMais" type="button">Mostrar os ${nf(escondidos)} parceiros restantes</button></div>`
+      :(parcTodos&&todos.length>20?`<div style="margin-top:11px"><button class="preset" id="pMenos" type="button">Mostrar só os 20 maiores</button></div>`:"")}
+    <div class="sub" style="margin-top:11px">O número grande é a <b>quantidade de unidades</b> e o percentual
+      abaixo é a fatia daquela coluna — cada coluna fecha 100%. O tom de fundo é o <b>VGV</b>, então dá para
+      separar quem vende muita unidade pequena de quem vende poucas unidades grandes.
+      ${escondidos>0?`A tabela mostra os 20 maiores; o rodapé de <b>Total</b> continua sendo do recorte inteiro.`:""}</div>
+  </div>`;
+
+  const bm=document.getElementById("pMais");
+  if(bm) bm.addEventListener("click",()=>{ parcTodos=true; rParceiros(); });
+  const bn=document.getElementById("pMenos");
+  if(bn) bn.addEventListener("click",()=>{ parcTodos=false; rParceiros(); });
+  document.querySelectorAll("#pCorpo td[data-pc]").forEach(td=>td.addEventListener("click",()=>{
+    const n=td.dataset.pc, cc=o.valCol(td.dataset.cc);
+    modalVendas(`${n} · ${o.rotCol(cc)}`,o.titulo,
+      vendasDoParceiro(n,o.filtroCol(cc)));
+  }));
+}
+function pintaMatrizParcProd(ctx){
+  const prods=PRODUTOS.filter(p=>ctx.rows.some(t=>t.produto===p));
+  matrizParc({ctx,cols:prods,titulo:"Parceiro × Empreendimento",
+    sub:`Qual parceiro entrega qual produto · quanto mais escuro, maior o VGV · clique na célula para abrir as vendas`,
+    oQue:"das unidades do empreendimento",
+    colDe:t=>t.produto,rotCol:p=>p,valCol:s=>s,filtroCol:p=>({produto:p})});
+}
+function pintaMatrizParcGer(ctx){
+  const gs=Array.from(new Set(ctx.rows.map(t=>t.gerente||"—"))).sort();
+  matrizParc({ctx,cols:gs,titulo:"Parceiro × Gerente",
+    sub:`Com quem cada parceiro trabalha · quanto mais escuro, maior o VGV · clique na célula para abrir as vendas`,
+    oQue:"das unidades do gerente",
+    colDe:t=>t.gerente||"—",rotCol:g=>g,valCol:s=>s,filtroCol:g=>({gerente:g})});
+}
+function pintaMatrizParcMes(ctx){
+  const ms=Array.from(new Set(ctx.rows.filter(t=>t.mes!=null).map(t=>t.mes))).sort((a,b)=>a-b);
+  matrizParc({ctx,cols:ms,titulo:"Parceiro × Mês",
+    sub:`Quando cada parceiro entregou · quanto mais escuro, maior o VGV · clique na célula para abrir as vendas`,
+    oQue:"das unidades do mês",
+    colDe:t=>t.mes,rotCol:m=>MESL[m],valCol:s=>+s,filtroCol:m=>({mes:m})});
+}
+
+/* ---- 6.3 · principal parceiro de cada gerente ------------------------- */
+function pintaDonoParc(ctx){
+  /* o filtro de gerente não faz sentido aqui — a tela é justamente a
+     comparação entre gerentes. O de empreendimento continua valendo. */
+  const f=Object.assign({canal:"Parcerias"},fParcProd?{produto:fParcProd}:{});
+  const rows=filtrar(f,perParc);
+  const porGer={};
+  rows.forEach(t=>{
+    const g=t.gerente||"—";
+    const a=porGer[g]||(porGer[g]={nome:g,vgv:0,qtd:0,parc:{},qtdParc:{}});
+    a.vgv+=t.valor; a.qtd+=(t.peso||0);
+    const n=nomeParc(t);
+    a.parc[n]=(a.parc[n]||0)+t.valor;
+    a.qtdParc[n]=(a.qtdParc[n]||0)+(t.peso||0);
+  });
+  const lista=Object.values(porGer).sort((a,b)=>b.vgv-a.vgv);
+
+  document.getElementById("pCorpo").innerHTML=`
+  <div class="grid g2" style="margin-bottom:13px">${lista.map(g=>{
+    const ent=Object.entries(g.parc).filter(([n])=>!semParc(n)).sort((a,b)=>b[1]-a[1]);
+    const nSem=g.parc[SEM_PARC]||0;
+    const pr=ent[0];
+    const dep=pr&&g.vgv?pr[1]/g.vgv:null;
+    const top3=ent.slice(0,3).reduce((s,e)=>s+e[1],0);
+    const mx=pr?pr[1]:1;
+    return `<div class="card">
+      <div class="hd"><div class="h">${rotGer(g.nome)}</div>
+        <div class="sub">${moeda(g.vgv)} · ${nfu(g.qtd)} unidade${g.qtd===1?"":"s"} ·
+          <b>${nf(ent.length)}</b> parceiro${ent.length===1?"":"s"}</div></div>
+      ${pr?`<div style="margin:2px 0 12px;padding:11px 12px;border-radius:9px;background:var(--card-2)">
+        <div class="lab">Principal parceiro</div>
+        <div style="font-weight:700;font-size:14.5px;line-height:1.3;margin:3px 0 5px">${esc(pr[0])}</div>
+        <div class="sub"><b>${moeda(pr[1])}</b> · ${nfu(g.qtdParc[pr[0]]||0)} un ·
+          <b style="color:${dep>=0.5?"var(--warn)":"var(--ink-2)"}">${pct1(dep)}</b> do que o gerente vendeu</div>
+        <div class="track" style="margin-top:8px"><div class="barfill"
+          style="width:${Math.min(dep||0,1)*100}%;background:${dep>=0.5?"var(--warn)":"var(--s3)"}"></div></div>
+      </div>`:`<div class="sub" style="margin-bottom:12px">Nenhuma venda com parceiro nomeado no período.</div>`}
+      ${ent.length>1?`<div class="lab" style="margin-bottom:7px">Os maiores</div>
+        ${ent.slice(0,5).map(([n,v])=>`<div class="hit" data-dg="${esc(g.nome)}" data-dp="${esc(n)}"
+          style="margin-bottom:9px;cursor:pointer"
+          data-tip="<b>${esc(n)}</b><br>${moeda(v)} · ${nfu(g.qtdParc[n]||0)} unidade(s)<br><span style='color:var(--muted)'>clique para ver as vendas</span>">
+          <div style="display:flex;align-items:baseline;gap:9px;margin-bottom:4px">
+            <span style="font-size:12.5px">${esc(n)}</span>
+            <span class="num" style="margin-left:auto;font-size:11.5px;color:var(--ink-2)">${pct1(g.vgv?v/g.vgv:null)}</span></div>
+          <div class="track"><div class="barfill" style="width:${Math.min(v/mx,1)*100}%;background:var(--s3)"></div></div>
+        </div>`).join("")}`:""}
+      <div class="sub" style="margin-top:10px;padding-top:10px;border-top:1px solid var(--grid)">
+        ${pr?`Os três maiores somam <b>${pct1(g.vgv?top3/g.vgv:null)}</b> da carteira dele.
+        ${dep>=0.5?"Metade ou mais do resultado passa por um único parceiro — resultado forte e risco concentrado no mesmo lugar."
+          :dep>=0.3?"Há um parceiro claramente principal, com outros nomes sustentando o resto."
+          :"A carteira é distribuída: nenhum parceiro sozinho decide o número dele."}`:""}
+        ${nSem>0?`<br><b>${moeda(nSem)}</b> sem parceiro preenchido na Base.`:""}</div>
+    </div>`; }).join("")}</div>
+  <div class="card"><div class="hd"><div class="h">Resumo · principal parceiro por gerente${esc(fParcProd?" · "+fParcProd:"")}</div>
+    <div class="sub">A mesma leitura em tabela, para comparar lado a lado · clique na linha para as vendas do gerente</div></div>
+    <div class="scroll"><table class="tb num"><thead><tr><th class="stickyc">Gerente</th>
+      <th class="r">VGV</th><th class="r">Unid.</th><th class="r">Parceiros</th>
+      <th>Principal parceiro</th><th class="r">VGV do principal</th>
+      <th class="r">Dependência</th><th class="r">Top 3</th></tr></thead>
+    <tbody>${lista.map(g=>{
+      const ent=Object.entries(g.parc).filter(([n])=>!semParc(n)).sort((a,b)=>b[1]-a[1]);
+      const pr=ent[0], dep=pr&&g.vgv?pr[1]/g.vgv:null;
+      const top3=ent.slice(0,3).reduce((s,e)=>s+e[1],0);
+      return `<tr class="clickable" data-rg="${esc(g.nome)}">
+        <td class="nm stickyc">${rotGer(g.nome)}</td>
+        <td class="r"><b>${moeda(g.vgv)}</b></td><td class="r">${nfu(g.qtd)}</td>
+        <td class="r">${nf(ent.length)}</td>
+        <td class="nm">${pr?esc(pr[0]):"—"}</td>
+        <td class="r">${pr?moeda(pr[1]):"—"}</td>
+        <td class="r" style="color:${dep>=0.5?"var(--warn)":"inherit"}"><b>${pct1(dep)}</b></td>
+        <td class="r">${pct1(g.vgv?top3/g.vgv:null)}</td></tr>`; }).join("")}
+    </tbody></table></div>
+    <div class="sub" style="margin-top:11px"><b>Dependência</b> é a fatia do VGV do gerente que passa pelo
+      maior parceiro dele. Acima de 50% o número fica em âmbar: não é erro, é aviso — o resultado está
+      apoiado num relacionamento só, e vale ter um segundo parceiro sendo construído no mesmo produto.</div>
+  </div>`;
+
+  document.querySelectorAll("#pCorpo [data-dg]").forEach(el=>el.addEventListener("click",()=>{
+    const g=el.dataset.dg, n=el.dataset.dp;
+    modalVendas(`${g} · ${n}`,"Gerente × parceiro",
+      filtrar(Object.assign({canal:"Parcerias",gerente:g},fParcProd?{produto:fParcProd}:{}),perParc)
+        .filter(t=>nomeParc(t)===n));
+  }));
+  document.querySelectorAll("#pCorpo tr[data-rg]").forEach(tr=>tr.addEventListener("click",()=>{
+    const g=tr.dataset.rg;
+    modalVendas(g,"Parcerias · vendas do período",
+      filtrar(Object.assign({canal:"Parcerias",gerente:g},fParcProd?{produto:fParcProd}:{}),perParc));
+  }));
+}
+
+/* =====================================================================
+   7 · ORIGEM POR EMPREENDIMENTO
    ===================================================================== */
 const CANAIS_MKT=["Salão","Online"];   // a análise de origem olha só os canais próprios
 const perOrigem=novoPeriodo();
@@ -3989,14 +4452,15 @@ registraReceita("desconto", {titulo:0,valor:13,heat:[1,12]});
 registraReceita("vso",      {titulo:0,valor:3, heat:[7,18], ocultar:[6]});
 registraReceita("gerentes", {titulo:1,valor:2, barra:6, corBarra:"var(--s1)", ocultar:[0,9]});
 registraReceita("origem",   {titulo:0,valor:4, barra:2, corBarra:"var(--s4)", ocultar:[6]});
+registraReceita("parceiros",{titulo:1,valor:2, barra:5, corBarra:"var(--s3)", ocultar:[0,10]});
 
 /* =====================================================================
    NAVEGAÇÃO
    ===================================================================== */
 const R={sintese:rSintese,geral:rGeral,vendas:rVendas,desconto:rDesconto,canais:rCanais,
-         gerentes:rGerentes,origem:rOrigem,vso:rVSO};
+         gerentes:rGerentes,parceiros:rParceiros,origem:rOrigem,vso:rVSO};
 const feito={};
-const PERIODOS={geral:perGeral,gerentes:perGer,origem:perOrigem,desconto:perDesc};
+const PERIODOS={geral:perGeral,gerentes:perGer,parceiros:perParc,origem:perOrigem,desconto:perDesc};
 /* Se o dia virou com a página aberta, as abas cujo período termina "hoje"
    são marcadas para redesenhar na próxima vez que forem abertas. */
 function sincronizaDia(){
@@ -4258,7 +4722,7 @@ carregarAcessosDoBanco();
 $("#hdPeriodo").textContent=`Janeiro a Dezembro de ${ANO}`;
 $("#hdUpd").textContent="Atualizado em "+((D.meta&&D.meta.atualizado)||"—");
 $("#ftUpd").textContent="Última atualização da planilha: "+((D.meta&&D.meta.atualizado)||"—");
-$("#ftVer").textContent=`Inteligência Comercial ${ANO} · v38.1 · celular, VSO da planilha e visão por canal`;
+$("#ftVer").textContent=`Inteligência Comercial ${ANO} · v39 · aba Parceiros: ranking, cruzamentos e principal parceiro por gerente`;
 $("#hdTitle").textContent=`Inteligência Comercial ${ANO}`;
 
 window.initDashboard=function(){ Object.keys(feito).forEach(k=>delete feito[k]);
