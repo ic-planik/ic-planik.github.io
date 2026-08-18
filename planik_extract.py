@@ -198,8 +198,31 @@ class Extrator:
                     f"[Base] coluna {obrig!r} não existe mais. Cabeçalho atual: {sorted(hdr)}"
                 )
 
+        # Em 17/08/2026 a Base renomeou tres colunas — Origem virou
+        # "Midia Origem", Plataforma virou "Midia Atual" e Campanha virou
+        # "Linha de Campanha". O extrator nao gritou porque as tres eram
+        # opcionais, e o resultado foi a aba Origem inteira sumir do site em
+        # silencio. Agora ele aceita os dois nomes E cobra que pelo menos um
+        # exista: sumico silencioso de coluna e o pior tipo de erro.
+        APELIDOS = {
+            "Origem": ["Origem", "Midia Origem", "Mídia Origem"],
+            "Plataforma": ["Plataforma", "Midia Atual", "Mídia Atual"],
+            "Campanha": ["Campanha", "Linha de Campanha"],
+        }
+        achado = {}
+        for papel, nomes in APELIDOS.items():
+            for n in nomes:
+                if n in hdr:
+                    achado[papel] = hdr[n]
+                    break
+            else:
+                raise ErroDeEstrutura(
+                    f"[Base] nenhuma coluna de {papel.lower()} encontrada. "
+                    f"Procurei por {nomes}. Cabeçalho atual: {sorted(hdr)}"
+                )
+
         def cel(r, nome):
-            c = hdr.get(nome)
+            c = achado.get(nome, hdr.get(nome))
             return ws.cell(r, c).value if c else None
 
         transacoes = []
@@ -658,22 +681,45 @@ class Extrator:
                     if vend is not None:
                         mensal_vend[p][mi] = round(vend, 2)
 
-        anual = {}
-        r_a = achar_linha(ws, "VSO ANO YTD", col=16)
-        if r_a:
-            for r in range(r_a + 2, r_a + 20):
+        # Blocos de resumo da coluna P: o do ano e os quatro trimestres. O site
+        # passou a mostrar exatamente estes numeros em vez de recalcular da
+        # Base — a planilha considera distrato e reentrada de unidade no
+        # denominador, coisa que a Base sozinha nao sabe reproduzir.
+        def bloco(titulo):
+            r0 = achar_linha(ws, titulo, col=16)
+            if not r0:
+                return {}
+            out = {}
+            for r in range(r0 + 2, ws.max_row + 1):
                 nm = txt(ws.cell(r, 16).value)
                 if not nm:
                     break
-                anual[self.canon(nm)] = {
+                if chave(nm) == "EMPREENDIMENTO":   # cabecalho do proprio bloco
+                    continue
+                out[self.canon(nm)] = {
                     "inicio": round(num(ws.cell(r, 17).value), 2),
                     "vendas": round(num(ws.cell(r, 18).value), 2),
-                    "vso": round(num(ws.cell(r, 19).value), 4),
+                    "vso": round(num(ws.cell(r, 19).value, None), 4)
+                    if ws.cell(r, 19).value not in (None, "-", "") else None,
                 }
+            return out
+
+        anual = bloco("VSO ANO YTD")
+        tris = {}
+        for i, rot in enumerate(["VSO 1", "VSO 2", "VSO 3", "VSO 4"], start=1):
+            b = bloco(rot + "\u00b0 TRI") or bloco(rot + "\u00ba TRI")
+            if b:
+                tris["t%d" % i] = b
+        if not anual:
+            raise ErroDeEstrutura("bloco 'VSO ANO YTD' nao encontrado na aba VSOs 2026")
+        if len(tris) != 4:
+            raise ErroDeEstrutura("esperava 4 blocos de trimestre na aba VSOs 2026, achei %d"
+                           % len(tris))
         return {"mensalPorProduto": dict(mensal_prod),
                 "mensalDisponivel": dict(mensal_disp),
                 "mensalVendido": dict(mensal_vend),
-                "mensalTotal": mensal_total, "anoYTD": anual}
+                "mensalTotal": mensal_total, "anoYTD": anual,
+                "trimestres": tris}
 
     # -- desconto ------------------------------------------------------------
 

@@ -10,9 +10,10 @@ Publica DOIS documentos:
 
     dados/atual       a planilha inteira, para a diretoria e a Inteligência
                       Comercial.
-    dados/parcerias   a mesma planilha sem o valor e o desconto das unidades
-                      vendidas pelos outros canais, para quem tem visão
-                      restrita. Os totais são idênticos; o detalhe some.
+    dados/parcerias   a operação de Parcerias e nada mais, para quem tem
+                      visão restrita. A carteira (VGV total, vendido na vida,
+                      estoque) continua inteira, porque é patrimônio; o
+                      desempenho é só do canal.
 
 O segundo existe porque esconder na tela não esconde nada: o navegador baixa o
 documento inteiro e um F12 lê tudo. A separação só vale se o dado proibido nem
@@ -67,8 +68,7 @@ if not chave:
     print(f"FIREBASE_KEY ausente — modo teste. {len(payload):,} chars, "
           f"{len(dados['transacoes'])} transações, atualizado em {atualizado}.")
     print(f"  visão restrita: {len(payload_parc):,} chars · "
-          f"{v['linhasDetalhadas']} linhas de {redigir.CANAL_PROPRIO} inteiras · "
-          f"{v['vendasResumidas']} vendas de outros canais em {v['linhasAgregadas']} linhas de mês")
+          f"{v['vendas']} vendas de {v['canal']} · nenhum dado de outro canal")
     sys.exit(0)
 
 import firebase_admin
@@ -90,5 +90,4 @@ db.collection("dados").document("parcerias").set({
 print(f"Firestore atualizado: {len(payload):,} chars | planilha de {atualizado} | "
       f"{len(dados['transacoes'])} transações")
 print(f"  dados/parcerias: {len(payload_parc):,} chars | "
-      f"{v['vendasResumidas']} vendas de outros canais resumidas em "
-      f"{v['linhasAgregadas']} linhas, sem unidade nem desconto")
+      f"{v['vendas']} vendas de {v['canal']}, sem nenhum dado dos demais canais")
