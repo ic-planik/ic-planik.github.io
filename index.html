@@ -4568,6 +4568,23 @@ async function chatEnviar(texto){
         +`<div class="txt pisca">${fmtIA(txt)}</div>`;
       log.scrollTop=log.scrollHeight; }
   };
+  /* O modelo raciocina antes de escrever, e nesse tempo não chega texto
+     nenhum. Uma pergunta pesada passou 66 segundos com a tela em branco —
+     ninguém espera um minuto olhando para o nada sem achar que travou.
+     Enquanto só houver raciocínio, a bolha diz o que está acontecendo e
+     conta os segundos; o primeiro pedaço de texto apaga o aviso. */
+  let veioTexto=false;
+  const relogio=setInterval(()=>{
+    if(veioTexto) return;
+    const log=$("#chatLog"), ult=log&&log.lastElementChild; if(!ult) return;
+    const seg=Math.round((Date.now()-t0)/1000);
+    ult.className="msg ia";
+    ult.innerHTML=`<img class="ava" src="${AVATAR}" alt="Jorge">`
+      +`<div class="txt pisca" style="color:var(--muted)">Pensando na resposta… ${seg}s`
+      +(seg>25?`<span style="display:block;font-size:11.5px;margin-top:4px">Pergunta que cruza muita coisa demora mais.</span>`:"")
+      +`</div>`;
+    log.scrollTop=log.scrollHeight;
+  },1000);
 
   try{
     if(/^__/.test(CHAT_URL)) throw new Error(
@@ -4611,7 +4628,7 @@ async function chatEnviar(texto){
           if(!cru || cru==="[DONE]") continue;
           let ev; try{ ev=JSON.parse(cru); }catch(e){ continue; }
           if(ev.type==="content_block_delta" && ev.delta && ev.delta.type==="text_delta"){
-            texto += ev.delta.text; pinta(texto);
+            veioTexto=true; texto += ev.delta.text; pinta(texto);
           }
           if(ev.type==="message_delta" && ev.delta && ev.delta.stop_reason)
             parada=ev.delta.stop_reason;
@@ -4621,12 +4638,19 @@ async function chatEnviar(texto){
         }
       }
     }
-    /* Sem texto e cortado por tamanho: o raciocínio comeu a cota. Dizer isso é
-       melhor que "tente de novo", porque tentar de novo daria no mesmo. */
+    /* Sem texto e cortado por tamanho: o raciocínio comeu a cota inteira.
+       A mensagem antiga dizia "sua pergunta é ampla demais" e mandava dividir.
+       Estava errada e ainda jogava a culpa em quem perguntou: quem esbarrou
+       nisso tinha feito uma pergunta curta e específica, que só era CARA de
+       calcular. Falar a verdade — o assistente ficou sem espaço — é melhor,
+       porque a saída não é dividir a pergunta, é repetir ou pedir a lista
+       direto. */
     if(!texto && parada==="max_tokens")
-      throw new Error("A pergunta é ampla demais para uma resposta só. "
-        +"Quebre em duas ou três perguntas menores — por exemplo, primeiro os gerentes, "
-        +"depois os canais e as origens.");
+      throw new Error("O assistente usou todo o espaço da resposta raciocinando e não chegou a "
+        +"escrever nada. Isso costuma acontecer em pergunta curta de enunciar e pesada de "
+        +"calcular. Tente de novo; se repetir, peça a lista de forma direta (por exemplo, "
+        +"\"liste os parceiros do núcleo parados há mais de 60 dias\") e avise a "
+        +"Inteligência Comercial — o caso fica registrado no log.");
     if(!texto) throw new Error("O assistente não devolveu resposta. Tente perguntar de novo.");
     if(parada==="max_tokens")
       texto += "\n\n*(resposta interrompida por tamanho — peça a continuação ou "
@@ -4638,6 +4662,7 @@ async function chatEnviar(texto){
       : ((err&&err.message)||"Não foi possível falar com o assistente.");
     chatHist[iAlvo] = {role:"assistant",content:m,erro:true};
   }finally{
+    clearInterval(relogio);
     chatOcupado = false; chatBotao(); chatPinta();
     /* a pergunta e a resposta ficam registradas para o admin. Erro também
        entra: uma sequência de falhas é justamente o que a gestão precisa ver. */
