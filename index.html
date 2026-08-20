@@ -59,6 +59,8 @@ header.top{background:var(--card);border-bottom:1px solid var(--border);position
   cursor:pointer;display:grid;place-items:center;font-size:14px;flex:0 0 auto}
 .iconbtn:hover{border-color:var(--gold)}
 .userbadge{font-size:12px;color:var(--ink-2);background:var(--card-2);border:1px solid var(--border);
+  cursor:pointer;font-family:inherit}
+.userbadge:hover{border-color:var(--gold)}
   border-radius:99px;padding:5px 11px;display:flex;align-items:center;gap:7px;white-space:nowrap}
 .userbadge .role{font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:var(--gold);font-weight:700}
 nav.tabs{display:flex;gap:2px;overflow-x:auto;scrollbar-width:none;border-top:1px solid var(--border);
@@ -497,7 +499,7 @@ footer{border-top:1px solid var(--border);margin-top:40px;padding:16px 0 24px;fo
 <body class="locked">
 
 <div id="loginOverlay">
-  <div class="login">
+  <div class="login" id="loginBox">
     <div class="mark">PLANIK</div>
     <div class="t1">Inteligência Comercial</div>
     <div class="sb">Acesso restrito · entre com seu usuário</div>
@@ -515,6 +517,32 @@ footer{border-top:1px solid var(--border);margin-top:40px;padding:16px 0 24px;fo
       <div class="err" id="li_err"></div>
     </form>
   </div>
+
+  <!-- Definir a própria senha. Vive dentro do mesmo overlay do login, e por
+       isso herda o desenho inteiro sem uma linha de CSS nova. Aparece entre
+       o "Entrar" e o relatório: quem cai aqui já se autenticou, mas ainda
+       não passou. -->
+  <div class="login" id="senhaBox" style="display:none">
+    <div class="mark">PLANIK</div>
+    <div class="t1">Defina sua senha</div>
+    <div class="sb" id="sn_quem">Escolha uma senha que só você conheça.</div>
+    <form onsubmit="return false">
+      <div class="fld"><label for="sn_a">Nova senha</label>
+        <div class="senha">
+          <input id="sn_a" type="password" placeholder="mínimo de 8 caracteres" autocomplete="new-password">
+          <button type="button" id="sn_olho" class="olho" aria-label="Mostrar senha"
+            aria-pressed="false" title="Mostrar senha"></button>
+        </div></div>
+      <div class="fld"><label for="sn_b">Repita a nova senha</label>
+        <input id="sn_b" type="password" placeholder="digite de novo" autocomplete="new-password"></div>
+      <button type="button" id="sn_btn" class="btn">Salvar e entrar</button>
+      <div class="err" id="sn_err"></div>
+      <div class="sb" style="margin:14px 0 0;font-size:11.5px;line-height:1.55">
+        A senha vai direto do seu teclado para o Firebase. Ela não passa pelo relatório,
+        não fica gravada aqui e ninguém da Inteligência Comercial consegue lê-la —
+        nem para te ajudar. Guarde num gerenciador de senhas.</div>
+    </form>
+  </div>
 </div>
 <div id="dataStatus"><div id="dataStatusMsg">Carregando dados…</div></div>
 
@@ -529,7 +557,7 @@ footer{border-top:1px solid var(--border);margin-top:40px;padding:16px 0 24px;fo
         <button data-a="pago" title="Somente vendas com ato pago">Ato pago</button></div>
       <span class="chip" id="hdPeriodo"></span>
       <span class="chip" id="hdUpd"></span>
-      <span class="userbadge" id="userBadge"></span>
+      <button class="userbadge" id="userBadge" title="Minha conta" aria-label="Minha conta"></button>
       <button class="iconbtn" id="tgl" title="Tema claro/escuro" aria-label="Alternar tema">◐</button>
       <button class="iconbtn" id="cfgBtn" title="Cadastro do time" aria-label="Cadastro do time">⚙</button>
       <button class="txtbtn" id="logoutBtn">Sair</button>
@@ -695,15 +723,116 @@ footer{border-top:1px solid var(--border);margin-top:40px;padding:16px 0 24px;fo
       window.PLK_ROLES[u]?ok():nao();
     }).catch(function(){ window.PLK_ROLES[u]?ok():nao(); });
   }
+  function escondeSenhaBox(){
+    var sb=$("senhaBox"), lb=$("loginBox");
+    if(sb){ sb.style.display="none";
+      var a=$("sn_a"),b=$("sn_b"); if(a)a.value=""; if(b)b.value=""; }
+    if(lb) lb.style.display="";
+  }
   function barrar(u){
     try{ if(auth) auth.signOut(); }catch(e){}
+    escondeSenhaBox();
     window.currentUser=null; document.body.classList.add("locked");
     var o=$("loginOverlay"); if(o) o.style.display="";
     var e=$("li_err");
     if(e) e.textContent="Acesso não liberado para "+u+"@planik.app. Fale com a Inteligência Comercial.";
     var pw=$("li_pass"); if(pw) pw.value="";
   }
-  function entrar(u){ liberar(u,function(){enter(u);},function(){barrar(u);}); }
+  function entrar(u){ liberar(u,function(){checaSenha(u);},function(){barrar(u);}); }
+
+  /* ------------------------------------------------------------------
+     SENHA PRÓPRIA
+
+     Até aqui as senhas eram criadas pela Inteligência Comercial e entregues
+     prontas — o que significa que existia sempre alguém, além do dono da
+     conta, que sabia entrar nela. Agora cada pessoa define a sua no primeiro
+     acesso, e a partir daí ninguém mais consegue ler a senha de ninguém:
+     o Firebase guarda só o hash, e nem o console mostra o valor.
+
+     O marcador de "já definiu" vive em senhas/{uid}, uma coleção nova. É
+     pelo **UID**, não pelo login: UID não muda se o e-mail da conta mudar
+     um dia, então esta trava sobrevive a uma futura migração para e-mail
+     corporativo sem precisar ser reescrita.
+
+     Quem apaga o marcador é o admin, pela engrenagem — é isso que significa
+     "exigir nova senha".
+
+     ATENÇÃO ao que isto NÃO é: não é controle de acesso. Quem chega nesta
+     tela já se autenticou e já teria direito ao dado. É higiene de senha, e
+     alguém com o F12 aberto consegue passar por cima dela. O que protege o
+     dado continua sendo a regra do Firestore, não esta tela.
+     ------------------------------------------------------------------ */
+  function checaSenha(u){
+    var user=auth&&auth.currentUser;
+    /* Sem banco ou sem sessão não dá para saber — e na dúvida a pessoa
+       ENTRA. Um Firestore instável não pode virar uma tranca no time
+       inteiro num dia de fechamento. */
+    if(!user||!window.PLK_DB) return enter(u);
+    window.PLK_DB.collection("senhas").doc(user.uid).get()
+      .then(function(sn){ (sn&&sn.exists)?enter(u):pedeSenha(u); })
+      .catch(function(){ enter(u); });
+  }
+  var loginPend="";
+  function pedeSenha(u){
+    loginPend=u;
+    var o=$("loginOverlay"), lb=$("loginBox"), sb=$("senhaBox");
+    if(!sb) return enter(u);
+    if(o) o.style.display="";
+    if(lb) lb.style.display="none";
+    sb.style.display="";
+    var f=roleFor(u), q=$("sn_quem");
+    if(q) q.innerHTML="Primeiro acesso de <b>"+(f.nome||u)+"</b>. Escolha uma senha que só você conheça.";
+    var a=$("sn_a"); if(a){ a.value=""; try{a.focus();}catch(e){} }
+    var b=$("sn_b"); if(b) b.value="";
+    var e=$("sn_err"); if(e) e.textContent="";
+  }
+  function senhaOcupado(b,m){ var x=$("sn_btn");
+    if(x){x.disabled=b;x.textContent=b?"Salvando…":"Salvar e entrar";}
+    var e=$("sn_err"); if(e&&m!=null) e.textContent=m; }
+  window.doNovaSenha=function(){
+    var u=loginPend||((auth&&auth.currentUser&&auth.currentUser.email)||"").split("@")[0];
+    var a=(($("sn_a")||{}).value||""), b=(($("sn_b")||{}).value||"");
+    var e=$("sn_err");
+    /* Regras mínimas, checadas antes de incomodar o servidor. O Firebase
+       aceita 6 caracteres; 8 é pouco mais e evita as senhas de sempre. */
+    if(a.length<8){ if(e)e.textContent="A senha precisa ter pelo menos 8 caracteres."; return; }
+    if(a!==b){ if(e)e.textContent="As duas senhas não são iguais."; return; }
+    if(a.toLowerCase()===String(u).toLowerCase()){ if(e)e.textContent="A senha não pode ser igual ao seu usuário."; return; }
+    if(/^(\d)\1+$/.test(a)||/^12345678/.test(a)){ if(e)e.textContent="Escolha uma senha menos previsível."; return; }
+    var user=auth&&auth.currentUser;
+    if(!user){ if(e)e.textContent="Sua sessão expirou. Recarregue a página e entre de novo."; return; }
+    senhaOcupado(true,"");
+    user.updatePassword(a).then(function(){
+      /* Marcador gravado DEPOIS da senha mudar. Se gravasse antes e a troca
+         falhasse, a pessoa ficaria com a senha velha e sem ser perguntada
+         de novo — o pior dos dois mundos. */
+      var reg=window.PLK_DB
+        ? window.PLK_DB.collection("senhas").doc(user.uid)
+            .set({ts:Date.now(), user:u, nome:(roleFor(u)||{}).nome||u})
+        : Promise.resolve();
+      return reg.catch(function(){});   // falha aqui só faz perguntar de novo depois
+    }).then(function(){
+      senhaOcupado(false,"");
+      var sb=$("senhaBox"), lb=$("loginBox");
+      if(sb) sb.style.display="none";
+      if(lb) lb.style.display="";
+      var a2=$("sn_a"),b2=$("sn_b"); if(a2)a2.value=""; if(b2)b2.value="";
+      window.PLK_LOG({tipo:"senha", detalhe:"definiu a própria senha"});
+      enter(u);
+    }).catch(function(err){
+      senhaOcupado(false,"");
+      var cod=(err&&err.code)||"desconhecido";
+      var M={
+        "auth/weak-password":"Senha muito fraca. Use pelo menos 8 caracteres, misturando letras e números.",
+        "auth/requires-recent-login":"Por segurança, entre de novo e defina a senha logo na sequência.",
+        "auth/network-request-failed":"Falha de rede. Verifique a internet e tente de novo.",
+        "auth/too-many-requests":"Muitas tentativas. Aguarde um instante."
+      };
+      if(e) e.textContent=M[cod]||("Não foi possível salvar a senha. Código: "+cod
+        +" — mande este código para a Inteligência Comercial.");
+      try{ console.error("[senha] falhou:",cod,err&&err.message); }catch(_){}
+    });
+  };
   function enter(u){
     var f=roleFor(u); window.currentUser=f;
     var b=$("userBadge");
@@ -776,6 +905,7 @@ footer{border-top:1px solid var(--border);margin-top:40px;padding:16px 0 24px;fo
   };
   window.doLogout=function(){
     try{ if(auth) auth.signOut(); }catch(e){}
+    escondeSenhaBox();
     window.currentUser=null; document.body.classList.add("locked");
     var o=$("loginOverlay"); if(o)o.style.display="";
     var u=$("li_user"),p=$("li_pass"); if(u)u.value=""; if(p)p.value="";
@@ -791,9 +921,14 @@ footer{border-top:1px solid var(--border);margin-top:40px;padding:16px 0 24px;fo
     var p=$("li_pass"); if(p)p.addEventListener("keydown",function(e){if(e.key==="Enter"){e.preventDefault();window.doLogin();}});
     var u=$("li_user"); if(u)u.addEventListener("keydown",function(e){if(e.key==="Enter"){e.preventDefault();var q=$("li_pass");if(q)q.focus();}});
     var l=$("logoutBtn"); if(l)l.addEventListener("click",window.doLogout);
+    var sb=$("sn_btn"); if(sb){ sb.addEventListener("click",window.doNovaSenha);
+      sb.addEventListener("touchend",function(e){e.preventDefault();window.doNovaSenha();}); }
+    var s2=$("sn_b"); if(s2)s2.addEventListener("keydown",function(e){
+      if(e.key==="Enter"){e.preventDefault();window.doNovaSenha();}});
+    var s1=$("sn_a"); if(s1)s1.addEventListener("keydown",function(e){
+      if(e.key==="Enter"){e.preventDefault();var q=$("sn_b");if(q)q.focus();}});
     /* Olho da senha. O foco volta para o campo e o cursor para o fim, senao a
        pessoa clica no olho e perde o lugar onde estava digitando. */
-    var o=$("li_olho");
     var SVG_ABERTO='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"'
       +' stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'
       +'<path d="M1.8 12S5.4 5.4 12 5.4 22.2 12 22.2 12 18.6 18.6 12 18.6 1.8 12 1.8 12Z"/>'
@@ -803,10 +938,11 @@ footer{border-top:1px solid var(--border);margin-top:40px;padding:16px 0 24px;fo
       +'<path d="M9.8 5.7A9.8 9.8 0 0 1 12 5.4c6.6 0 10.2 6.6 10.2 6.6a19 19 0 0 1-2.8 3.7"/>'
       +'<path d="M6.4 7.8A18.6 18.6 0 0 0 1.8 12S5.4 18.6 12 18.6c1.6 0 3-.3 4.2-.9"/>'
       +'<path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/><path d="M3 3l18 18"/></svg>';
-    if(o){
+    function ligaOlho(idBotao,idCampo){
+      var o=$(idBotao); if(!o) return;
       o.innerHTML=SVG_ABERTO;
       o.addEventListener("click",function(){
-        var c=$("li_pass"); if(!c) return;
+        var c=$(idCampo); if(!c) return;
         var ver=c.type==="password";
         c.type=ver?"text":"password";
         o.setAttribute("aria-pressed",ver?"true":"false");
@@ -817,6 +953,8 @@ footer{border-top:1px solid var(--border);margin-top:40px;padding:16px 0 24px;fo
         try{ var n=c.value.length; c.setSelectionRange(n,n); }catch(_){}
       });
     }
+    ligaOlho("li_olho","li_pass");
+    ligaOlho("sn_olho","sn_a");
   }
   if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",wire); else wire();
 })();
@@ -1824,6 +1962,151 @@ function pintaListaAcessos(){
     salvarAcessos();
   });
 }
+/* =====================================================================
+   MINHA CONTA — trocar a própria senha
+
+   Fica no crachá do topo e no "Mais" do celular, NÃO na engrenagem: a
+   engrenagem é só de quem administra o cadastro, e trocar a própria senha
+   tem de estar ao alcance de todo mundo que entra no relatório.
+
+   O Firebase exige login recente para trocar senha. Em vez de mandar a
+   pessoa sair e entrar de novo, pedimos a senha atual e reautenticamos ali
+   mesmo — o que também impede que alguém troque a senha numa máquina que
+   ficou aberta sem dono.
+
+   A senha atual e a nova saem do campo direto para o Firebase. Não são
+   guardadas em variável de módulo, não vão para o log e não passam pelo
+   Worker.
+   ===================================================================== */
+function abrirConta(){
+  const u=window.currentUser||{};
+  abrir({titulo:"Minha conta",
+    sub:`Você está como <b>${esc(u.nome||u.user||"—")}</b> · ${esc(u.user||"")}@planik.app`,
+    html:`<div style="padding:16px 17px;max-width:430px">
+      <div class="grouphd">Trocar minha senha</div>
+      <div class="sub" style="margin:-2px 0 13px">A senha vai do seu teclado direto para o Firebase.
+        Ninguém da Inteligência Comercial consegue lê-la — se você esquecer, a saída é o admin
+        exigir uma nova, não te contar a antiga.</div>
+      <div class="fld"><label for="cs_v">Senha atual</label>
+        <input id="cs_v" type="password" autocomplete="current-password" placeholder="a que você usa hoje"></div>
+      <div class="fld"><label for="cs_a">Nova senha</label>
+        <input id="cs_a" type="password" autocomplete="new-password" placeholder="mínimo de 8 caracteres"></div>
+      <div class="fld"><label for="cs_b">Repita a nova senha</label>
+        <input id="cs_b" type="password" autocomplete="new-password" placeholder="digite de novo"></div>
+      <button class="btn" id="cs_btn" type="button" style="margin-top:4px">Salvar nova senha</button>
+      <div id="cs_msg" style="margin-top:11px;font-size:12.5px"></div>
+    </div>`,
+    render(){
+      const $$$=x=>document.getElementById(x);
+      const msg=(t,bom)=>{ const m=$$$("cs_msg"); if(m){ m.textContent=t;
+        m.style.color=bom?"var(--good)":"var(--bad)"; } };
+      const salva=()=>{
+        const v=($$$("cs_v")||{}).value||"", a=($$$("cs_a")||{}).value||"", b=($$$("cs_b")||{}).value||"";
+        const bt=$$$("cs_btn");
+        if(!v){ msg("Digite sua senha atual."); return; }
+        if(a.length<8){ msg("A nova senha precisa ter pelo menos 8 caracteres."); return; }
+        if(a!==b){ msg("As duas senhas novas não são iguais."); return; }
+        if(a===v){ msg("A nova senha é igual à atual."); return; }
+        if(a.toLowerCase()===String(u.user||"").toLowerCase()){ msg("A senha não pode ser igual ao seu usuário."); return; }
+        const au=window.PLK_AUTH, user=au&&au.currentUser;
+        if(!user){ msg("Sua sessão expirou. Recarregue a página."); return; }
+        if(bt){ bt.disabled=true; bt.textContent="Salvando…"; }
+        msg("");
+        const solta=()=>{ if(bt){ bt.disabled=false; bt.textContent="Salvar nova senha"; } };
+        /* Reautenticar com a senha atual antes de trocar. Se o SDK não
+           expuser o provider, cai para um login normal, que tem o mesmo
+           efeito de renovar a sessão. */
+        let reauth;
+        try{
+          const P=window.firebase&&firebase.auth&&firebase.auth.EmailAuthProvider;
+          reauth = (P&&user.reauthenticateWithCredential)
+            ? user.reauthenticateWithCredential(P.credential(user.email,v))
+            : au.signInWithEmailAndPassword(user.email,v);
+        }catch(e){ reauth=Promise.reject(e); }
+        reauth.then(()=>user.updatePassword(a)).then(()=>{
+          const uid=user.uid;
+          const reg=window.PLK_DB
+            ? window.PLK_DB.collection("senhas").doc(uid)
+                .set({ts:Date.now(),user:u.user||"",nome:u.nome||u.user||""}).catch(()=>{})
+            : Promise.resolve();
+          return reg;
+        }).then(()=>{
+          solta();
+          ["cs_v","cs_a","cs_b"].forEach(x=>{ const el=$$$(x); if(el) el.value=""; });
+          msg("Senha alterada. Ela já vale para o próximo acesso.",true);
+          if(window.PLK_LOG) window.PLK_LOG({tipo:"senha",detalhe:"trocou a própria senha"});
+        }).catch(err=>{
+          solta();
+          const cod=(err&&err.code)||"desconhecido";
+          const M={
+            "auth/invalid-credential":"A senha atual está errada.",
+            "auth/wrong-password":"A senha atual está errada.",
+            "auth/weak-password":"Senha muito fraca. Use pelo menos 8 caracteres, misturando letras e números.",
+            "auth/too-many-requests":"Muitas tentativas. Aguarde um instante.",
+            "auth/network-request-failed":"Falha de rede. Verifique a internet."
+          };
+          msg(M[cod]||("Não foi possível trocar a senha. Código: "+cod
+            +" — mande este código para a Inteligência Comercial."));
+        });
+      };
+      const bt=document.getElementById("cs_btn");
+      if(bt) bt.addEventListener("click",salva);
+      const bb=document.getElementById("cs_b");
+      if(bb) bb.addEventListener("keydown",e=>{ if(e.key==="Enter"){ e.preventDefault(); salva(); } });
+    }});
+}
+
+/* Estado das senhas, para o admin. Lê a coleção inteira — a regra do
+   Firestore permite isso só para o admin; para qualquer outra pessoa a
+   leitura é do próprio documento e mais nada.
+
+   "Exigir nova senha" apaga o marcador: no próximo acesso a pessoa cai na
+   tela de definir senha. ISSO NÃO DESBLOQUEIA QUEM ESQUECEU A SENHA — para
+   entrar e ser perguntado, ainda é preciso conseguir logar. Quem esqueceu
+   de verdade continua dependendo de uma senha provisória posta no console
+   do Firebase. O texto na tela diz isso, para ninguém clicar aqui achando
+   que resolveu. */
+let SENHAS={}, SENHASST="";
+function pintaSenhas(){
+  const el=document.getElementById("snBody"); if(!el) return;
+  const gente=Object.keys(window.PLK_ROLES||{}).sort();
+  const linhas=gente.map(u=>{
+    const r=(window.PLK_ROLES||{})[u]||{};
+    const m=Object.values(SENHAS).find(x=>x&&x.user===u);
+    return `<tr><td class="nm">${esc(r.nome||u)}
+        <span style="color:var(--muted);font-weight:400">· ${esc(u)}@planik.app</span></td>
+      <td class="c">${m?`<span class="pill g">definiu</span>`:`<span class="pill off">ainda não</span>`}</td>
+      <td class="r" style="font-size:11.5px;color:var(--ink-2)">${m&&m.ts?dtBR(new Date(m.ts).toISOString().slice(0,10)):"—"}</td>
+      <td class="r">${m?`<button class="txtbtn" data-exig="${esc(m._id||"")}" data-nome="${esc(r.nome||u)}">Exigir nova senha</button>`:""}</td></tr>`;
+  }).join("");
+  el.innerHTML=`<div class="scroll"><table class="tb"><thead><tr><th>Pessoa</th>
+      <th class="c">Senha própria</th><th class="r">Desde</th><th></th></tr></thead>
+    <tbody>${linhas}</tbody></table></div>
+    <div class="sub" style="margin-top:9px">${esc(SENHASST)}
+      <br><b>Exigir nova senha</b> faz a pessoa escolher outra no próximo acesso — ela ainda
+      precisa conseguir entrar com a senha de agora. Para quem <b>esqueceu</b> a senha, o caminho
+      continua sendo pôr uma provisória no console do Firebase; aí ela entra, é obrigada a trocar,
+      e a provisória morre no mesmo minuto.</div>`;
+  el.querySelectorAll("[data-exig]").forEach(b=>b.addEventListener("click",()=>{
+    const id=b.dataset.exig; if(!id||!window.PLK_DB) return;
+    b.disabled=true; b.textContent="Exigindo…";
+    window.PLK_DB.collection("senhas").doc(id).delete().then(()=>{
+      delete SENHAS[id]; SENHASST=`${b.dataset.nome} vai definir uma nova senha no próximo acesso.`;
+      pintaSenhas();
+    }).catch(()=>{ b.disabled=false; b.textContent="Exigir nova senha";
+      SENHASST="Não consegui apagar o marcador. Confira as regras do Firestore."; pintaSenhas(); });
+  }));
+}
+function carregaSenhas(){
+  if(!window.PLK_DB||!ehAdmin()) return;
+  window.PLK_DB.collection("senhas").get().then(sn=>{
+    SENHAS={};
+    sn.forEach(d=>{ SENHAS[d.id]=Object.assign({_id:d.id},d.data()||{}); });
+    SENHASST=`${Object.keys(SENHAS).length} de ${Object.keys(window.PLK_ROLES||{}).length} já definiram a própria senha.`;
+    pintaSenhas();
+  }).catch(()=>{ SENHASST="Não consegui ler o estado das senhas. A coleção pode não existir ainda — ela nasce na primeira senha definida."; pintaSenhas(); });
+}
+
 function abrirCfg(){
   if(!podeVerCfg()) return;          // porta fechada também para chamada direta
   cfgEdicao=podeEditarCfg();
@@ -1836,7 +2119,11 @@ function abrirCfg(){
         <div class="grouphd">Acessos ao relatório</div>
         <div class="sub" style="margin:-4px 0 9px">Quem pode entrar e o que enxerga da engrenagem.
           Organiza a interface — não substitui as regras do Firestore.</div>
-        <div id="acBody"></div></div>`,
+        <div id="acBody"></div>
+        ${ehAdmin()?`<div class="grouphd" style="margin-top:18px">Senhas</div>
+          <div class="sub" style="margin:-4px 0 9px">Quem já definiu a própria senha. Você não
+            consegue ver senha nenhuma — nem deveria.</div>
+          <div id="snBody"><div class="sub">Carregando…</div></div>`:""}</div>`,
     rodape:`<span class="cfgnote" id="cfgSync"></span>
             <span style="margin-left:auto;display:flex;gap:7px;flex-wrap:wrap">
               ${podeVerLog()?'<button class="txtbtn" id="cfgLog">Log de acessos</button>':""}
@@ -1844,7 +2131,7 @@ function abrirCfg(){
               <button class="txtbtn" id="cfgExp">Exportar</button>
               <button class="txtbtn" id="cfgImp">Importar</button>
               <button class="txtbtn" id="cfgRst">Restaurar da planilha</button></span>`,
-    render(){ pintaCfg(); pintaListaAcessos(); }});
+    render(){ pintaCfg(); pintaListaAcessos(); if(ehAdmin()){ pintaSenhas(); carregaSenhas(); } }});
 }
 
 /* =====================================================================
@@ -1952,6 +2239,10 @@ function pintaLog(){
   const linhas=logFiltrado();
   const perg=linhas.filter(r=>r.tipo==="pergunta");
   const aces=linhas.filter(r=>r.tipo==="acesso");
+  /* Troca de senha entra no log de propósito: "quem definiu a própria senha
+     e quando" é pergunta de governança, e é a única prova de que a virada
+     aconteceu. O QUE a senha é não está aqui nem em lugar nenhum. */
+  const snh=linhas.filter(r=>r.tipo==="senha");
   const pessoas=new Set(linhas.map(r=>r.user)).size;
   const falhas=perg.filter(r=>r.erro).length;
   const tempo=perg.filter(r=>r.segundos).reduce((s,r)=>s+r.segundos,0);
@@ -1977,6 +2268,7 @@ function pintaLog(){
         <option value="">Tudo</option>
         <option value="acesso" ${LOGF.tipo==="acesso"?"selected":""}>Só acessos</option>
         <option value="pergunta" ${LOGF.tipo==="pergunta"?"selected":""}>Só perguntas</option>
+        <option value="senha" ${LOGF.tipo==="senha"?"selected":""}>Só senhas</option>
       </select>
       <select class="selin" id="logQuem">
         <option value="">Todas as pessoas</option>
@@ -1990,13 +2282,15 @@ function pintaLog(){
         <button class="txtbtn" data-logdias="365">Ano</button></span>
     </div>
 
-    <div class="grid g3" style="margin:12px 0 14px">
+    <div class="grid g4" style="margin:12px 0 14px">
       ${cartao("Acessos",nf(aces.length),`${nf(pessoas)} pessoa(s) diferente(s)`)}
       ${cartao("Perguntas ao assistente",nf(perg.length),
         medio!=null?`${nf(medio,1)} s de resposta em média`:"—")}
       ${cartao("Perguntas com erro",nf(falhas),
         perg.length?`${nf(perg.length?falhas/perg.length*100:0,1)}% das perguntas`:"—",
         falhas?"var(--warn)":"")}
+      ${cartao("Trocas de senha",nf(snh.length),
+        `${nf(new Set(snh.map(r=>r.user)).size)} pessoa(s)`)}
     </div>
 
     ${linhas.length?`<div class="scroll"><table class="tb"><thead><tr>
@@ -2007,8 +2301,10 @@ function pintaLog(){
         <td class="nm">${esc(r.nome||r.user||"?")}
           <span style="display:block;font-size:10.5px;color:var(--muted);font-weight:400">${esc(r.user||"")}</span></td>
         <td>${r.tipo==="acesso"?"Entrou na plataforma"
+              :r.tipo==="senha"?"Senha"
               :`Perguntou${r.erro?' <span class="selo erro" style="width:18px;height:18px;font-size:11px">!</span>':""}`}</td>
         <td style="white-space:normal">${r.tipo==="acesso"?'<span style="color:var(--muted)">—</span>'
+          :r.tipo==="senha"?`<span style="color:var(--ink-2)">${esc(r.detalhe||"definiu a própria senha")}</span>`
           :`<b>${esc(String(r.pergunta||"").slice(0,180))}</b>
             <span style="display:block;color:var(--muted);font-size:11.5px;margin-top:3px">
               ${esc(resumoResp(r.resposta))}${
@@ -2097,7 +2393,8 @@ function abrirLog(){
         const asp=v=>'"'+String(v==null?"":v).replace(/"/g,'""')+'"';
         const linhas=[["Data e hora","Login","Nome","Evento","Pergunta","Resposta","Segundos","Erro"]]
           .concat(logFiltrado().map(r=>[dtHora(r.ts),r.user,r.nome,
-            r.tipo==="acesso"?"Acesso":"Pergunta",r.pergunta||"",r.resposta||"",
+            r.tipo==="acesso"?"Acesso":r.tipo==="senha"?"Senha":"Pergunta",
+            r.pergunta||r.detalhe||"",r.resposta||"",
             r.segundos==null?"":String(r.segundos).replace(".",","),r.erro?"sim":""]));
         /* BOM para o Excel abrir os acentos certos */
         const b=new Blob(["﻿"+linhas.map(l=>l.map(asp).join(";")).join("\r\n")],
@@ -4326,6 +4623,7 @@ function pintaFolha(){
     <div class="item" style="cursor:default"><span class="ic">👤</span>
       <span>${esc(u.nome||u.user||"—")}
         <span style="display:block;font-size:11px;color:var(--muted)">${esc(u.user||"")}@planik.app</span></span></div>
+    <button class="item" data-acao="conta"><span class="ic">🔑</span>Minha senha</button>
     ${podeUsarChat()?`<button class="item" data-acao="chat"><span class="ic">💬</span>Fale com o Jorge</button>`:""}
     ${podeVerCfg()?`<button class="item" data-acao="cfg"><span class="ic">⚙</span>Configurações</button>`:""}
     <button class="item" data-acao="tema"><span class="ic">◐</span>Tema claro ou escuro</button>
@@ -4353,6 +4651,7 @@ $("#folhaMais").addEventListener("click",e=>{
   const a=b.dataset.acao;
   fechaFolha();
   if(a==="chat") abrirChat();
+  if(a==="conta") abrirConta();
   if(a==="cfg") abrirCfg();
   if(a==="tema") $("#tgl").click();
   if(a==="sair") $("#logoutBtn").click();
@@ -4541,6 +4840,8 @@ function mostrar(p){
   window.scrollTo({top:0,behavior:"instant"});
 }
 $("#tabs").addEventListener("click",e=>{ const b=e.target.closest(".tab"); if(b) mostrar(b.dataset.p); });
+const badge=$("#userBadge");
+if(badge) badge.addEventListener("click",()=>abrirConta());
 $("#tgl").addEventListener("click",()=>{
   const r=document.documentElement;
   r.setAttribute("data-theme",r.getAttribute("data-theme")==="dark"?"light":"dark");
@@ -4810,7 +5111,7 @@ carregarAcessosDoBanco();
 $("#hdPeriodo").textContent=`Janeiro a Dezembro de ${ANO}`;
 $("#hdUpd").textContent="Atualizado em "+((D.meta&&D.meta.atualizado)||"—");
 $("#ftUpd").textContent="Última atualização da planilha: "+((D.meta&&D.meta.atualizado)||"—");
-$("#ftVer").textContent=`Inteligência Comercial ${ANO} · v39 · aba Parceiros: ranking, cruzamentos e principal parceiro por gerente`;
+$("#ftVer").textContent=`Inteligência Comercial ${ANO} · v40 · aba Parceiros e senha própria de cada acesso`;
 $("#hdTitle").textContent=`Inteligência Comercial ${ANO}`;
 
 window.initDashboard=function(){ Object.keys(feito).forEach(k=>delete feito[k]);
