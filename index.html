@@ -3173,7 +3173,25 @@ const VP=[{id:"ranking",rot:"Ranking de parceiros"},
           {id:"ger",    rot:"Parceiro × Gerente"},
           {id:"mes",    rot:"Parceiro × Mês"},
           {id:"dono",   rot:"Principal parceiro de cada gerente"}];
-let vParc="ranking", fParcGer="", fParcProd="", parcTodos=false;
+let vParc="ranking", fParcGer="", fParcProd="", parcTodos=false, ordParc="vgv";
+
+/* Como ordenar o ranking. A diretoria pediu isto olhando o pódio: o 3º em VGV
+   era um parceiro de uma unidade só, um Taj caro. Em VGV ele é terceiro
+   mesmo — o dinheiro entrou —, mas "quem mais vende" e "quem vende mais caro"
+   são perguntas diferentes, e o relatório mostrava só a segunda.
+
+   **Recorrência** é a terceira leitura, e a mais dura: quatro unidades num mês
+   só não é relacionamento recorrente, é um evento. Conta em quantos meses
+   distintos o parceiro vendeu, e só desempata pelas unidades. */
+const ORDP=[{id:"vgv", rot:"VGV",         cha:p=>p.vgv},
+            {id:"unid",rot:"Unidades",    cha:p=>p.qtd},
+            {id:"rec", rot:"Recorrência", cha:p=>p.meses*1e6+p.qtd}];
+const chaveOrd=()=>(ORDP.find(o=>o.id===ordParc)||ORDP[0]).cha;
+const rotOrd=()=>(ORDP.find(o=>o.id===ordParc)||ORDP[0]).rot;
+/* desempate sempre por VGV, para a ordem não pular entre repinturas */
+const ordenaParc=l=>{ const f=chaveOrd(); return l.slice().sort((a,b)=>f(b)-f(a)||b.vgv-a.vgv); };
+/* "A, B e C" — vírgula até o penúltimo, "e" no último */
+const listaNomes=a=>a.length<2?(a[0]||""):a.slice(0,-1).join(", ")+" e "+a[a.length-1];
 
 const SEM_PARC="Sem parceiro";
 /* "-", "—", vazio: tudo isso é ausência de parceiro, não um parceiro chamado
@@ -3206,6 +3224,10 @@ function agregaParc(rows){
     a.gers[g]=(a.gers[g]||0)+t.valor;
     a.prods[t.produto]=(a.prods[t.produto]||0)+t.valor;
   });
+  /* meses com venda: a régua de recorrência. Um parceiro de 4 unidades num
+     mês só e outro de 4 unidades em 4 meses aparecem iguais em quantidade e
+     são coisas muito diferentes para quem cuida do relacionamento. */
+  Object.values(acc).forEach(a=>{ a.meses=a.mes.filter(v=>v>0).length; });
   return Object.values(acc).sort((a,b)=>b.vgv-a.vgv);
 }
 /* maior chave de um objeto {nome: valor} */
@@ -3318,7 +3340,17 @@ function pintaRankingParc(c){
   const nucleo=reais.slice(0,conc.n);
   const parados=nucleo.filter(p=>{ const d=diasEntre(p.ult,ref); return d!=null&&d>60; });
   const dep=totVgv&&reais.length?reais[0].vgv/totVgv:null;
-  const podio=reais.slice(0,3);
+  /* O núcleo e a concentração continuam medidos em VGV — é dinheiro, e a
+     régua de 80% só faz sentido sobre dinheiro. O que muda com o botão é a
+     ORDEM DA VITRINE: pódio e tabela. */
+  const ordenados=ordenaParc(reais);
+  const podio=ordenados.slice(0,3);
+  const porUnid=reais.slice().sort((a,b)=>b.qtd-a.qtd||b.vgv-a.vgv);
+  const porRec=reais.slice().sort((a,b)=>b.meses-a.meses||b.qtd-a.qtd);
+  const lidVgv=reais[0], lidUn=porUnid[0], lidRec=porRec[0];
+  /* parceiro caro de uma tacada só: alto VGV, uma unidade. É exatamente o
+     caso que a diretoria apontou, e vale dizer o nome em vez de esconder. */
+  const tacada=reais.slice(0,5).filter(p=>p.qtd<=1);
 
   const linha=(p,i)=>{
     const g=maiorDe(p.gers), sh=totVgv?p.vgv/totVgv:0;
@@ -3331,6 +3363,7 @@ function pintaRankingParc(c){
       <td class="r">${nfu(p.qtd)}</td>
       <td class="r">${p.qtd?moeda(p.vgv/p.qtd):"—"}</td>
       <td class="r">${pct1(sh)}</td>
+      <td class="r">${nf(p.meses)}</td>
       <td class="r">${nf(Object.keys(p.prods).length)}</td>
       <td class="r">${nf(Object.keys(p.gers).length)}</td>
       <td class="nm">${g?`${esc(g[0])}<span style="display:block;font-size:10px;color:var(--ink-2)">${pct1(p.vgv?g[1]/p.vgv:null)} do parceiro</span>`:"—"}</td>
@@ -3341,15 +3374,18 @@ function pintaRankingParc(c){
   document.getElementById("pCorpo").innerHTML=`
   ${podio.length?`<div class="grid g3" style="margin-bottom:13px">
     ${podio.map((p,i)=>`<div class="card" style="border-top:3px solid ${["var(--s1)","var(--s2)","var(--s3)"][i]}">
-      <div class="lab">${i+1}º lugar</div>
+      <div class="lab">${i+1}º lugar · por ${esc(rotOrd().toLowerCase())}</div>
       <div style="font-weight:700;font-size:15px;line-height:1.3;margin:3px 0 7px">${esc(p.nome)}</div>
-      <div class="val" style="font-size:19px">${moeda(p.vgv)}</div>
-      <div class="sub">${nfu(p.qtd)} unidade${p.qtd===1?"":"s"} · ${pct1(c.totVgv?p.vgv/c.totVgv:null)} do canal ·
-        ticket ${p.qtd?moeda(p.vgv/p.qtd):"—"}<br>
+      <div class="val" style="font-size:19px">${ordParc==="vgv"?moeda(p.vgv)
+        :ordParc==="unid"?`${nfu(p.qtd)} unidade${p.qtd===1?"":"s"}`
+        :`${nf(p.meses)} ${p.meses===1?"mês":"meses"} com venda`}</div>
+      <div class="sub">${ordParc==="vgv"?`${nfu(p.qtd)} unidade${p.qtd===1?"":"s"} em ${nf(p.meses)} ${p.meses===1?"mês":"meses"}`
+        :`${moeda(p.vgv)}${ordParc==="unid"?` em ${nf(p.meses)} ${p.meses===1?"mês":"meses"}`:` · ${nfu(p.qtd)} unidade${p.qtd===1?"":"s"}`}`} ·
+        ${pct1(c.totVgv?p.vgv/c.totVgv:null)} do canal · ticket ${p.qtd?moeda(p.vgv/p.qtd):"—"}<br>
         Principal gerente: <b>${esc((maiorDe(p.gers)||["—"])[0])}</b> ·
         ${nf(Object.keys(p.prods).length)} empreendimento(s)</div>
       <div class="track" style="margin-top:9px"><div class="barfill"
-        style="width:${Math.min(c.totVgv?p.vgv/c.totVgv:0,1)*100}%;background:${["var(--s1)","var(--s2)","var(--s3)"][i]}"></div></div>
+        style="width:${Math.min(chaveOrd()(podio[0])?chaveOrd()(p)/chaveOrd()(podio[0]):0,1)*100}%;background:${["var(--s1)","var(--s2)","var(--s3)"][i]}"></div></div>
     </div>`).join("")}</div>`:""}
 
   <div class="card" style="margin-bottom:13px"><div class="hd"><div class="h">Leitura rápida</div></div>
@@ -3366,28 +3402,55 @@ function pintaRankingParc(c){
         menos e fechar mais rápido do que prospectar nome novo.`
         :`<br>Nenhum parceiro do núcleo está parado há mais de 60 dias: a carteira que sustenta o resultado
         segue girando.`}
+      ${lidUn&&lidVgv&&lidUn.nome!==lidVgv.nome
+        ? `<br>Em <b>dinheiro</b> quem lidera é <b>${esc(lidVgv.nome)}</b> (${moeda(lidVgv.vgv)} em ${nfu(lidVgv.qtd)} un);
+           em <b>volume</b> é <b>${esc(lidUn.nome)}</b> (${nfu(lidUn.qtd)} un, ${moeda(lidUn.vgv)}).
+           São perguntas diferentes: um traz VGV, o outro traz giro.`
+        : lidVgv?`<br><b>${esc(lidVgv.nome)}</b> lidera em dinheiro e em volume ao mesmo tempo — é o parceiro
+           que sustenta o canal nas duas leituras.`:""}
+      ${lidRec?`<br>O mais <b>recorrente</b> é <b>${esc(lidRec.nome)}</b>, com venda em <b>${nf(lidRec.meses)}</b>
+        ${lidRec.meses===1?"mês":"meses"} diferentes. Recorrência é o que separa relacionamento de sorte:
+        vender quatro unidades num mês só não é o mesmo que vender uma por mês durante quatro meses.`:""}
+      ${tacada.length?`<br>Atenção ao ler o pódio por VGV: ${listaNomes(tacada.map(p=>esc(p.nome)+" ("+moeda(p.vgv)+")"))}
+        ${tacada.length===1?"está":"estão"} entre os cinco maiores com <b>uma unidade só</b> no ano —
+        é uma venda cara, não um parceiro de giro. Use o botão <b>Unidades</b> ou <b>Recorrência</b>
+        acima para ver o ranking pela outra régua.`:""}
       ${c.semp?`<br><b>${moeda(c.semp.vgv)}</b> em ${nfu(c.semp.qtd)} unidade(s) estão sem parceiro preenchido na Base:
         entram no total do canal, mas ficam fora do ranking porque não dá para negociar com um campo em branco.`:""}`
       :"Nenhuma venda de Parcerias neste recorte."}
     </div></div>
 
-  <div class="card" data-cart="parceiros"><div class="hd"><div class="h">Ranking de parceiros${esc(rotParc())}</div>
-    <div class="sub">Todos os parceiros com venda no período, ordenados por VGV · clique no nome para as vendas,
-      ou no <b>gráfico mês a mês</b> para ampliar</div></div>
+  <div class="card" data-cart="parceiros">
+    <div class="hd" style="display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap">
+      <div><div class="h">Ranking de parceiros${esc(rotParc())}</div>
+      <div class="sub">Todos os parceiros com venda no período, ordenados por <b>${esc(rotOrd().toLowerCase())}</b> ·
+        clique no nome para as vendas, ou no <b>gráfico mês a mês</b> para ampliar</div></div>
+      <div class="tgl" id="pOrd" style="margin-left:auto">${ORDP.map(o=>
+        `<button class="${o.id===ordParc?"on":""}" data-o="${o.id}">${o.rot}</button>`).join("")}</div>
+    </div>
     <div class="scroll"><table class="tb num"><thead><tr><th class="c">#</th><th class="stickyc">Parceiro</th>
       <th class="r">VGV</th><th class="r">Unid.</th><th class="r">Ticket médio</th><th class="r">Share</th>
+      <th class="r">Meses c/ venda</th>
       <th class="r">Empr.</th><th class="r">Gerentes</th><th>Principal gerente</th>
       <th class="r">Última venda</th><th>Mês a mês</th></tr></thead>
-    <tbody>${reais.map((p,i)=>linha(p,i)).join("")}
+    <tbody>${ordenados.map((p,i)=>linha(p,i)).join("")}
       ${semp?linha(semp,null):""}
       <tr class="tot"><td></td><td class="stickyc">Total</td><td class="r">${moeda(totVgv)}</td>
         <td class="r">${nfu(totQtd)}</td><td class="r">${totQtd?moeda(totVgv/totQtd):"—"}</td>
-        <td class="r">100%</td><td></td><td></td><td></td><td></td><td></td></tr>
+        <td class="r">100%</td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
     </tbody></table></div>
     <div class="sub" style="margin-top:11px"><b>Share</b> é a fatia do VGV de Parcerias no período —
       inclusive o que está sem parceiro preenchido, por isso a soma dos parceiros nomeados não fecha 100%.
       <b>Principal gerente</b> é quem mais vendeu com aquele parceiro, e o percentual abaixo diz o quanto
-      daquele parceiro passa por ele.</div></div>`;
+      daquele parceiro passa por ele. <b>Meses c/ venda</b> conta em quantos meses diferentes o parceiro
+      vendeu: é a régua de recorrência, e distingue quem entrega todo mês de quem fez uma tacada só.
+      O botão no canto troca a ordem entre <b>VGV</b> (quanto trouxe), <b>Unidades</b> (quanto girou) e
+      <b>Recorrência</b> (com que constância). O pódio acompanha a escolha; a concentração e o núcleo
+      continuam medidos em VGV, porque a régua de 80% é sobre dinheiro.</div></div>`;
+
+  const bo=document.getElementById("pOrd");
+  if(bo) bo.addEventListener("click",e=>{ const b=e.target.closest("button"); if(!b) return;
+    ordParc=b.dataset.o; rParceiros(); });
 
   document.querySelectorAll("#pCorpo tr[data-parc]").forEach(tr=>{
     const n=tr.dataset.parc;
@@ -4452,7 +4515,7 @@ registraReceita("desconto", {titulo:0,valor:13,heat:[1,12]});
 registraReceita("vso",      {titulo:0,valor:3, heat:[7,18], ocultar:[6]});
 registraReceita("gerentes", {titulo:1,valor:2, barra:6, corBarra:"var(--s1)", ocultar:[0,9]});
 registraReceita("origem",   {titulo:0,valor:4, barra:2, corBarra:"var(--s4)", ocultar:[6]});
-registraReceita("parceiros",{titulo:1,valor:2, barra:5, corBarra:"var(--s3)", ocultar:[0,10]});
+registraReceita("parceiros",{titulo:1,valor:2, barra:5, corBarra:"var(--s3)", ocultar:[0,11]});
 
 /* =====================================================================
    NAVEGAÇÃO
