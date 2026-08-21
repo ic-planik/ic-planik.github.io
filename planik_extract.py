@@ -204,21 +204,44 @@ class Extrator:
         # opcionais, e o resultado foi a aba Origem inteira sumir do site em
         # silencio. Agora ele aceita os dois nomes E cobra que pelo menos um
         # exista: sumico silencioso de coluna e o pior tipo de erro.
+        # Os nomes destas três colunas já mudaram duas vezes na planilha sem
+        # aviso. Em 17/08 "Origem" virou "Midia Origem"; em 21/08 "Midia
+        # Origem" virou "Origem" de novo e "Midia Atual" virou "Campanha de
+        # Origem". Por isso a lista de apelidos só cresce, nunca troca: o
+        # nome antigo continua valendo caso alguém volte atrás.
+        #
+        # "Campanha de Origem" tem nome de campanha e conteúdo de PLATAFORMA
+        # (Instagram, Site Planik, Google adwords) — foi conferido linha a
+        # linha contra a "Midia Atual" da planilha anterior, mesma posição e
+        # mesma distribuição de valores. Se um dia essa coluna passar a
+        # guardar campanha de verdade, este apelido tem de sair daqui.
         APELIDOS = {
-            "Origem": ["Origem", "Midia Origem", "Mídia Origem"],
-            "Plataforma": ["Plataforma", "Midia Atual", "Mídia Atual"],
+            "Origem": ["Origem", "Midia Origem"],
+            "Plataforma": ["Plataforma", "Campanha de Origem", "Midia Atual"],
             "Campanha": ["Campanha", "Linha de Campanha"],
         }
+        # A comparação é NORMALIZADA: sem acento, sem maiúscula, sem espaço
+        # sobrando. "Mídia Atual", "midia atual" e "MIDIA  ATUAL" são a mesma
+        # coluna, e a lista de apelidos deixa de precisar de uma entrada por
+        # jeito de escrever.
+        #
+        # Isto não é preciosismo. Em quatro dias o cabeçalho desta planilha
+        # mudou duas vezes, e uma letra maiúscula a mais em "Linha de
+        # Campanha" derrubaria a atualização inteira — com o relatório da
+        # diretoria parado por causa de um shift.
+        hdr_norm = {chave(k): v for k, v in hdr.items()}
         achado = {}
         for papel, nomes in APELIDOS.items():
             for n in nomes:
-                if n in hdr:
-                    achado[papel] = hdr[n]
+                col = hdr_norm.get(chave(n))
+                if col:
+                    achado[papel] = col
                     break
             else:
                 raise ErroDeEstrutura(
                     f"[Base] nenhuma coluna de {papel.lower()} encontrada. "
-                    f"Procurei por {nomes}. Cabeçalho atual: {sorted(hdr)}"
+                    f"Procurei por {nomes} (ignorando acento e maiúscula). "
+                    f"Cabeçalho atual: {sorted(hdr)}"
                 )
 
         def cel(r, nome):
