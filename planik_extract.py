@@ -210,15 +210,24 @@ class Extrator:
         # Origem". Por isso a lista de apelidos só cresce, nunca troca: o
         # nome antigo continua valendo caso alguém volte atrás.
         #
-        # "Campanha de Origem" tem nome de campanha e conteúdo de PLATAFORMA
-        # (Instagram, Site Planik, Google adwords) — foi conferido linha a
-        # linha contra a "Midia Atual" da planilha anterior, mesma posição e
-        # mesma distribuição de valores. Se um dia essa coluna passar a
-        # guardar campanha de verdade, este apelido tem de sair daqui.
+        # As três colunas são um FUNIL, não três dimensões soltas, e foi o
+        # Jorge quem esclareceu a semântica em 24/08:
+        #
+        #   Origem              de onde nasceu a venda. Preenchida em 100%
+        #                       das vendas de Salão e Online.
+        #   Campanha de Origem  só existe quando a Origem é "Online" — é a
+        #                       campanha que trouxe o lead (Site Planik,
+        #                       Nik Frei Caneca, Google Adwords…).
+        #   Linha de Campanha   a linha criativa dentro da campanha.
+        #
+        # Conferido na base de 24/08: 66 vendas Online, 66 com campanha, 65
+        # com linha; nenhuma linha sem campanha. Por um tempo estas colunas
+        # foram lidas como "plataforma" e "campanha", que era a leitura certa
+        # para a planilha antiga e virou errada quando ela mudou.
         APELIDOS = {
-            "Origem": ["Origem", "Midia Origem"],
-            "Plataforma": ["Plataforma", "Campanha de Origem", "Midia Atual"],
-            "Campanha": ["Campanha", "Linha de Campanha"],
+            "Origem":   ["Origem", "Midia Origem"],
+            "Campanha": ["Campanha de Origem", "Campanha", "Plataforma", "Midia Atual"],
+            "Linha":    ["Linha de Campanha", "Linha"],
         }
         # A comparação é NORMALIZADA: sem acento, sem maiúscula, sem espaço
         # sobrando. "Mídia Atual", "midia atual" e "MIDIA  ATUAL" são a mesma
@@ -285,8 +294,8 @@ class Extrator:
                 "valorM2":  num(cel(r, "Valor do m²"), None) if cel(r, "Valor do m²") is not None else None,
                 "fifith":   txt(cel(r, "Fifith?")) or None,
                 "origem":   txt(cel(r, "Origem")) or None,
-                "plataforma": txt(cel(r, "Plataforma")) or None,
                 "campanha": txt(cel(r, "Campanha")) or None,
+                "linha": txt(cel(r, "Linha")) or None,
                 "peso":     num(cel(r, "Peso"), 1),
             })
 
@@ -786,8 +795,8 @@ class Extrator:
                 "mes":      txt(ws.cell(r, 2).value),
                 "canal":    txt(ws.cell(r, 3).value),
                 "origem":   txt(ws.cell(r, 4).value) or "Não informada",
-                "plataforma": txt(ws.cell(r, 5).value) or None,
-                "campanha": txt(ws.cell(r, 6).value) or None,
+                "campanha": txt(ws.cell(r, 5).value) or None,
+                "linha":    txt(ws.cell(r, 6).value) or None,
                 "vendas":   num(ws.cell(r, 7).value),
             })
 
@@ -860,8 +869,8 @@ class Extrator:
         return {
             "porCanal": por_canal,
             "rankingOrigens": ranking,
-            "plataformas": agrupa(lambda t: t["plataforma"]),
-            "campanhas": agrupa(lambda t: t["campanha"]),
+            "campanhasMkt": agrupa(lambda t: t["campanha"]),
+            "linhas": agrupa(lambda t: t["linha"]),
             "porProduto": agrupa(lambda t: t["produto"]),
             "qualidade": {
                 "semOrigem": round(sem_origem, 2),

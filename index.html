@@ -537,6 +537,13 @@ footer{border-top:1px solid var(--border);margin-top:40px;padding:16px 0 24px;fo
         <input id="sn_b" type="password" placeholder="digite de novo" autocomplete="new-password"></div>
       <button type="button" id="sn_btn" class="btn">Salvar e entrar</button>
       <div class="err" id="sn_err"></div>
+      <!-- Saída de emergência. Sem ela, quem esbarra num erro nesta tela fica
+           preso: o topo do relatório está escondido, então não existe "Sair"
+           em lugar nenhum e a única saída era trocar de navegador. -->
+      <button type="button" id="sn_sair"
+        style="display:block;margin:12px auto 0;background:none;border:0;color:#7b7c80;
+               font-size:12px;text-decoration:underline;cursor:pointer;font-family:inherit">
+        Sair e entrar de novo</button>
       <div class="sb" style="margin:14px 0 0;font-size:11.5px;line-height:1.55">
         A senha vai direto do seu teclado para o Firebase. Ela não passa pelo relatório,
         não fica gravada aqui e ninguém da Inteligência Comercial consegue lê-la —
@@ -787,6 +794,18 @@ footer{border-top:1px solid var(--border);margin-top:40px;padding:16px 0 24px;fo
     var b=$("sn_b"); if(b) b.value="";
     var e=$("sn_err"); if(e) e.textContent="";
   }
+  /* Volta para a tela de login, encerrando a sessão, com um recado. Serve
+     ao botão de emergência e ao caso do login antigo. */
+  function saiParaLogin(recado){
+    try{ if(auth) auth.signOut(); }catch(e){}
+    escondeSenhaBox();
+    window.currentUser=null;
+    document.body.classList.add("locked");
+    var o=$("loginOverlay"); if(o) o.style.display="";
+    var p=$("li_pass"); if(p) p.value="";
+    var e=$("li_err"); if(e) e.textContent=recado||"";
+    var u=$("li_user"); if(u){ try{ u.focus(); }catch(_){} }
+  }
   function senhaOcupado(b,m){ var x=$("sn_btn");
     if(x){x.disabled=b;x.textContent=b?"Salvando…":"Salvar e entrar";}
     var e=$("sn_err"); if(e&&m!=null) e.textContent=m; }
@@ -823,9 +842,19 @@ footer{border-top:1px solid var(--border);margin-top:40px;padding:16px 0 24px;fo
     }).catch(function(err){
       senhaOcupado(false,"");
       var cod=(err&&err.code)||"desconhecido";
+      /* "Login recente demais" não é erro que a pessoa resolva lendo um
+         aviso: o Firebase exige uma autenticação nova para trocar senha, e
+         quem voltou numa aba aberta de ontem nunca vai conseguir daqui.
+         Então a gente NÃO explica — a gente resolve: desloga e devolve para
+         o login já com a instrução na tela. */
+      if(cod==="auth/requires-recent-login"){
+        saiParaLogin("Sua sessão já estava aberta há um tempo e, por segurança, o Firebase "
+          +"pede um login novo antes de trocar a senha. Entre de novo com a senha atual — "
+          +"a tela para definir a sua senha aparece logo em seguida.");
+        return;
+      }
       var M={
         "auth/weak-password":"Senha muito fraca. Use pelo menos 8 caracteres, misturando letras e números.",
-        "auth/requires-recent-login":"Por segurança, entre de novo e defina a senha logo na sequência.",
         "auth/network-request-failed":"Falha de rede. Verifique a internet e tente de novo.",
         "auth/too-many-requests":"Muitas tentativas. Aguarde um instante."
       };
@@ -936,6 +965,8 @@ footer{border-top:1px solid var(--border);margin-top:40px;padding:16px 0 24px;fo
       if(e.key==="Enter"){e.preventDefault();window.doNovaSenha();}});
     var s1=$("sn_a"); if(s1)s1.addEventListener("keydown",function(e){
       if(e.key==="Enter"){e.preventDefault();var q=$("sn_b");if(q)q.focus();}});
+    var ss=$("sn_sair"); if(ss)ss.addEventListener("click",function(){
+      saiParaLogin("Você saiu. Entre de novo para definir sua senha."); });
     /* Olho da senha. O foco volta para o campo e o cursor para o fim, senao a
        pessoa clica no olho e perde o lugar onde estava digitando. */
     var SVG_ABERTO='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"'
@@ -1041,6 +1072,39 @@ function bindTips(root){ (root||document).querySelectorAll("[data-tip]").forEach
    TRANSAÇÕES E PERÍODO
    ===================================================================== */
 const TX=(D.transacoes||[]).map(t=>Object.assign({},t));
+
+/* ---------------------------------------------------------------------
+   COMPATIBILIDADE DO TRIO DE ORIGEM
+
+   Em 24/08 os campos do funil de captação foram renomeados no extrator,
+   para passarem a ter o nome do que realmente guardam:
+
+       antes                          agora
+       plataforma  ← Campanha de Origem   →  campanha
+       campanha    ← Linha de Campanha    →  linha
+
+   Isso criou uma dependência de ORDEM DE PUBLICAÇÃO: subir este arquivo
+   antes do planik_extract.py deixava a aba Origem com Campanha e Linha
+   vazias, sem erro nenhum na tela. Foi exatamente o que aconteceu, e a
+   culpa é de quem desenhou a mudança assim — não de quem publicou.
+
+   A correção é o relatório entender os dois formatos. Se o payload trouxer
+   "plataforma" e não trouxer "linha", ele é do formato antigo e os campos
+   são renomeados aqui, uma vez, na entrada. A partir daí o resto do código
+   só conhece campanha e linha.
+
+   Quando o extrator novo estiver publicado em todos os ambientes, este
+   bloco pode sair — mas ele custa nada e protege contra o mesmo erro na
+   próxima renomeação. */
+const FORMATO_ORIGEM=(function(){
+  const temPlat=TX.some(t=>t.plataforma!=null);
+  const temLinha=TX.some(t=>t.linha!=null);
+  if(temPlat&&!temLinha){
+    TX.forEach(t=>{ t.linha=t.campanha||null; t.campanha=t.plataforma||null; });
+    return "antigo";
+  }
+  return temLinha?"novo":"vazio";
+})();
 const soma=a=>a.reduce((s,t)=>s+(t.valor||0),0);
 
 /* ---------------------------------------------------------------------
@@ -1198,7 +1262,7 @@ function filtrar(f,p,todos){
                    else if(t.produto!==f.produto) return false; }
     if(f.origem&&(t.origem||"Não informada")!==f.origem) return false;
     if(f.campanha&&t.campanha!==f.campanha) return false;
-    if(f.plataforma&&t.plataforma!==f.plataforma) return false;
+    if(f.linha&&t.linha!==f.linha) return false;
     return true;
   });
 }
@@ -1338,7 +1402,12 @@ const COLS=[
      propósito, porque lá a venda é nossa e não há imobiliária externa. */
   {k:"parceiro",t:"Parceiro", nm:true, f:v=>{const s=String(v==null?"":v).trim();
      return (!s||/^[-–—·.]+$/.test(s))?"—":s;}},
+  /* O trio da captação. São um funil: Origem sempre preenchida nos canais
+     próprios, Campanha só quando a Origem é Online, Linha só dentro de uma
+     campanha. Nos canais sem captação as três ficam em "—". */
   {k:"origem",  t:"Origem", f:v=>v||"—"},
+  {k:"campanha",t:"Campanha", f:v=>v||"—"},
+  {k:"linha",   t:"Linha de campanha", nm:true, f:v=>v||"—"},
   {k:"metragem",t:"Metragem (m²)", r:true, f:v=>v==null?"—":nf(v,2)},
   {k:"valorM2", t:"Valor do m²", r:true, f:v=>v==null?"—":moeda(v)},
   {k:"valor",   t:"Valor (VGV)", r:true, f:moeda},
@@ -3655,6 +3724,7 @@ function rParceiros(){
   ({ranking:pintaRankingParc, prod:pintaMatrizParcProd, ger:pintaMatrizParcGer,
     mes:pintaMatrizParcMes, dono:pintaDonoParc})[vParc](ctx);
   bindTips(document.getElementById("pCorpo"));
+  if(typeof cartoesDoPainel==="function") cartoesDoPainel("parceiros");
 }
 
 /* rótulo do recorte, para os títulos de modal não mentirem quando há filtro */
@@ -4010,388 +4080,554 @@ function pintaDonoParc(ctx){
 
 /* =====================================================================
    7 · ORIGEM POR EMPREENDIMENTO
+
+   Esta aba responde a pergunta que decide orçamento: de onde vem a venda,
+   e onde vale a pena colocar mais dinheiro.
+
+   A ESTRUTURA DO DADO É UM FUNIL, não três dimensões soltas. Foi conferido
+   na Base de 24/08, linha a linha:
+
+       179 vendas de captação própria (Salão + Online)
+        └ 174 com Origem preenchida
+           └  64 com Origem = "Online"   ← a porta do digital
+              └ 64 com Campanha          (100% das Online)
+                 └ 60 com Linha          (dentro de uma campanha)
+
+   Campanha NUNCA aparece fora da origem Online, e Linha NUNCA aparece fora
+   de uma campanha. Por isso a aba é desenhada em camadas: quem lê de cima
+   para baixo entende que "Instagram" não concorre com "PAP" — PAP é uma
+   origem, Instagram é uma campanha DENTRO da origem Online.
+
+   Tratar as três como listas paralelas foi o erro da versão anterior, e é
+   o que fazia o total não fechar em lugar nenhum.
+
+   As duas réguas de sempre continuam valendo, e sempre juntas:
+     · share do TOTAL   — sobre todas as unidades vendidas do recorte,
+                          incluindo Parcerias, Interna e Lançadora;
+     · share da CAPTAÇÃO — só sobre Salão e Online, que é o que nós captamos.
+   A classificação é pelo CANAL, nunca pelo texto do campo Origem: existe
+   venda de Salão com origem digitada "Parcerias", e ela continua sendo
+   captação nossa.
    ===================================================================== */
 const CANAIS_MKT=["Salão","Online"];   // a análise de origem olha só os canais próprios
+const ORIGEM_DIGITAL="Online";          // a origem que abre o funil de campanha
 const perOrigem=novoPeriodo();
-const VO=[{id:"porprod",rot:"Origem por empreendimento"},{id:"resumo",rot:"Resumo por empreendimento"},
-  {id:"plataforma",rot:"Plataformas"},{id:"origem",rot:"Ranking de origens"},
-  {id:"campanha",rot:"Campanhas"},{id:"matriz",rot:"Origem × empreendimento"}];
-let vOrig="porprod", prodSel="";
+const VO=[{id:"panorama", rot:"Panorama"},
+          {id:"porprod",  rot:"Origem por empreendimento"},
+          {id:"resumo",   rot:"Resumo por empreendimento"},
+          {id:"ranking",  rot:"Ranking"},
+          {id:"mOrigem",  rot:"Origem × empreendimento"},
+          {id:"mCampanha",rot:"Campanha × empreendimento"},
+          {id:"mLinha",   rot:"Linha × empreendimento"},
+          {id:"campLinha",rot:"Campanha → Linha"}];
+let vOrig="panorama", prodSel="", nivelRk="origem";
 
-/* ---- linha de campanha -------------------------------------------------
-   O nome da campanha carrega a linha criativa dentro dele, tipo
-   "Frei Caneca - Linha Investidor - Lookalike". Pegamos o trecho que começa
-   em "Linha" e vai até o próximo separador. Campanha sem "Linha" no nome
-   fica como "Sem linha identificada" — nada é inventado.                  */
-function linhaDaCampanha(c){
-  if(!c) return null;
-  const m=String(c).match(/linha\s+[^|\-–—]+/i);
-  return m ? m[0].trim().replace(/\s+/g," ") : null;
-}
-const kLinha=s=>kk(s).replace(/[()]/g,"");
+const soMkt=t=>CANAIS_MKT.includes(t.canal)&&!!t.peso;   // captação própria
+const naBase=t=>!!t.peso;                                 // toda unidade vendida
+const semCap=t=>naBase(t)&&!soMkt(t);                     // canal sem captação
+const canaisSemCap=rows=>Array.from(new Set(rows.filter(semCap).map(t=>t.canal)));
+const listaPt=a=>a.length<2?(a[0]||""):a.slice(0,-1).join(", ")+" e "+a[a.length-1];
+const ehDigital=t=>kk(t.origem||"")===kk(ORIGEM_DIGITAL);
+
 /* distância de edição, para avisar sobre nomes quase iguais na planilha */
 function dist(a,b){
-  if(Math.abs(a.length-b.length)>2) return 9;
+  if(Math.abs(a.length-b.length)>3) return 9;
   const m=[...Array(a.length+1)].map((_,i)=>[i,...Array(b.length).fill(0)]);
   for(let j=0;j<=b.length;j++) m[0][j]=j;
   for(let i=1;i<=a.length;i++) for(let j=1;j<=b.length;j++)
     m[i][j]=Math.min(m[i-1][j]+1,m[i][j-1]+1,m[i-1][j-1]+(a[i-1]===b[j-1]?0:1));
   return m[a.length][b.length];
 }
-/* ---------------------------------------------------------------------
-   Escopo da aba Origem — duas réguas, sempre as duas à vista.
-
-   A base é TODA venda de unidade do empreendimento (vaga, peso 0, fica de
-   fora: não nasce de captação nenhuma). Dentro dela, só Salão e Online têm
-   origem de captação — em Parcerias e Lançadora o campo Origem repete o
-   nome do canal, não é informação de captação. Por isso esses canais não
-   entram no ranking de origens, mas ENTRAM no denominador.
-
-   Sem isso o Online do Frei Caneca aparecia com 34,4%, que é a fatia dele
-   entre o que nós captamos; do empreendimento inteiro ele é 13,5%, porque
-   Parcerias sozinha responde por 58,2%. As duas leituras são verdadeiras —
-   o erro era mostrar uma sem dizer qual.
-
-   A classificação é pelo CANAL, nunca pelo texto do campo Origem: existe
-   venda de Salão com origem digitada como "Parcerias", e ela tem que
-   continuar contando como captação nossa.
-   --------------------------------------------------------------------- */
-const soMkt=t=>CANAIS_MKT.includes(t.canal)&&!!t.peso;   // captação própria
-const naBase=t=>!!t.peso;                                 // toda unidade vendida
-const semCap=t=>naBase(t)&&!soMkt(t);                     // canal sem captação
-const canaisSemCap=rows=>Array.from(new Set(rows.filter(semCap).map(t=>t.canal)));
-/* "Parcerias, Lançadora e Interna" — vírgula até o penúltimo, "e" no último */
-const listaPt=a=>a.length<2?(a[0]||""):a.slice(0,-1).join(", ")+" e "+a[a.length-1];
-
 function agrupar(rows,campoFn){
   const acc={};
   rows.forEach(t=>{ const k=campoFn(t); if(k==null) return;
-    (acc[k]=acc[k]||{nome:k,vgv:0,vendas:0}); acc[k].vgv+=t.valor; acc[k].vendas+=(t.peso||0); });
+    (acc[k]=acc[k]||{nome:k,vgv:0,vendas:0,mes:Array(12).fill(0),prods:{}});
+    acc[k].vgv+=t.valor; acc[k].vendas+=(t.peso||0);
+    if(t.mes!=null) acc[k].mes[t.mes]+=t.valor;
+    acc[k].prods[t.produto]=(acc[k].prods[t.produto]||0)+(t.peso||0); });
   return Object.values(acc).map(x=>({...x,ticket:x.vgv/x.vendas})).sort((a,b)=>b.vgv-a.vgv);
 }
+
+/* ---- o recorte da aba: período + empreendimento escolhido no chip ------- */
+function filtroOrig(extra){
+  return Object.assign({},prodSel?{produto:prodSel}:{},extra||{});
+}
+const linhasBase=()=>filtrar(filtroOrig(),perOrigem).filter(naBase);
+const linhasCap =()=>filtrar(filtroOrig(),perOrigem).filter(soMkt);
+const rotProd=()=>prodSel?" · "+prodSel:"";
+
+/* Os três níveis do funil, na ordem. Cada um sabe de onde sai e como se
+   chama — assim ranking, matriz e panorama leem da mesma fonte. */
+const FUNIL={
+  origem:  {rot:"Origem",   plural:"origens",   campo:t=>t.origem||"Não informada",
+            base:linhasCap, dica:"de onde nasceu a venda"},
+  campanha:{rot:"Campanha", plural:"campanhas", campo:t=>t.campanha,
+            base:()=>linhasCap().filter(t=>t.campanha),
+            dica:"só existe quando a origem é "+ORIGEM_DIGITAL},
+  linha:   {rot:"Linha",    plural:"linhas",    campo:t=>t.linha,
+            base:()=>linhasCap().filter(t=>t.linha),
+            dica:"a linha criativa dentro da campanha"}
+};
+
+/* Quadro vazio sem explicação é o pior resultado possível: quem olha conclui
+   que não houve venda, quando na verdade o dado não chegou. Esta faixa diz a
+   diferença — e, quando a causa é a publicação, diz qual arquivo falta. */
+function avisoDados(cap){
+  if(!cap.length) return "";
+  const cc=cap.filter(t=>t.campanha).length, cl=cap.filter(t=>t.linha).length;
+  if(cc>0&&cl>0) return "";
+  const motivo = FORMATO_ORIGEM==="vazio"
+    ? `O extrator publicado ainda é o <b>anterior</b> a esta versão da aba: ele não grava
+       campanha nem linha de campanha. Publique o <code>planik_extract.py</code> e rode
+       <b>Actions → Atualizar dashboard → Run workflow</b> (o botão "Re-run jobs" repete o
+       commit antigo e não resolve).`
+    : `A planilha tem ${nf(cc)} venda(s) com campanha e ${nf(cl)} com linha neste recorte.
+       Se você esperava mais, confira as colunas <b>Campanha de Origem</b> e
+       <b>Linha de Campanha</b> da aba Base.`;
+  return `<div class="avisoacesso" style="margin:0 0 13px;border-left-color:var(--warn)">
+    <b>As visões de campanha e de linha estão sem dado.</b> ${motivo}
+    <span style="display:block;margin-top:6px;color:var(--muted);font-size:11.5px">
+      O funil de Origem continua correto — só os dois níveis de baixo estão vazios.</span></div>`;
+}
+
 function rOrigem(){
+  sincHoje(perOrigem);
+  const base=linhasBase(), cap=linhasCap();
+  const uBase=unid(base), uCap=unid(cap);
+  const dig=cap.filter(ehDigital);
+  const comCamp=cap.filter(t=>t.campanha), comLin=cap.filter(t=>t.linha);
+  const semOrig=cap.filter(t=>!t.origem);
+  const fora=canaisSemCap(base);
+  const prods=PRODUTOS.filter(p=>TX.some(t=>t.produto===p&&t.peso));
+
   $("#p-origem").innerHTML=`
     <div class="card" style="margin-bottom:13px"><div class="periodo" id="poSel"></div>
-      <div class="sub" style="margin-top:8px">Os percentuais são calculados sobre <b>todas as vendas</b> do
-        recorte. <b>Parcerias, Lançadora e Interna entram na conta, mas não no ranking de origens</b>:
-        nesses canais o campo Origem só repete o nome do canal, não diz de onde veio o cliente.
-        Cada tabela traz as duas réguas — share do total e share da captação própria.</div></div>
-    <div id="poCorpo"></div>`;
-  seletorPeriodo("poSel",perOrigem,pintaOrigem);
-  pintaOrigem();
-}
-function pintaOrigem(){
-  sincHoje(perOrigem);
-  document.getElementById("poCorpo").innerHTML=`
-  <div class="card">
-    <div class="hd" style="display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap">
-      <div><div class="h" id="oT"></div><div class="sub" id="oS"></div></div>
-      <div class="tgl" id="oTgl" style="margin-left:auto">
-        ${VO.map(v=>`<button class="${v.id===vOrig?"on":""}" data-v="${v.id}">${v.rot}</button>`).join("")}</div></div>
-    <div id="oC"></div>
-  </div>`;
-  document.getElementById("oTgl").addEventListener("click",e=>{
-    const b=e.target.closest("button"); if(!b) return;
-    document.querySelectorAll("#oTgl button").forEach(x=>x.classList.remove("on"));
-    b.classList.add("on"); vOrig=b.dataset.v; pintaVistaOrigem();
-  });
-  pintaVistaOrigem();
-}
-function tabAgg(itens,rot,campo,cor,extraFiltro,bases){
-  const total=itens.reduce((s,i)=>s+i.vgv,0)||1, max=Math.max(1,...itens.map(i=>i.vgv));
-  const B=bases||{};   // {total: unidades de tudo, cap: unidades da captação}
-  return {html:`<div class="scroll"><table class="tb num"><thead><tr><th class="stickyc">${rot}</th>
-      <th class="r">Vendas</th>${B.total?'<th class="r">Share do total</th>':""}
-      ${B.cap?'<th class="r">Share da captação</th>':""}
-      <th class="r">VGV</th><th class="r">Ticket médio</th>
-      <th class="r">Share VGV</th><th></th></tr></thead>
-    <tbody>${itens.map(i=>`<tr class="clickable" data-k="${esc(i.nome)}">
-      <td class="nm stickyc">${esc(i.nome)}</td><td class="r"><b>${nfu(i.vendas)}</b></td>
-      ${B.total?`<td class="r"><b>${pct1(i.vendas/B.total)}</b></td>`:""}
-      ${B.cap?`<td class="r" style="color:var(--ink-2)">${pct1(i.vendas/B.cap)}</td>`:""}
-      <td class="r">${moeda(i.vgv)}</td><td class="r">${moeda(i.ticket)}</td>
-      <td class="r">${pct1(i.vgv/total)}</td>
-      <td style="width:150px"><div class="track" style="height:7px">
-        <div class="barfill" style="width:${(i.vgv/max)*100}%;background:${cor||"var(--s1)"}"></div></div></td>
-      </tr>`).join("")}${B.linhaSemCap||""}</tbody></table></div>`,
-    ligar(root){ root.querySelectorAll("tr[data-k]").forEach(tr=>tr.addEventListener("click",()=>{
-      const f=Object.assign({},extraFiltro||{}); f[campo]=tr.dataset.k;
-      modalVendas(tr.dataset.k,`${rot} · ${ANO}`,filtrar(f,perOrigem).filter(soMkt)); })); }};
-}
-/* Tabela de representatividade.
-   `total` é o denominador principal (todas as vendas do recorte) e `cap` o da
-   captação própria. `semCap` é a linha do que não tem origem — ela existe para
-   a coluna fechar 100%: share que não soma é a primeira coisa que gera dúvida. */
-function tabelaShare(itens,rotulo,total,cor,opts){
-  const o=opts||{};
-  const totV=itens.reduce((s,i)=>s+i.vgv,0)+(o.semCap?o.semCap.vgv:0)||1;
-  const max=Math.max(1,...itens.map(i=>i.vendas));
-  if(!itens.length&&!o.semCap) return `<div class="empty">Nada registrado neste recorte.</div>`;
-  const colCap=o.cap!=null;
-  return `<div class="scroll"><table class="tb num"><thead><tr>
-      <th class="stickyc">${rotulo}</th><th class="r">Vendas</th><th class="r">Share do total</th>
-      ${colCap?'<th class="r">Share da captação</th>':""}
-      <th class="r">VGV</th><th class="r">Ticket</th><th></th></tr></thead>
-    <tbody>${itens.map(i=>`<tr class="clickable" data-k="${esc(i.nome)}">
-      <td class="nm stickyc">${esc(i.nome)}</td>
-      <td class="r"><b>${nfu(i.vendas)}</b></td>
-      <td class="r"><b>${pct1(i.vendas/total)}</b></td>
-      ${colCap?`<td class="r" style="color:var(--ink-2)">${o.cap?pct1(i.vendas/o.cap):"—"}</td>`:""}
-      <td class="r">${moeda(i.vgv)}</td>
-      <td class="r">${moeda(i.ticket)}</td>
-      <td style="width:140px"><div class="track" style="height:7px">
-        <div class="barfill" style="width:${(i.vendas/max)*100}%;background:${cor}"></div></div></td>
-    </tr>`).join("")}
-    ${o.semCap?`<tr class="clickable" data-semcap="1" style="background:var(--card-2)">
-      <td class="nm stickyc" style="font-style:italic;color:var(--ink-2)">Sem origem de captação
-        <span style="display:block;font-size:10.5px;color:var(--muted);font-style:normal">${esc(o.semCap.canais)}</span></td>
-      <td class="r" style="color:var(--ink-2)">${nfu(o.semCap.vendas)}</td>
-      <td class="r" style="color:var(--ink-2)"><b>${pct1(o.semCap.vendas/total)}</b></td>
-      ${colCap?'<td class="r" style="color:var(--muted)">—</td>':""}
-      <td class="r" style="color:var(--ink-2)">${moeda(o.semCap.vgv)}</td>
-      <td class="r" style="color:var(--ink-2)">${o.semCap.vendas?moeda(o.semCap.vgv/o.semCap.vendas):"—"}</td>
-      <td></td></tr>`:""}
-    <tr class="tot"><td class="stickyc">Total</td><td class="r">${nfu(total)}</td><td class="r">100%</td>
-      ${colCap?'<td class="r"></td>':""}
-      <td class="r">${moeda(totV)}</td><td class="r">${total?moeda(totV/total):"—"}</td><td></td></tr>
-    </tbody></table></div>`;
-}
-
-/* Aviso padrão da aba: quanto do recorte não tem origem de captação. */
-function avisoSemCap(rows){
-  const fora=rows.filter(semCap), tot=unid(rows);
-  if(!fora.length||!tot) return "";
-  return `<div class="sub" style="margin-bottom:12px;padding:9px 11px;border-radius:9px;
-    background:var(--warn-bg);color:var(--warn)"><b>${pct1(unid(fora)/tot)}</b> das vendas deste recorte
-    vieram de <b>${listaPt(canaisSemCap(rows))}</b> e não têm origem de captação — entram no denominador,
-    mas ficam fora do ranking de origens.</div>`;
-}
-function pintaVistaOrigem(){
-  const el=document.getElementById("oC");
-  const todas=filtrar({},perOrigem).filter(naBase), mkt=todas.filter(soMkt);
-  const BT=unid(todas)||1, BC=unid(mkt);
-  const T=(t,s)=>{document.getElementById("oT").textContent=t;document.getElementById("oS").innerHTML=s;};
-  if(vOrig==="porprod"){ pintaOrigemPorProduto(el,todas,mkt,T); return; }
-  if(vOrig==="origem"){
-    T("Ranking de origens","Share do total considera Parcerias e Lançadora no denominador · clique na linha para abrir as vendas");
-    const fora=todas.filter(semCap);
-    const linhaSemCap=fora.length?`<tr class="clickable" data-k="__semcap" style="background:var(--card-2)">
-      <td class="nm stickyc" style="font-style:italic;color:var(--ink-2)">Sem origem de captação
-        <span style="display:block;font-size:10.5px;color:var(--muted);font-style:normal">${esc(canaisSemCap(todas).join(", "))}</span></td>
-      <td class="r" style="color:var(--ink-2)"><b>${nfu(unid(fora))}</b></td>
-      <td class="r" style="color:var(--ink-2)"><b>${pct1(unid(fora)/BT)}</b></td>
-      <td class="r" style="color:var(--muted)">—</td>
-      <td class="r" style="color:var(--ink-2)">${moeda(soma(fora))}</td>
-      <td class="r" style="color:var(--ink-2)">${moeda(soma(fora)/unid(fora))}</td>
-      <td class="r"></td><td></td></tr>`:"";
-    const t=tabAgg(agrupar(mkt,x=>x.origem||"Não informada"),"Origem","origem","var(--s1)",null,
-      {total:BT,cap:BC,linhaSemCap});
-    el.innerHTML=avisoSemCap(todas)+t.html; t.ligar(el);
-    const tr=el.querySelector('tr[data-k="__semcap"]');
-    if(tr) tr.addEventListener("click",()=>modalVendas("Sem origem de captação",
-      canaisSemCap(todas).join(", "),fora));
-  } else if(vOrig==="campanha"){
-    T("Campanhas","Vendas atribuídas a cada campanha · clique na linha para abrir as vendas");
-    const it=agrupar(mkt.filter(x=>x.campanha),x=>x.campanha);
-    if(!it.length){ el.innerHTML=`<div class="empty">Nenhuma campanha atribuída no período.</div>`; return; }
-    const t=tabAgg(it,"Campanha","campanha","var(--s3)",null,{total:BT,cap:BC});
-    el.innerHTML=avisoSemCap(todas)+t.html; t.ligar(el);
-  } else if(vOrig==="plataforma"){
-    T("Plataformas de mídia","Onde o lead entrou · clique na linha para abrir as vendas");
-    const it=agrupar(mkt.filter(x=>x.plataforma),x=>x.plataforma);
-    if(!it.length){ el.innerHTML=`<div class="empty">Nenhuma plataforma registrada no período.</div>`; return; }
-    const t=tabAgg(it,"Plataforma","plataforma","var(--s3)",null,{total:BT,cap:BC});
-    el.innerHTML=avisoSemCap(todas)+t.html; t.ligar(el);
-  } else if(vOrig==="resumo"){
-    T("Resumo por empreendimento",
-      "Unidades totais do empreendimento e, ao lado, o que a captação própria puxou · clique para abrir as vendas");
-    const linhasR=PRODUTOS.filter(p=>todas.some(t=>t.produto===p)).map(p=>{
-      const tud=todas.filter(t=>t.produto===p), r=tud.filter(soMkt);
-      const top=a=>{const g=agrupar(r,a);return g.length?g[0]:null;};
-      const pl=top(t=>t.plataforma), o=top(t=>t.origem), cp=top(t=>t.campanha);
-      const uT=unid(tud), uC=unid(r);
-      const cel=x=>x?`<b>${esc(x.nome)}</b><span style="color:var(--muted);display:block;font-size:11px">
-        ${nfu(x.vendas)} un. · ${pct1(x.vendas/uT)} do total</span>`:'<span style="color:var(--muted)">—</span>';
-      return `<tr class="clickable" data-p="${esc(p)}">
-        <td class="nm stickyc">${esc(p)}</td><td class="r"><b>${nfu(uT)}</b></td>
-        <td class="r">${moeda(soma(tud))}</td>
-        <td class="r">${nfu(uC)}<span style="display:block;font-size:10px;color:var(--ink-2)">${pct1(uT?uC/uT:0)}</span></td>
-        <td>${cel(o)}</td><td>${cel(pl)}</td><td>${cel(cp)}</td></tr>`;
-    });
-    el.innerHTML=avisoSemCap(todas)+`<div class="scroll"><table class="tb num">
-      <thead><tr><th class="stickyc">Empreendimento</th>
-      <th class="r">Unidades</th><th class="r">VGV</th><th class="r">Captação própria</th>
-      <th>Melhor origem</th><th>Melhor plataforma</th><th>Melhor campanha</th></tr></thead>
-      <tbody>${linhasR.join("")}</tbody></table></div>
-      <div class="sub" style="margin-top:11px">"Melhor origem" olha só a captação própria — Parcerias e
-      Lançadora não têm origem para ranquear —, mas o percentual embaixo dela é sobre o
-      <b>total do empreendimento</b>, para não inflar a leitura.</div>`;
-    el.querySelectorAll("tr[data-p]").forEach(tr=>tr.addEventListener("click",()=>
-      modalVendas(tr.dataset.p,"Todas as vendas do empreendimento",
-        filtrar({produto:tr.dataset.p},perOrigem).filter(naBase))));
-  } else {
-    T("Origem × empreendimento",
-      "Unidades e, abaixo, o share sobre TODAS as vendas do empreendimento · cada coluna fecha 100% · clique na célula para abrir as vendas");
-    const ors=agrupar(mkt,t=>t.origem||"Não informada").map(o=>o.nome);
-    const prods=PRODUTOS.filter(p=>todas.some(t=>t.produto===p));
-    const cel={}, totProd={}, semP={};
-    /* denominador da coluna = TODAS as unidades do empreendimento; o que não
-       tem captação vira uma linha própria, para a coluna fechar 100%. */
-    todas.forEach(t=>{ const p=t.produto;
-      totProd[p]=(totProd[p]||0)+(t.peso||0);
-      if(soMkt(t)) cel[(t.origem||"Não informada")+"||"+p]=(cel[(t.origem||"Não informada")+"||"+p]||0)+(t.peso||0);
-      else semP[p]=(semP[p]||0)+(t.peso||0); });
-    const max=Math.max(1,...Object.values(cel));
-    const totGeral=unid(todas)||1;
-    const totSem=unid(todas.filter(semCap));
-    el.innerHTML=`<div class="scroll"><table class="tb num"><thead><tr><th class="stickyc">Origem</th>
-      ${prods.map(p=>`<th class="c" style="font-size:9.5px;white-space:normal;max-width:88px">${esc(p)}
-        <span style="display:block;font-weight:400;opacity:.7">${nfu(totProd[p]||0)} unidade${(totProd[p]||0)===1?"":"s"}</span></th>`).join("")}
-      <th class="r">Total</th></tr></thead>
-      <tbody>${ors.map(o=>{
-        const tot=prods.reduce((s,p)=>s+(cel[o+"||"+p]||0),0);
-        return `<tr><td class="nm stickyc">${esc(o)}</td>
-        ${prods.map(p=>{const n=cel[o+"||"+p]||0, sh=totProd[p]?n/totProd[p]:0;
-          return `<td class="c" ${n?`style="cursor:pointer;padding:6px 8px;background:color-mix(in srgb,var(--s1) ${Math.round((0.12+0.88*(n/max))*66)}%,transparent)"
-            data-o="${esc(o)}" data-p="${esc(p)}"
-            data-tip="<b>${esc(o)}</b> → ${esc(p)}<br><b>${nfu(n)}</b> unidade(s) · <b>${pct1(sh)}</b> das unidades do empreendimento<br><span style='color:var(--muted)'>clique para abrir</span>">
-            <b style="font-size:13px">${nfu(n)}</b>
-            <span style="display:block;font-size:10px;color:var(--ink-2)">${pct1(sh)}</span>`
-            :'style="color:var(--muted)">·'}</td>`;}).join("")}
-        <td class="r"><b>${nfu(tot)}</b><span style="display:block;font-size:10px;color:var(--ink-2);font-weight:400">${pct1(tot/totGeral)}</span></td></tr>`;}).join("")}
-        ${totSem?`<tr style="background:var(--card-2)">
-          <td class="nm stickyc" style="font-style:italic;color:var(--ink-2)">Sem origem de captação
-            <span style="display:block;font-size:10.5px;color:var(--muted);font-style:normal">${esc(canaisSemCap(todas).join(", "))}</span></td>
-          ${prods.map(p=>{const n=semP[p]||0, sh=totProd[p]?n/totProd[p]:0;
-            return `<td class="c" style="color:var(--ink-2)">${n?`<b style="font-size:13px">${nfu(n)}</b>
-              <span style="display:block;font-size:10px">${pct1(sh)}</span>`:"·"}</td>`;}).join("")}
-          <td class="r" style="color:var(--ink-2)"><b>${nfu(totSem)}</b>
-            <span style="display:block;font-size:10px;font-weight:400">${pct1(totSem/totGeral)}</span></td></tr>`:""}
-        <tr class="tot"><td class="stickyc">Total</td>
-          ${prods.map(p=>`<td class="c">${nfu(totProd[p]||0)}<span style="display:block;font-size:10px;font-weight:400">100%</span></td>`).join("")}
-          <td class="r">${nfu(totGeral)}<span style="display:block;font-size:10px;font-weight:400">100%</span></td></tr>
-      </tbody></table></div>`;
-    el.innerHTML=avisoSemCap(todas)+el.innerHTML;
-    bindTips(el);
-    el.querySelectorAll("td[data-o]").forEach(td=>td.addEventListener("click",()=>
-      modalVendas(`${td.dataset.o} · ${td.dataset.p}`,"Origem × empreendimento",
-        filtrar({origem:td.dataset.o,produto:td.dataset.p},perOrigem).filter(soMkt))));
-  }
-}
-
-/* ---------- Origem por empreendimento: a visão principal da aba ---------- */
-function pintaOrigemPorProduto(el,todas,mkt,T){
-  const comVenda=PRODUTOS.filter(p=>todas.some(t=>t.produto===p));
-  if(prodSel && !comVenda.includes(prodSel)) prodSel="";
-  const tudo=prodSel?todas.filter(t=>t.produto===prodSel):todas;   // base: todas as vendas
-  const escopo=tudo.filter(soMkt);                                  // só a captação própria
-  const fora=tudo.filter(semCap);
-  T("Origem por empreendimento",
-    "De onde nasceu cada venda · o share é sobre todas as vendas do empreendimento, com Parcerias e Lançadora no denominador");
-
-  const total=unid(tudo)||1;      // denominador principal
-  const totalCap=unid(escopo);    // denominador da captação
-  const origens=agrupar(escopo,t=>t.origem||"Não informada");
-  const lider=origens[0];
-  const comCamp=escopo.filter(t=>t.campanha);
-  const camps=agrupar(comCamp,t=>t.campanha);
-  // linhas de campanha, agrupadas por nome normalizado
-  const porLinha={};
-  comCamp.forEach(t=>{
-    const l=linhaDaCampanha(t.campanha)||"Sem linha identificada";
-    const k=kLinha(l);
-    porLinha[k]=porLinha[k]||{nome:l,vendas:0,vgv:0,variantes:{}};
-    porLinha[k].vendas+=(t.peso||0); porLinha[k].vgv+=t.valor;
-    porLinha[k].variantes[l]=(porLinha[k].variantes[l]||0)+1;
-  });
-  const linhasC=Object.values(porLinha).map(x=>({...x,ticket:x.vgv/x.vendas}))
-    .sort((a,b)=>b.vendas-a.vendas);
-  // avisa sobre nomes quase iguais (erro de digitação na planilha)
-  const chaves=Object.keys(porLinha).filter(k=>k!==kLinha("Sem linha identificada"));
-  const parecidos=[];
-  for(let i=0;i<chaves.length;i++) for(let j=i+1;j<chaves.length;j++)
-    if(dist(chaves[i],chaves[j])<=2) parecidos.push([porLinha[chaves[i]].nome,porLinha[chaves[j]].nome]);
-
-  const chip=(v,r,n)=>`<button class="preset ${prodSel===v?"on":""}" data-p="${esc(v)}"
-    style="${prodSel===v?"background:var(--gold);border-color:var(--gold);color:#14161a;font-weight:700":""}">
-    ${esc(r)}${n!=null?` <span style="opacity:.7">${n}</span>`:""}</button>`;
-
-  el.innerHTML=`
-  <div style="display:flex;gap:7px;flex-wrap:wrap;margin-bottom:14px">
-    ${chip("","Todos os empreendimentos",nfu(unid(todas)))}
-    ${comVenda.map(p=>chip(p,p,nfu(unid(todas.filter(t=>t.produto===p))))).join("")}
-  </div>
-
-  ${avisoSemCap(tudo)}
-
-  <div class="grid g3" style="margin-bottom:14px">
-    <div class="card kpi" style="background:var(--card-2)"><div class="lab">${prodSel?esc(prodSel):"Todos os empreendimentos"}</div>
-      <div class="val sm">${nfu(total)} unidades</div>
-      <div class="sub">${moeda(soma(tudo))} em VGV · <b>${nfu(totalCap)}</b> de captação própria
-        (<b>${pct1(totalCap/total)}</b>)</div></div>
-    <div class="card kpi" style="background:var(--card-2)"><div class="lab">Origem que mais gerou venda</div>
-      <div class="val sm">${lider?esc(lider.nome):"—"}</div>
-      <div class="sub">${lider?`<b>${nfu(lider.vendas)}</b> unidades · <b>${pct1(lider.vendas/total)}</b> do
-        empreendimento · ${pct1(totalCap?lider.vendas/totalCap:0)} da captação`:""}</div></div>
-    <div class="card kpi" style="background:var(--card-2)"><div class="lab">Vendas atribuídas a campanha</div>
-      <div class="val sm">${nfu(unid(comCamp))}</div>
-      <div class="sub"><b>${pct1(unid(comCamp)/total)}</b> do empreendimento · ${nf(camps.length)} campanhas
-        e ${nf(linhasC.length)} linhas distintas</div></div>
-  </div>
-
-  <div class="card" style="margin-bottom:13px">
-    <div class="hd"><div class="h">Todas as origens${prodSel?` · ${esc(prodSel)}`:""}</div>
-      <div class="sub">Share do total inclui Parcerias e Lançadora no denominador; share da captação
-        olha só Salão e Online · clique na linha para abrir as vendas</div></div>
-    <div id="opOrig"></div>
-  </div>
-
-  <div class="grid g2">
-    <div class="card"><div class="hd"><div class="h">Campanhas</div>
-      <div class="sub">Composição das <b>${nf(comCamp.length)}</b> vendas com campanha registrada</div></div>
-      <div id="opCamp"></div></div>
-    <div class="card"><div class="hd"><div class="h">Linhas de campanha</div>
-      <div class="sub">A linha criativa extraída do nome da campanha · "sem linha" são campanhas
-        cujo nome não traz uma linha, como Site Planik e Google Adwords</div></div>
-      <div id="opLinha"></div>
-      ${(parecidos.length&&podeEditarCfg())?`<div class="sub" style="margin-top:11px;color:var(--warn)">
-        <b>Atenção ao cadastro.</b> Estes nomes são quase idênticos e por isso contam separado:
-        ${parecidos.map(([a,b])=>`"${esc(a)}" e "${esc(b)}"`).join("; ")}.
-        Padronizar o nome na planilha consolida as duas linhas numa só.</div>`:""}
+      <div class="sub" style="margin-top:8px">Os percentuais trazem sempre as <b>duas réguas</b>:
+        <b>share do total</b> conta todas as unidades vendidas do recorte, e <b>share da captação</b>
+        olha só Salão e Online. ${fora.length?`Em ${esc(listaPt(fora))} o campo Origem repete o nome do
+        canal — entram no denominador, não no ranking.`:""}</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:11px">
+        <button class="preset ${prodSel===""?"on":""}" data-prod="">Todos os empreendimentos
+          <b style="margin-left:4px">${nfu(uBase)}</b></button>
+        ${prods.map(p=>{ const u=unid(filtrar({produto:p},perOrigem).filter(naBase));
+          return `<button class="preset ${prodSel===p?"on":""}" data-prod="${esc(p)}">${esc(p)}
+            <b style="margin-left:4px">${nfu(u)}</b></button>`; }).join("")}
+      </div>
     </div>
+    ${avisoDados(cap)}
+    <div class="card" style="margin-bottom:13px">
+      <div class="tgl" id="oT">${VO.map(v=>
+        `<button class="${v.id===vOrig?"on":""}" data-v="${v.id}">${v.rot}</button>`).join("")}</div>
+    </div>
+    <div id="oCorpo"></div>`;
+
+  seletorPeriodo("poSel",perOrigem,rOrigem);
+  document.getElementById("oT").addEventListener("click",e=>{
+    const b=e.target.closest("button"); if(!b) return; vOrig=b.dataset.v; rOrigem(); });
+  document.querySelectorAll("[data-prod]").forEach(b=>b.addEventListener("click",()=>{
+    prodSel=b.dataset.prod; rOrigem(); }));
+
+  const ctx={base,cap,dig,comCamp,comLin,semOrig,uBase,uCap,fora,prods};
+  ({panorama:pintaPanorama, porprod:pintaOrigProd, resumo:pintaResumo, ranking:pintaRanking,
+    mOrigem:()=>pintaMatrizOrig("origem"), mCampanha:()=>pintaMatrizOrig("campanha"),
+    mLinha:()=>pintaMatrizOrig("linha"), campLinha:pintaCampLinha}[vOrig]||pintaPanorama)(ctx);
+  bindTips(document.getElementById("oCorpo"));
+  /* No celular a tabela vira cartão no mostrar() — mas trocar de visão aqui
+     dentro desenha uma tabela nova, que ficava sem cartão. É idempotente. */
+  if(typeof cartoesDoPainel==="function") cartoesDoPainel("origem");
+}
+
+/* ---- 7.1 · Panorama ----------------------------------------------------
+   A tela que existe para decidir, não para consultar. Três blocos: o funil
+   (onde o volume some), onde está o dinheiro por camada, e o que está sujo
+   no cadastro — porque decisão tomada sobre dado sujo é pior que decisão
+   adiada.                                                                */
+function pintaPanorama(c){
+  const {base,cap,dig,comCamp,comLin,semOrig,uBase,uCap}=c;
+  const etapas=[
+    {rot:"Todas as unidades vendidas", rows:base,
+     nota:"inclui Parcerias, Interna e Lançadora"},
+    {rot:"Captação própria — Salão + Online", rows:cap,
+     nota:"o que a nossa operação trouxe"},
+    {rot:`Origem ${ORIGEM_DIGITAL} — o digital`, rows:dig,
+     nota:"a única origem que abre campanha"},
+    {rot:"Com campanha identificada", rows:comCamp, nota:"dá para atribuir investimento"},
+    {rot:"Com linha criativa", rows:comLin, nota:"dá para saber qual peça converteu"}
+  ];
+  const max=Math.max(1,...etapas.map(e=>unid(e.rows)));
+  const naoDig=cap.filter(t=>!ehDigital(t));
+  const tkDig=unid(dig)?soma(dig)/unid(dig):null;
+  const tkNao=unid(naoDig)?soma(naoDig)/unid(naoDig):null;
+  const camps=agrupar(comCamp,t=>t.campanha);
+  const origs=agrupar(cap,t=>t.origem||"Não informada");
+
+  /* nomes quase iguais: "Linn Vila Mariana" e "linn Vila Mariana" viram duas
+     campanhas e partem o número no meio sem ninguém perceber */
+  const nomes=Array.from(new Set(comCamp.map(t=>t.campanha).concat(comLin.map(t=>t.linha))));
+  const quase=[];
+  for(let i=0;i<nomes.length;i++) for(let j=i+1;j<nomes.length;j++){
+    const a=kk(nomes[i]),b=kk(nomes[j]);
+    if(a===b||dist(a,b)<=2) quase.push([nomes[i],nomes[j]]);
+  }
+
+  document.getElementById("oCorpo").innerHTML=`
+  <div class="card" style="margin-bottom:13px"><div class="hd">
+    <div class="h">O funil da captação${esc(rotProd())}</div>
+    <div class="sub">Onde o volume vai afunilando, da carteira inteira até a peça criativa.
+      Cada degrau é um subconjunto do de cima — clique para abrir as vendas.</div></div>
+    ${etapas.map((e,i)=>{ const u=unid(e.rows), v=soma(e.rows);
+      const larg=Math.max(2,(u/max)*100);
+      const perda=i>0?unid(etapas[i-1].rows)-u:0;
+      return `<div class="hit" data-etapa="${i}" style="margin-bottom:11px;cursor:pointer"
+        data-tip="<b>${esc(e.rot)}</b><br>${nfu(u)} unidade(s) · ${moeda(v)}<br><span style='color:var(--muted)'>clique para abrir as vendas</span>">
+        <div style="display:flex;align-items:baseline;gap:9px;margin-bottom:4px;flex-wrap:wrap">
+          <span style="font-weight:${i<2?"700":"600"};font-size:13px">${esc(e.rot)}</span>
+          <span style="font-size:11px;color:var(--muted)">${esc(e.nota)}</span>
+          <span class="num" style="margin-left:auto;font-size:12.5px">
+            <b>${nfu(u)}</b> un · ${moeda(v)}
+            ${i>0?`<span style="color:var(--muted)">· ${pct1(unid(etapas[i-1].rows)?u/unid(etapas[i-1].rows):null)} do degrau acima</span>`:""}</span></div>
+        <!-- dois tons, não cinco: azul = tudo que vendemos, dourado = o ramo
+             digital, que é onde entra verba. A cor conta a história. -->
+        <div class="track"><div class="barfill" style="width:${larg}%;opacity:${i>=2?1-(i-2)*0.16:1};
+          background:${i<2?"var(--s1)":"var(--s2)"}"></div></div>
+        ${perda>0&&i>1?`<div style="font-size:11px;color:var(--muted);margin-top:3px">
+          ${nfu(perda)} unidade(s) ficaram para trás neste degrau</div>`:""}
+      </div>`; }).join("")}
+  </div>
+
+  <div class="grid g3" style="margin-bottom:13px">
+    <div class="card kpi"><div class="lab">Captação própria</div>
+      <div class="val">${pct1(uBase?uCap/uBase:null)}</div>
+      <div class="sub"><b>${nfu(uCap)}</b> de ${nfu(uBase)} unidades vendidas nasceram
+        em Salão ou Online</div></div>
+    <div class="card kpi"><div class="lab">Peso do digital na captação</div>
+      <div class="val">${pct1(uCap?unid(dig)/uCap:null)}</div>
+      <div class="sub"><b>${nfu(unid(dig))}</b> unidades · ${moeda(soma(dig))} ·
+        ticket <b>${tkDig?moeda(tkDig):"—"}</b></div></div>
+    <div class="card kpi"><div class="lab">Ticket: digital × resto</div>
+      <div class="val" style="font-size:19px">${tkDig&&tkNao?(tkDig>=tkNao?"+":"")+pct1(tkDig/tkNao-1):"—"}</div>
+      <div class="sub">digital ${tkDig?moeda(tkDig):"—"} · demais origens ${tkNao?moeda(tkNao):"—"}</div></div>
+  </div>
+
+  <div class="grid g2" style="margin-bottom:13px">
+    <div class="card"><div class="hd"><div class="h">Onde está o dinheiro, por origem</div>
+      <div class="sub">Todas as origens da captação própria, por VGV</div></div>
+      ${origs.slice(0,8).map(o=>`<div class="hit" data-orig="${esc(o.nome)}"
+        style="margin-bottom:10px;cursor:pointer"
+        data-tip="<b>${esc(o.nome)}</b><br>${nfu(o.vendas)} un · ${moeda(o.vgv)} · ticket ${moeda(o.ticket)}">
+        <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:4px">
+          <span style="font-size:12.5px">${esc(o.nome)}</span>
+          <span class="num" style="margin-left:auto;font-size:11.5px;color:var(--ink-2)">
+            ${nfu(o.vendas)} un · ${moeda(o.vgv)}</span></div>
+        <div class="track"><div class="barfill" style="width:${Math.min(o.vgv/(origs[0].vgv||1),1)*100}%;
+          background:${kk(o.nome)===kk(ORIGEM_DIGITAL)?"var(--s2)":"var(--s1)"}"></div></div>
+      </div>`).join("")}
+      <div class="sub" style="margin-top:9px;padding-top:9px;border-top:1px solid var(--grid)">
+        A barra do <b>${esc(ORIGEM_DIGITAL)}</b> está em outra cor porque é a única que se
+        desdobra em campanha e linha — é onde entra verba de mídia.</div>
+    </div>
+
+    <div class="card"><div class="hd"><div class="h">Campanhas que mais venderam</div>
+      <div class="sub">Dentro da origem ${esc(ORIGEM_DIGITAL)} · ordenadas por VGV</div></div>
+      ${camps.length?camps.slice(0,8).map(o=>{
+        const nl=Object.keys(agrupar(c.comLin.filter(t=>t.campanha===o.nome),t=>t.linha)).length;
+        return `<div class="hit" data-camp="${esc(o.nome)}" style="margin-bottom:10px;cursor:pointer"
+        data-tip="<b>${esc(o.nome)}</b><br>${nfu(o.vendas)} un · ${moeda(o.vgv)} · ticket ${moeda(o.ticket)}<br>${nl} linha(s) criativa(s)">
+        <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:4px">
+          <span style="font-size:12.5px">${esc(o.nome)}</span>
+          <span class="num" style="margin-left:auto;font-size:11.5px;color:var(--ink-2)">
+            ${nfu(o.vendas)} un · ${moeda(o.vgv)}</span></div>
+        <div class="track"><div class="barfill" style="width:${Math.min(o.vgv/(camps[0].vgv||1),1)*100}%;background:var(--s2)"></div></div>
+      </div>`;}).join(""):`<div class="empty">Nenhuma venda com campanha neste recorte.</div>`}
+    </div>
+  </div>
+
+  <div class="card"><div class="hd"><div class="h">Leitura rápida</div></div>
+    <div class="sub" style="font-size:12.5px;line-height:1.65">
+      ${uCap?`De cada 100 unidades vendidas, <b>${nf(uBase?uCap/uBase*100:0,0)}</b> vieram da nossa
+      captação; o resto entrou por Parcerias, Interna ou Lançadora, que não têm origem de captação.
+      Dentro do que captamos, o digital responde por <b>${pct1(uCap?unid(dig)/uCap:null)}</b> das unidades.
+      ${tkDig&&tkNao?(tkDig>tkNao
+        ? ` E vende <b>mais caro</b>: ticket de ${moeda(tkDig)} contra ${moeda(tkNao)} das demais origens —
+            é argumento a favor de manter ou aumentar a verba de mídia.`
+        : ` Mas vende <b>mais barato</b>: ticket de ${moeda(tkDig)} contra ${moeda(tkNao)} das demais
+            origens. Volume de digital sem ticket é tráfego, não é resultado — vale olhar qual campanha
+            está puxando a média para baixo antes de aumentar verba.`):""}
+      ${camps.length?`<br>A campanha que mais trouxe VGV foi <b>${esc(camps[0].nome)}</b>
+        (${moeda(camps[0].vgv)} em ${nfu(camps[0].vendas)} unidades, ticket ${moeda(camps[0].ticket)}).`:""}
+      ${camps.length>1?(()=>{ const cara=camps.slice().sort((a,b)=>b.ticket-a.ticket)[0];
+        return cara.nome!==camps[0].nome
+          ? ` Mas a de <b>maior ticket</b> é <b>${esc(cara.nome)}</b>, com ${moeda(cara.ticket)}
+              em ${nfu(cara.vendas)} unidade(s) — volume e ticket estão em campanhas diferentes,
+              e a decisão de verba precisa escolher qual dos dois você quer comprar.`
+          : " E ela também é a de maior ticket — volume e valor no mesmo lugar, que é o melhor cenário.";})():""}
+      ${semOrig.length?`<br><b style="color:var(--warn)">${nfu(unid(semOrig))} unidade(s) de captação própria
+        estão sem origem preenchida</b> (${moeda(soma(semOrig))}). Enquanto isso não for preenchido,
+        todo percentual desta aba está medindo uma base menor do que a real.`:""}
+      ${quase.length?`<br><b style="color:var(--warn)">Nomes quase iguais no cadastro:</b>
+        ${quase.slice(0,3).map(([a,b])=>`"${esc(a)}" e "${esc(b)}"`).join("; ")}${quase.length>3?
+        ` e mais ${nf(quase.length-3)}`:""}. São contados como coisas diferentes e partem o número
+        no meio — vale padronizar na planilha.`:""}`
+      :"Nenhuma venda de captação própria neste recorte."}
+    </div></div>`;
+
+  const corpo=document.getElementById("oCorpo");
+  corpo.querySelectorAll("[data-etapa]").forEach(el=>el.addEventListener("click",()=>{
+    const e=etapas[+el.dataset.etapa];
+    modalVendas(e.rot,`Origem${rotProd()} · ${e.nota}`,e.rows);
+  }));
+  corpo.querySelectorAll("[data-orig]").forEach(el=>el.addEventListener("click",()=>
+    modalVendas(el.dataset.orig,`Origem${rotProd()} · captação própria`,
+      cap.filter(t=>(t.origem||"Não informada")===el.dataset.orig))));
+  corpo.querySelectorAll("[data-camp]").forEach(el=>el.addEventListener("click",()=>
+    modalVendas(el.dataset.camp,`Campanha${rotProd()}`,
+      cap.filter(t=>t.campanha===el.dataset.camp))));
+}
+
+/* ---- 7.2 · Origem por empreendimento (mantida, com as colunas reais) ---- */
+function pintaOrigProd(c){
+  const alvos=prodSel?[prodSel]:c.prods;
+  document.getElementById("oCorpo").innerHTML=alvos.map(p=>{
+    const rp=filtrar({produto:p},perOrigem).filter(naBase);
+    const rc=rp.filter(soMkt);
+    const up=unid(rp), uc=unid(rc);
+    const linhas=agrupar(rc,t=>t.origem||"Não informada");
+    const forap=canaisSemCap(rp);
+    const semCapU=up-uc;
+    return `<div class="card" data-cart="origem" style="margin-bottom:13px"><div class="hd">
+      <div class="h">${esc(p)}</div>
+      <div class="sub"><b>${nfu(up)}</b> unidades no total · <b>${nfu(uc)}</b> de captação própria
+        (${pct1(up?uc/up:null)}) · VGV ${moeda(soma(rp))}</div></div>
+      <div class="scroll"><table class="tb num"><thead><tr><th>Origem</th>
+        <th class="r">Unid.</th><th class="r">Share do total</th><th class="r">Share da captação</th>
+        <th class="r">VGV</th><th class="r">Ticket</th><th>Peso</th></tr></thead>
+      <tbody>${linhas.map(o=>`<tr class="clickable" data-p2="${esc(p)}" data-o2="${esc(o.nome)}">
+        <td class="nm">${esc(o.nome)}</td>
+        <td class="r">${nfu(o.vendas)}</td>
+        <td class="r">${pct1(up?o.vendas/up:null)}</td>
+        <td class="r">${pct1(uc?o.vendas/uc:null)}</td>
+        <td class="r"><b>${moeda(o.vgv)}</b></td>
+        <td class="r">${moeda(o.ticket)}</td>
+        <td><div class="track" style="min-width:70px"><div class="barfill"
+          style="width:${Math.min(uc?o.vendas/uc:0,1)*100}%;background:var(--s4)"></div></div></td></tr>`).join("")}
+        ${semCapU>0.001?`<tr style="background:var(--card-2)"><td class="nm">
+          <i>Sem origem de captação</i>
+          <span style="display:block;font-size:10.5px;color:var(--muted)">${esc(listaPt(forap))}</span></td>
+          <td class="r">${nfu(semCapU)}</td><td class="r">${pct1(up?semCapU/up:null)}</td>
+          <td class="r">—</td><td class="r">${moeda(soma(rp)-soma(rc))}</td>
+          <td class="r">${semCapU?moeda((soma(rp)-soma(rc))/semCapU):"—"}</td><td></td></tr>`:""}
+        <tr class="tot"><td>Total</td><td class="r">${nfu(up)}</td><td class="r">100%</td>
+          <td class="r"></td><td class="r">${moeda(soma(rp))}</td>
+          <td class="r">${up?moeda(soma(rp)/up):"—"}</td><td></td></tr>
+      </tbody></table></div></div>`;
+  }).join("")||`<div class="card"><div class="empty">Nenhum empreendimento no recorte.</div></div>`;
+
+  document.querySelectorAll("#oCorpo tr[data-o2]").forEach(tr=>tr.addEventListener("click",()=>
+    modalVendas(`${tr.dataset.p2} · ${tr.dataset.o2}`,"Origem por empreendimento",
+      filtrar({produto:tr.dataset.p2,origem:tr.dataset.o2},perOrigem).filter(soMkt))));
+}
+
+/* ---- 7.3 · Resumo por empreendimento ----------------------------------- */
+function pintaResumo(c){
+  const alvos=prodSel?[prodSel]:c.prods;
+  document.getElementById("oCorpo").innerHTML=`
+  <div class="card"><div class="hd"><div class="h">Resumo por empreendimento${esc(rotProd())}</div>
+    <div class="sub">Uma linha por empreendimento: quanto veio de captação própria, quanto do digital,
+      e qual a origem e a campanha que mais venderam ali · clique para abrir</div></div>
+    <div class="scroll"><table class="tb num"><thead><tr><th class="stickyc">Empreendimento</th>
+      <th class="r">Unid.</th><th class="r">Captação própria</th><th class="r">Digital</th>
+      <th>Origem que mais vendeu</th><th>Campanha que mais vendeu</th>
+      <th class="r">VGV captado</th><th class="r">Ticket</th></tr></thead>
+    <tbody>${alvos.map(p=>{
+      const rp=filtrar({produto:p},perOrigem).filter(naBase);
+      const rc=rp.filter(soMkt), rd=rc.filter(ehDigital);
+      const up=unid(rp), uc=unid(rc);
+      const to=agrupar(rc,t=>t.origem||"Não informada")[0];
+      const tc=agrupar(rc.filter(t=>t.campanha),t=>t.campanha)[0];
+      return `<tr class="clickable" data-p3="${esc(p)}">
+        <td class="nm stickyc">${esc(p)}</td>
+        <td class="r">${nfu(up)}</td>
+        <td class="r"><b>${nfu(uc)}</b><span style="display:block;font-size:10px;color:var(--ink-2)">${pct1(up?uc/up:null)}</span></td>
+        <td class="r">${nfu(unid(rd))}<span style="display:block;font-size:10px;color:var(--ink-2)">${pct1(uc?unid(rd)/uc:null)} da captação</span></td>
+        <td class="nm">${to?`${esc(to.nome)}<span style="display:block;font-size:10px;color:var(--ink-2)">${nfu(to.vendas)} un · ${pct1(uc?to.vendas/uc:null)}</span>`:"—"}</td>
+        <td class="nm">${tc
+          ? `${esc(tc.nome)}<span style="display:block;font-size:10px;color:var(--ink-2)">${nfu(tc.vendas)} un · ${moeda(tc.vgv)} · ${pct1(unid(rd)?tc.vendas/unid(rd):null)} do digital</span>`
+          : (unid(rd)>0
+              ? `<span style="color:var(--warn)">campanha não preenchida</span><span style="display:block;font-size:10px;color:var(--muted)">${nfu(unid(rd))} un vieram do digital sem campanha na Base</span>`
+              : `<span style="color:var(--muted)">nenhuma venda digital</span>`)}</td>
+        <td class="r">${moeda(soma(rc))}</td>
+        <td class="r">${uc?moeda(soma(rc)/uc):"—"}</td></tr>`;
+    }).join("")}
+    </tbody></table></div>
+    <div class="sub" style="margin-top:11px"><b>Captação própria</b> é a fatia do empreendimento que
+      nasceu em Salão ou Online. <b>Digital</b> é a parte dessa captação com origem
+      ${esc(ORIGEM_DIGITAL)} — a única que tem campanha atrás. Empreendimento com captação alta e
+      digital baixo está sendo vendido por relacionamento e presença, não por mídia.</div></div>`;
+  document.querySelectorAll("#oCorpo tr[data-p3]").forEach(tr=>tr.addEventListener("click",()=>
+    modalVendas(tr.dataset.p3,"Captação própria do empreendimento",
+      filtrar({produto:tr.dataset.p3},perOrigem).filter(soMkt))));
+}
+
+/* ---- 7.4 · Ranking nos três níveis ------------------------------------- */
+function pintaRanking(c){
+  const N=FUNIL[nivelRk]||FUNIL.origem;
+  const rows=N.base();
+  const lista=agrupar(rows,N.campo);
+  const uc=c.uCap, uBase=c.uBase;
+  const tot=lista.reduce((s,x)=>s+x.vgv,0);
+  document.getElementById("oCorpo").innerHTML=`
+  <div class="card"><div class="hd" style="display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap">
+    <div><div class="h">Ranking de ${esc(N.plural)}${esc(rotProd())}</div>
+      <div class="sub">${esc(N.dica)} · clique na linha para abrir as vendas</div></div>
+    <div class="tgl" id="oNv" style="margin-left:auto">${Object.keys(FUNIL).map(k=>
+      `<button class="${k===nivelRk?"on":""}" data-n="${k}">${FUNIL[k].rot}</button>`).join("")}</div>
+  </div>
+    ${lista.length?`<div class="scroll"><table class="tb num"><thead><tr><th class="c">#</th>
+      <th class="stickyc">${esc(N.rot)}</th><th class="r">Unid.</th>
+      <th class="r">Share do total</th><th class="r">Share da captação</th>
+      <th class="r">VGV</th><th class="r">Ticket</th><th class="r">Empr.</th><th>Mês a mês</th></tr></thead>
+    <tbody>${lista.map((o,i)=>`<tr class="clickable" data-nv="${esc(o.nome)}">
+      <td class="c" style="color:var(--muted)">${i+1}</td>
+      <td class="nm stickyc"><span class="lnk">${esc(o.nome)}</span></td>
+      <td class="r">${nfu(o.vendas)}</td>
+      <td class="r">${pct1(uBase?o.vendas/uBase:null)}</td>
+      <td class="r">${pct1(uc?o.vendas/uc:null)}</td>
+      <td class="r"><b>${moeda(o.vgv)}</b></td>
+      <td class="r">${moeda(o.ticket)}</td>
+      <td class="r">${nf(Object.keys(o.prods).length)}</td>
+      <td><span class="spark">${spark(o.mes,"var(--s4)")}</span></td></tr>`).join("")}
+      <tr class="tot"><td></td><td class="stickyc">Total</td>
+        <td class="r">${nfu(lista.reduce((s,x)=>s+x.vendas,0))}</td>
+        <td class="r"></td><td class="r"></td><td class="r">${moeda(tot)}</td>
+        <td class="r"></td><td></td><td></td></tr>
+    </tbody></table></div>`:`<div class="empty">Nenhuma venda com ${esc(N.rot.toLowerCase())} neste recorte.</div>`}
+    <div class="sub" style="margin-top:11px">Os três níveis são um funil, não três listas paralelas:
+      <b>Origem</b> cobre toda a captação própria; <b>Campanha</b> só existe dentro da origem
+      <b>${esc(ORIGEM_DIGITAL)}</b>; <b>Linha</b> só existe dentro de uma campanha. Por isso o total
+      de campanhas é menor que o de origens — não é dado faltando, é o funil.</div>
   </div>`;
-
-  document.getElementById("opOrig").innerHTML=tabelaShare(origens,"Origem",total,"var(--s1)",
-    {cap:totalCap, semCap: fora.length?{vendas:unid(fora),vgv:soma(fora),canais:canaisSemCap(tudo).join(", ")}:null});
-  document.getElementById("opCamp").innerHTML=comCamp.length
-    ? tabelaShare(camps,"Campanha",unid(comCamp),"var(--s3)")
-    : `<div class="empty">Nenhuma venda com campanha registrada neste recorte.</div>`;
-  document.getElementById("opLinha").innerHTML=comCamp.length
-    ? tabelaShare(linhasC,"Linha",unid(comCamp),"var(--s3)")
-    : `<div class="empty">Nenhuma venda com campanha registrada neste recorte.</div>`;
-
-  el.querySelectorAll("[data-p]").forEach(b=>b.addEventListener("click",()=>{
-    prodSel=b.dataset.p; pintaVistaOrigem(); }));
-  const base=prodSel?{produto:prodSel}:{};
-  document.querySelectorAll("#opOrig tr[data-k]").forEach(tr=>tr.addEventListener("click",()=>
-    modalVendas(`${tr.dataset.k}${prodSel?" · "+prodSel:""}`,"Origem · captação própria",
-      escopo.filter(t=>(t.origem||"Não informada")===tr.dataset.k))));
-  const trSem=document.querySelector("#opOrig tr[data-semcap]");
-  if(trSem) trSem.addEventListener("click",()=>modalVendas(
-    `Sem origem de captação${prodSel?" · "+prodSel:""}`,canaisSemCap(tudo).join(", "),fora));
-  document.querySelectorAll("#opCamp tr[data-k]").forEach(tr=>tr.addEventListener("click",()=>
-    modalVendas(`${tr.dataset.k}${prodSel?" · "+prodSel:""}`,"Campanha · Salão e Online",
-      escopo.filter(t=>t.campanha===tr.dataset.k))));
-  document.querySelectorAll("#opLinha tr[data-k]").forEach(tr=>tr.addEventListener("click",()=>{
-    const alvo=kLinha(tr.dataset.k);
-    modalVendas(`${tr.dataset.k}${prodSel?" · "+prodSel:""}`,"Linha de campanha · Salão e Online",
-      escopo.filter(t=>t.campanha &&
-        kLinha(linhaDaCampanha(t.campanha)||"Sem linha identificada")===alvo));
+  const nv=document.getElementById("oNv");
+  if(nv) nv.addEventListener("click",e=>{ const b=e.target.closest("button"); if(!b) return;
+    nivelRk=b.dataset.n; rOrigem(); });
+  document.querySelectorAll("#oCorpo tr[data-nv]").forEach(tr=>tr.addEventListener("click",()=>{
+    const f={}; f[nivelRk==="origem"?"origem":nivelRk]=tr.dataset.nv;
+    modalVendas(tr.dataset.nv,`${N.rot}${rotProd()}`,
+      rows.filter(t=>String(N.campo(t))===tr.dataset.nv));
   }));
 }
 
+/* ---- 7.5 · as três matrizes × empreendimento ---------------------------- */
+function pintaMatrizOrig(nivel){
+  const N=FUNIL[nivel];
+  const rows=N.base();
+  const lista=agrupar(rows,N.campo);
+  const prods=PRODUTOS.filter(p=>rows.some(t=>t.produto===p));
+  const cel={},qtd={},totCol={};
+  rows.forEach(t=>{ const k=N.campo(t); if(k==null) return;
+    const kk2=k+"||"+t.produto;
+    cel[kk2]=(cel[kk2]||0)+t.valor; qtd[kk2]=(qtd[kk2]||0)+(t.peso||0);
+    totCol[t.produto]=(totCol[t.produto]||0)+(t.peso||0); });
+  const max=Math.max(1,...Object.values(cel));
+  const totQtd=Object.values(qtd).reduce((s,v)=>s+v,0)||1;
+  const totVgv=Object.values(cel).reduce((s,v)=>s+v,0);
+
+  document.getElementById("oCorpo").innerHTML=`
+  <div class="card"><div class="hd"><div class="h">${esc(N.rot)} × empreendimento${esc(rotProd())}</div>
+    <div class="sub">Quantidade de unidades e, abaixo, o quanto representa dentro do empreendimento ·
+      quanto mais escuro, maior o VGV · clique na célula para abrir as vendas</div></div>
+    ${lista.length?`<div class="scroll"><table class="tb num"><thead><tr><th class="stickyc">${esc(N.rot)}</th>
+      ${prods.map(p=>`<th class="c" style="font-size:9.5px;white-space:normal;max-width:86px">${esc(p)}
+        <span style="display:block;font-weight:400;opacity:.7">${nfu(totCol[p]||0)} un</span></th>`).join("")}
+      <th class="r">Total</th><th class="r">VGV</th></tr></thead>
+    <tbody>${lista.map(o=>{
+      const tq=prods.reduce((s,p)=>s+(qtd[o.nome+"||"+p]||0),0);
+      return `<tr><td class="nm stickyc">${esc(o.nome)}</td>
+      ${prods.map(p=>{ const k=o.nome+"||"+p, v=cel[k]||0, n=qtd[k]||0;
+        const sh=totCol[p]?n/totCol[p]:0;
+        const int=v?Math.round((0.12+0.88*(v/max))*72):0;
+        return `<td class="c" ${v?`style="cursor:pointer;padding:6px 8px;background:color-mix(in srgb,var(--s4) ${int}%,transparent)"
+          data-nv2="${esc(o.nome)}" data-pp="${esc(p)}"
+          data-tip="<b>${esc(o.nome)}</b> → ${esc(p)}<br><b>${nfu(n)}</b> unidade(s) · <b>${pct1(sh)}</b> da captação do empreendimento<br>VGV: <b>${moeda(v)}</b><br><span style='color:var(--muted)'>clique para abrir</span>">
+          <b style="font-size:13px">${nfu(n)}</b>
+          <span style="display:block;font-size:10px;color:var(--ink-2)">${pct1(sh)}</span>`
+          :'style="color:var(--muted)">·'}</td>`; }).join("")}
+      <td class="r"><b>${nfu(tq)}</b><span style="display:block;font-size:10px;color:var(--ink-2);font-weight:400">${pct1(tq/totQtd)}</span></td>
+      <td class="r"><b>${moeda(o.vgv)}</b></td></tr>`; }).join("")}
+      <tr class="tot"><td class="stickyc">Total</td>
+        ${prods.map(p=>`<td class="c">${nfu(totCol[p]||0)}<span style="display:block;font-size:10px;font-weight:400">100%</span></td>`).join("")}
+        <td class="r">${nfu(totQtd)}<span style="display:block;font-size:10px;font-weight:400">100%</span></td>
+        <td class="r">${moeda(totVgv)}</td></tr>
+    </tbody></table></div>`:`<div class="empty">Nenhuma venda com ${esc(N.rot.toLowerCase())} neste recorte.</div>`}
+    <div class="sub" style="margin-top:11px">O denominador de cada coluna é a <b>captação própria</b>
+      daquele empreendimento${nivel!=="origem"?` que passou por ${esc(N.rot.toLowerCase())}`:""} —
+      não o total de unidades, que inclui Parcerias e Lançadora.</div>
+  </div>`;
+  document.querySelectorAll("#oCorpo td[data-nv2]").forEach(td=>td.addEventListener("click",()=>
+    modalVendas(`${td.dataset.nv2} · ${td.dataset.pp}`,`${N.rot} × empreendimento`,
+      rows.filter(t=>String(N.campo(t))===td.dataset.nv2&&t.produto===td.dataset.pp))));
+}
+
+/* ---- 7.6 · Campanha → Linha --------------------------------------------
+   O pedido literal: "por campanha, qual linha com mais vendas". Uma seção
+   por campanha, com as linhas dela ordenadas — e o aviso quando a campanha
+   depende de uma linha só.                                               */
+function pintaCampLinha(c){
+  const rows=c.comCamp;
+  const camps=agrupar(rows,t=>t.campanha);
+  document.getElementById("oCorpo").innerHTML=`
+  <div class="card" style="margin-bottom:13px"><div class="hd">
+    <div class="h">Resumo · campanha e sua melhor linha${esc(rotProd())}</div>
+    <div class="sub">Comparação lado a lado · clique na linha da tabela para abrir as vendas da campanha</div></div>
+    ${camps.length?`<div class="scroll"><table class="tb num"><thead><tr><th class="stickyc">Campanha</th>
+      <th class="r">Unid.</th><th class="r">VGV</th><th class="r">Ticket</th>
+      <th class="r">Linhas</th><th>Linha que mais vendeu</th><th class="r">Concentração</th></tr></thead>
+    <tbody>${camps.map(o=>{
+      const rl=rows.filter(t=>t.campanha===o.nome&&t.linha);
+      const lin=agrupar(rl,t=>t.linha);
+      const dep=lin.length&&o.vgv?lin[0].vgv/o.vgv:null;
+      const semL=o.vendas-lin.reduce((s,x)=>s+x.vendas,0);
+      return `<tr class="clickable" data-cp="${esc(o.nome)}">
+        <td class="nm stickyc">${esc(o.nome)}</td>
+        <td class="r">${nfu(o.vendas)}</td><td class="r"><b>${moeda(o.vgv)}</b></td>
+        <td class="r">${moeda(o.ticket)}</td>
+        <td class="r">${nf(lin.length)}${semL>0.001?`<span style="display:block;font-size:10px;color:var(--warn)">${nfu(semL)} un sem linha</span>`:""}</td>
+        <td class="nm">${lin.length?`${esc(lin[0].nome)}<span style="display:block;font-size:10px;color:var(--ink-2)">${nfu(lin[0].vendas)} un · ${moeda(lin[0].vgv)}</span>`:'<span style="color:var(--muted)">—</span>'}</td>
+        <td class="r" style="color:${dep>=0.8?"var(--warn)":"inherit"}"><b>${pct1(dep)}</b></td></tr>`;
+    }).join("")}
+    </tbody></table></div>`:`<div class="empty">Nenhuma venda com campanha neste recorte.</div>`}
+    <div class="sub" style="margin-top:11px"><b>Concentração</b> é a fatia do VGV da campanha que veio
+      da melhor linha dela. Acima de 80% em âmbar: a campanha na prática é uma peça só, e pausar
+      aquela linha é pausar a campanha inteira.</div>
+  </div>
+
+  ${camps.slice(0,6).map(o=>{
+    const rl=rows.filter(t=>t.campanha===o.nome&&t.linha);
+    const lin=agrupar(rl,t=>t.linha);
+    if(!lin.length) return "";
+    const mx=lin[0].vgv||1;
+    return `<div class="card" style="margin-bottom:13px"><div class="hd">
+      <div class="h">${esc(o.nome)}</div>
+      <div class="sub">${nfu(o.vendas)} unidades · ${moeda(o.vgv)} · ticket ${moeda(o.ticket)} ·
+        ${nf(lin.length)} linha(s) criativa(s)</div></div>
+      ${lin.map(l=>`<div class="hit" data-lin="${esc(l.nome)}" style="margin-bottom:10px;cursor:pointer"
+        data-tip="<b>${esc(l.nome)}</b><br>${nfu(l.vendas)} un · ${moeda(l.vgv)} · ticket ${moeda(l.ticket)}<br><span style='color:var(--muted)'>clique para abrir</span>">
+        <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:4px;flex-wrap:wrap">
+          <span style="font-size:12.5px">${esc(l.nome)}</span>
+          <span class="num" style="margin-left:auto;font-size:11.5px;color:var(--ink-2)">
+            ${nfu(l.vendas)} un · ${moeda(l.vgv)} · ticket ${moeda(l.ticket)}</span></div>
+        <div class="track"><div class="barfill" style="width:${Math.min(l.vgv/mx,1)*100}%;background:var(--s3)"></div></div>
+      </div>`).join("")}
+    </div>`; }).join("")}`;
+
+  document.querySelectorAll("#oCorpo tr[data-cp]").forEach(tr=>tr.addEventListener("click",()=>
+    modalVendas(tr.dataset.cp,`Campanha${rotProd()}`,rows.filter(t=>t.campanha===tr.dataset.cp))));
+  document.querySelectorAll("#oCorpo [data-lin]").forEach(el=>el.addEventListener("click",()=>
+    modalVendas(el.dataset.lin,`Linha de campanha${rotProd()}`,
+      linhasCap().filter(t=>t.linha===el.dataset.lin))));
+}
+
 /* =====================================================================
-   7 · VSO
+   8 · VSO
    ===================================================================== */
 
 /* ---------------------------------------------------------------------
@@ -4873,7 +5109,10 @@ registraReceita("vendas",   {titulo:0,valor:13,mini:[1,12], corBarra:"var(--s2)"
 registraReceita("desconto", {titulo:0,valor:13,heat:[1,12]});
 registraReceita("vso",      {titulo:0,valor:3, heat:[7,18], ocultar:[6]});
 registraReceita("gerentes", {titulo:1,valor:2, barra:6, corBarra:"var(--s1)", ocultar:[0,9]});
-registraReceita("origem",   {titulo:0,valor:4, barra:2, corBarra:"var(--s4)", ocultar:[6]});
+/* A tabela de "Origem por empreendimento" mudou de colunas com a aba nova:
+   0 Origem · 1 Unid. · 2 Share do total · 3 Share da captação · 4 VGV ·
+   5 Ticket · 6 Peso (que já é barra e sai do texto). */
+registraReceita("origem",   {titulo:0,valor:4, barra:3, corBarra:"var(--s4)", ocultar:[6]});
 registraReceita("parceiros",{titulo:1,valor:2, barra:5, corBarra:"var(--s3)", ocultar:[0,11]});
 
 /* =====================================================================
@@ -5171,7 +5410,7 @@ carregarAcessosDoBanco();
 $("#hdPeriodo").textContent=`Janeiro a Dezembro de ${ANO}`;
 $("#hdUpd").textContent="Atualizado em "+((D.meta&&D.meta.atualizado)||"—");
 $("#ftUpd").textContent="Última atualização da planilha: "+((D.meta&&D.meta.atualizado)||"—");
-$("#ftVer").textContent=`Inteligência Comercial ${ANO} · v42 · perfil Gestora de Vendas`;
+$("#ftVer").textContent=`Inteligência Comercial ${ANO} · v44 · aba Origem: funil origem → campanha → linha, compatível com os dois formatos de payload`;
 $("#hdTitle").textContent=`Inteligência Comercial ${ANO}`;
 
 window.initDashboard=function(){ Object.keys(feito).forEach(k=>delete feito[k]);
