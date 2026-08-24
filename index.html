@@ -703,6 +703,7 @@ footer{border-top:1px solid var(--border);margin-top:40px;padding:16px 0 24px;fo
     }catch(e){}
   };
   var LABEL={admin:"Admin",diretor_online:"Diretor House",diretor_parcerias:"Diretor Parcerias",
+             gestora_vendas:"Gestora de Vendas",
              gerente:"Gerente",leitor:"Leitor"};
   function roleFor(u){ var r=window.PLK_ROLES[u];
     return r?Object.assign({user:u},r):{user:u,role:"leitor",nome:u}; }
@@ -835,8 +836,7 @@ footer{border-top:1px solid var(--border);margin-top:40px;padding:16px 0 24px;fo
   };
   function enter(u){
     var f=roleFor(u); window.currentUser=f;
-    var b=$("userBadge");
-    if(b) b.innerHTML="👤 "+f.nome+'<span class="role">'+(LABEL[f.role]||"Leitor")+"</span>";
+    window.PLK_CRACHA();
     document.body.classList.remove("locked");
     var o=$("loginOverlay"); if(o) o.style.display="none";
     /* uma linha por abertura da plataforma, não por recarga de aba: o
@@ -849,6 +849,15 @@ footer{border-top:1px solid var(--border);margin-top:40px;padding:16px 0 24px;fo
     }catch(e){ window.PLK_LOG({tipo:"acesso"}); }
     load();
   }
+  /* O crachá do topo precisa ser repintado DEPOIS que a lista de acessos
+     chega do banco: no primeiro desenho o papel ainda é o padrão, porque
+     quem traduz visão em papel é o aplicarAcessos(), que roda mais tarde.
+     Sem isto o Smith aparecia como "Leitor" para ele mesmo. */
+  window.PLK_CRACHA=function(){
+    var f=window.currentUser; if(!f) return;
+    var b=$("userBadge"); if(!b) return;
+    b.innerHTML="👤 "+f.nome+'<span class="role">'+(LABEL[f.role]||"Leitor")+"</span>";
+  };
   function status(m,s){ var a=$("dataStatus"),b=$("dataStatusMsg");
     if(b)b.textContent=m||""; if(a)a.style.display=s?"flex":"none"; }
   function load(){
@@ -1794,7 +1803,48 @@ function podeUsarChat(){ const u=window.currentUser; return !!(u&&(u.chat||u.use
    Firestore, a tela ficaria certa e o dado continuaria exposto — por isso a
    engrenagem avisa em vermelho quando isso acontece.
    ===================================================================== */
+/* Estas três abas não existem para o Diretor de Parcerias porque o documento
+   dele não tem a matéria-prima delas — desconto, origem de captação e VSO
+   ficaram de fora no servidor. A lista está aqui como documentação do porquê;
+   quem esconde as abas é a tabela PERFIS logo abaixo. */
 const ABAS_FORA_PARCERIAS=["desconto","origem","vso"];
+
+/* =====================================================================
+   PERFIS DE ACESSO
+
+   Cada perfil diz DUAS coisas, e elas são de naturezas diferentes:
+
+     abas  — quais telas a pessoa enxerga. Isto é organização: o dado já
+             chegou no navegador dela, e um F12 alcança o resto.
+     doc   — qual documento o servidor entrega. ISTO é trava: o que não
+             está no documento não existe para ela, nem pelo F12.
+
+   O Diretor de Parcerias tem os dois: tela enxuta E documento recortado.
+   A Gestora de Vendas tem só o primeiro — ela é do time comercial e
+   poderia ver o relatório inteiro; o recorte existe para ela não se perder
+   em nove abas quando usa três. Não confundir uma coisa com a outra é o
+   que evita alguém achar que marcou um cadeado quando fechou uma cortina.
+
+   Perfil sem "abas" (null) vê todas as telas.
+   ===================================================================== */
+const PERFIS={
+  "":          {rot:"Vê tudo",            papel:"leitor",             abas:null},
+  "parcerias": {rot:"Diretor Parcerias",  papel:"diretor_parcerias",
+                abas:["sintese","geral","vendas","canais","gerentes","parceiros"]},
+  "gestora":   {rot:"Gestora de Vendas",  papel:"gestora_vendas",
+                abas:["sintese","gerentes","parceiros"]}
+};
+function perfilAtual(){ return PERFIS[visaoDe()]||PERFIS[""]; }
+/* Abas que esta pessoa pode abrir, na ordem em que aparecem no topo. */
+function abasDoAcesso(){
+  const lista=perfilAtual().abas;
+  const todas=Array.from(document.querySelectorAll(".tab")).map(t=>t.dataset.p);
+  return lista?todas.filter(p=>lista.indexOf(p)>=0):todas;
+}
+const abaLiberada=p=>{ const l=perfilAtual().abas; return !l||l.indexOf(p)>=0; };
+/* Destino quando a aba pedida está fechada. Mandar para "sintese" às cegas
+   quebraria um perfil futuro que não tenha a Síntese. */
+function primeiraAba(){ return abasDoAcesso()[0]||"sintese"; }
 function visaoDe(){ const u=window.currentUser; return (u&&u.visao)||""; }
 function visaoRestrita(){ return visaoDe()==="parcerias"; }
 const CANAL_VISIVEL="Parcerias";
@@ -1803,15 +1853,12 @@ const CANAL_VISIVEL="Parcerias";
 function pintaAcessos(){
   const b=$("#cfgBtn"); if(b) b.style.display=podeVerCfg()?"":"none";
   const c=$("#chatBtn"); if(c) c.style.display=podeUsarChat()?"":"none";
-  const r=visaoRestrita();
-  ABAS_FORA_PARCERIAS.forEach(p=>{
-    const t=document.querySelector(`.tab[data-p="${p}"]`);
-    if(t) t.style.display=r?"none":"";
+  document.querySelectorAll(".tab").forEach(t=>{
+    t.style.display=abaLiberada(t.dataset.p)?"":"none";
   });
-  /* se a aba escondida era a que estava aberta, volta para a Síntese */
+  /* se a aba escondida era a que estava aberta, vai para a primeira que sobrou */
   const ab=document.querySelector(".tab.on");
-  if(r&&ab&&ABAS_FORA_PARCERIAS.indexOf(ab.dataset.p)>=0&&typeof mostrar==="function")
-    mostrar("sintese");
+  if(ab&&!abaLiberada(ab.dataset.p)&&typeof mostrar==="function") mostrar(primeiraAba());
 }
 
 /* =====================================================================
@@ -1832,7 +1879,7 @@ function pintaAcessos(){
 const NIVEIS=[{v:"edita",r:"Edita o cadastro"},{v:"le",r:"Vê a engrenagem"},{v:"",r:"Só o relatório"}];
 /* Quanto do DADO a pessoa recebe — não é o mesmo que o nível da engrenagem.
    A visão decide qual documento o navegador dela pede ao Firestore. */
-const VISOES=[{v:"",r:"Vê tudo"},{v:"parcerias",r:"Diretor Parcerias"}];
+const VISOES=Object.keys(PERFIS).map(v=>({v,r:PERFIS[v].rot}));
 const ACESSO_BASE=JSON.parse(JSON.stringify(window.PLK_ROLES||{}));
 let ACESSOS={}, SYNCAC="Somente os acessos originais do arquivo.";
 const loginOk=s=>/^[a-z0-9._-]{2,40}$/.test(String(s||"").trim().toLowerCase());
@@ -1843,7 +1890,8 @@ function aplicarAcessos(){
   Object.entries(ACESSOS).forEach(([u,c])=>{
     m[u]=Object.assign({},m[u]||{role:"leitor"},
       {nome:c.nome||(m[u]||{}).nome||u,cfg:c.cfg||"",chat:!!c.chat,visao:c.visao||""});
-    if(c.visao==="parcerias") m[u].role="diretor_parcerias";
+    const perf=PERFIS[c.visao||""];
+    if(perf&&perf.papel!=="leitor") m[u].role=perf.papel;
   });
   if(m.admin){ m.admin.cfg="edita"; m.admin.chat=true; m.admin.visao=""; }
   window.PLK_ROLES=m;
@@ -1851,6 +1899,7 @@ function aplicarAcessos(){
   const u=window.currentUser;
   if(u&&m[u.user]) window.currentUser=Object.assign({},u,m[u.user],{user:u.user});
   else if(u&&!m[u.user]) window.currentUser=Object.assign({},u,{cfg:""});
+  if(window.PLK_CRACHA) window.PLK_CRACHA();
   pintaAcessos();
 }
 function carregarAcessosDoBanco(){
@@ -4592,12 +4641,23 @@ const ehCelular=()=>window.matchMedia("(max-width:760px)").matches;
 /* --- barra inferior ---------------------------------------------------- */
 const NAVMOB=[{p:"sintese",ic:"◧",rot:"Síntese"},{p:"geral",ic:"◎",rot:"Geral"},
               {p:"vendas",ic:"▤",rot:"Vendas"},{p:"gerentes",ic:"◈",rot:"Gerentes"}];
+const IC_ABA={sintese:"◧",geral:"◎",vendas:"▤",desconto:"◍",canais:"◐",
+              gerentes:"◈",parceiros:"⬡",origem:"◇",vso:"◑"};
 function pintaNavMob(){
   const el=$("#navMob"); if(!el) return;
   const atual=($$(".tab.on")[0]||{}).dataset;
-  const visiveis=NAVMOB.filter(n=>{
-    const t=document.querySelector(`.tab[data-p="${n.p}"]`);
-    return t&&t.style.display!=="none";
+  /* A barra de baixo começa pelas quatro abas de sempre, mas SÓ conta as que
+     esta pessoa tem. Quem enxerga três abas via duas na barra e a terceira
+     enterrada no "Mais" — a barra ficava vazia e a aba principal escondida.
+     Agora as vagas que sobram são preenchidas com as outras abas dela. */
+  const temAba=p=>{ const t=document.querySelector(`.tab[data-p="${p}"]`);
+    return t&&t.style.display!=="none"; };
+  const visiveis=NAVMOB.filter(n=>temAba(n.p));
+  $$(".tab").forEach(t=>{
+    if(visiveis.length>=4) return;
+    const p=t.dataset.p;
+    if(!temAba(p)||visiveis.some(n=>n.p===p)) return;
+    visiveis.push({p,ic:IC_ABA[p]||"▸",rot:t.textContent.trim().split(" ")[0]});
   });
   el.innerHTML=visiveis.map(n=>`<button data-p="${n.p}" class="${atual&&atual.p===n.p?"on":""}">
       <span class="ic">${n.ic}</span><span>${n.rot}</span></button>`).join("")
@@ -4830,7 +4890,7 @@ function sincronizaDia(){
 }
 function mostrar(p){
   /* a aba escondida também não abre por chamada direta nem pelo endereço */
-  if(visaoRestrita()&&ABAS_FORA_PARCERIAS.indexOf(p)>=0) p="sintese";
+  if(!abaLiberada(p)) p=primeiraAba();
   sincronizaDia();
   $$(".tab").forEach(t=>t.classList.toggle("on",t.dataset.p===p));
   $$(".panel").forEach(s=>s.classList.toggle("on",s.id==="p-"+p));
@@ -5111,7 +5171,7 @@ carregarAcessosDoBanco();
 $("#hdPeriodo").textContent=`Janeiro a Dezembro de ${ANO}`;
 $("#hdUpd").textContent="Atualizado em "+((D.meta&&D.meta.atualizado)||"—");
 $("#ftUpd").textContent="Última atualização da planilha: "+((D.meta&&D.meta.atualizado)||"—");
-$("#ftVer").textContent=`Inteligência Comercial ${ANO} · v40 · aba Parceiros e senha própria de cada acesso`;
+$("#ftVer").textContent=`Inteligência Comercial ${ANO} · v42 · perfil Gestora de Vendas`;
 $("#hdTitle").textContent=`Inteligência Comercial ${ANO}`;
 
 window.initDashboard=function(){ Object.keys(feito).forEach(k=>delete feito[k]);
