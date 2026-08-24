@@ -890,9 +890,6 @@ footer{border-top:1px solid var(--border);margin-top:40px;padding:16px 0 24px;fo
   function status(m,s){ var a=$("dataStatus"),b=$("dataStatusMsg");
     if(b)b.textContent=m||""; if(a)a.style.display=s?"flex":"none"; }
   function load(){
-    if(window.__BOOTED__){ try{window.initDashboard();}catch(e){} return; }
-    status("Carregando dados…",true);
-    if(!window.PLK_DB){ status("Sem conexão com o banco. Verifique a internet e recarregue.",true); return; }
     /* Quem tem visão restrita pede OUTRO documento — o que já vem sem o valor
        e o desconto das unidades dos outros canais. Não é a tela que filtra:
        é o banco que entrega menos. A regra do Firestore fecha a porta do
@@ -903,13 +900,40 @@ footer{border-top:1px solid var(--border);margin-top:40px;padding:16px 0 24px;fo
        PERFIS[visao].doc no index.html é a fonte; isto é o espelho. */
     var DOC_DA_VISAO={parcerias:"parcerias", house:"house"};
     var qual=DOC_DA_VISAO[(window.currentUser||{}).visao]||"atual";
+    /* Trocar de conta SEM recarregar a página deixava o dado de quem estava
+       antes na memória: o __BOOTED__ desistia aqui e a tela só repintava por
+       cima. Abas e cartões vinham do novo acesso, as tabelas vinham do
+       anterior. Aconteceu de verdade em 24/08 — o Smith apareceu com o
+       payload do House, e antes disso o House apareceu com o do admin.
+       Agora, se o documento pedido é outro, a página recomeça do zero. */
+    if(window.__BOOTED__){
+      if(window.__PLK_DOC__!==qual){ location.reload(); return; }
+      try{window.initDashboard();}catch(e){}
+      return;
+    }
+    status("Carregando dados…",true);
+    if(!window.PLK_DB){ status("Sem conexão com o banco. Verifique a internet e recarregue.",true); return; }
     window.PLK_DB.collection("dados").doc(qual).get().then(function(s){
       if(!s.exists){ status(qual!=="atual"
         ? "A visão restrita ("+qual+") ainda não foi publicada. Ela nasce na próxima "
           +"atualização da planilha — avise a Inteligência Comercial se demorar."
         : "Dados ainda não publicados. Avise a Inteligência Comercial.",true); return; }
       var d=s.data()||{};
-      window.__PLK_DATA__ = d.payloadStr ? JSON.parse(d.payloadStr) : (d.payload||d);
+      var P = d.payloadStr ? JSON.parse(d.payloadStr) : (d.payload||d);
+      /* Confere que o documento que chegou é o que foi pedido. O payload
+         restrito se identifica em _visao.tipo; o completo não tem _visao.
+         Se não bater, a tela não desenha: um relatório com o recorte de
+         outra pessoa é pior que um relatório que não abriu. */
+      var v=P._visao||null, tipo=v?v.tipo:"";
+      var esperado=(qual==="atual")?"":qual;
+      if(tipo!==esperado){
+        status("O banco entregou o documento errado para este acesso ("
+          +(tipo||"completo")+" no lugar de "+(esperado||"completo")
+          +"). Nada foi exibido. Avise a Inteligência Comercial.",true);
+        return;
+      }
+      window.__PLK_DATA__ = P;
+      window.__PLK_DOC__ = qual;
       status("",false);
       if(typeof window.__BOOT__==="function") window.__BOOT__();
     }).catch(function(e){ status("Falha ao carregar os dados. Tente recarregar a página.",true); console.log(e); });
@@ -947,12 +971,20 @@ footer{border-top:1px solid var(--border);margin-top:40px;padding:16px 0 24px;fo
         try{ console.error("[login] falhou:",cod,err&&err.message); }catch(_){} });
     return false;
   };
+  /* Sair recarrega a página, e isso não é capricho: sem recarregar, o dado da
+     sessão anterior continua na memória e a próxima pessoa a entrar nesta aba
+     o recebe na tela. Limpar variável por variável seria uma lista que alguém
+     um dia esquece de atualizar; recarregar não tem como esquecer. */
   window.doLogout=function(){
-    try{ if(auth) auth.signOut(); }catch(e){}
+    var fim=function(){
+      try{ sessionStorage.removeItem("plk_acesso"); }catch(e){}
+      location.reload();
+    };
     escondeSenhaBox();
     window.currentUser=null; document.body.classList.add("locked");
     var o=$("loginOverlay"); if(o)o.style.display="";
     var u=$("li_user"),p=$("li_pass"); if(u)u.value=""; if(p)p.value="";
+    try{ if(auth) auth.signOut().then(fim,fim); else fim(); }catch(e){ fim(); }
   };
   if(fbReady&&auth) auth.onAuthStateChanged(function(user){
     if(user) entrar((user.email||"").split("@")[0].toLowerCase());
@@ -5462,7 +5494,7 @@ carregarAcessosDoBanco();
 $("#hdPeriodo").textContent=`Janeiro a Dezembro de ${ANO}`;
 $("#hdUpd").textContent="Atualizado em "+((D.meta&&D.meta.atualizado)||"—");
 $("#ftUpd").textContent="Última atualização da planilha: "+((D.meta&&D.meta.atualizado)||"—");
-$("#ftVer").textContent=`Inteligência Comercial ${ANO} · v45 · visão Diretor House (Salão + Online) com documento próprio no servidor`;
+$("#ftVer").textContent=`Inteligência Comercial ${ANO} · v46 · troca de conta na mesma aba recarrega a página; cada visão restrita lê só o próprio documento`;
 $("#hdTitle").textContent=`Inteligência Comercial ${ANO}`;
 
 window.initDashboard=function(){ Object.keys(feito).forEach(k=>delete feito[k]);
