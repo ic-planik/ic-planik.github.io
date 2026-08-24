@@ -710,7 +710,7 @@ footer{border-top:1px solid var(--border);margin-top:40px;padding:16px 0 24px;fo
     }catch(e){}
   };
   var LABEL={admin:"Admin",diretor_online:"Diretor House",diretor_parcerias:"Diretor Parcerias",
-             gestora_vendas:"Gestora de Vendas",
+             gestora_vendas:"Gestora de Vendas",diretor_house:"Diretor House",
              gerente:"Gerente",leitor:"Leitor"};
   function roleFor(u){ var r=window.PLK_ROLES[u];
     return r?Object.assign({user:u},r):{user:u,role:"leitor",nome:u}; }
@@ -897,10 +897,16 @@ footer{border-top:1px solid var(--border);margin-top:40px;padding:16px 0 24px;fo
        e o desconto das unidades dos outros canais. Não é a tela que filtra:
        é o banco que entrega menos. A regra do Firestore fecha a porta do
        documento completo para esses logins; isto aqui só evita bater nela. */
-    var qual=((window.currentUser||{}).visao==="parcerias")?"parcerias":"atual";
+    /* Qual documento o navegador pede. A tabela PERFIS mora no segundo bloco
+       de script, que ainda não rodou aqui — por isso o mapa é repetido, curto
+       e com um comentário dizendo que os dois têm de andar juntos.
+       PERFIS[visao].doc no index.html é a fonte; isto é o espelho. */
+    var DOC_DA_VISAO={parcerias:"parcerias", house:"house"};
+    var qual=DOC_DA_VISAO[(window.currentUser||{}).visao]||"atual";
     window.PLK_DB.collection("dados").doc(qual).get().then(function(s){
-      if(!s.exists){ status(qual==="parcerias"
-        ? "A visão restrita ainda não foi publicada. Avise a Inteligência Comercial."
+      if(!s.exists){ status(qual!=="atual"
+        ? "A visão restrita ("+qual+") ainda não foi publicada. Ela nasce na próxima "
+          +"atualização da planilha — avise a Inteligência Comercial se demorar."
         : "Dados ainda não publicados. Avise a Inteligência Comercial.",true); return; }
       var d=s.data()||{};
       window.__PLK_DATA__ = d.payloadStr ? JSON.parse(d.payloadStr) : (d.payload||d);
@@ -1856,14 +1862,15 @@ function podeEditarCfg(){ return cfgNivel()==="edita"; }
 function podeUsarChat(){ const u=window.currentUser; return !!(u&&(u.chat||u.user==="admin")); }
 
 /* =====================================================================
-   VISÃO RESTRITA — Diretor de Parcerias
+   VISÕES RESTRITAS — Diretor de Parcerias e Diretor House
 
-   Ele acompanha o resultado inteiro da empresa, mas não pode ver por quanto
-   nem com que desconto uma unidade foi vendida por outro canal.
+   Cada um acompanha o resultado inteiro da empresa em carteira e estoque,
+   mas não pode ver por quanto nem com que desconto uma unidade foi vendida
+   pelos canais que não são dele.
 
    O que protege isso NÃO é este arquivo: é o servidor. Quem tem visão
-   "parcerias" recebe do Firestore um documento diferente, em que as vendas
-   dos outros canais já vêm somadas por mês, sem unidade, sem desconto e sem
+   restrita recebe do Firestore um documento diferente, em que as vendas dos
+   outros canais já vêm somadas por mês, sem unidade, sem desconto e sem
    gerente. O dado proibido não chega no computador dele — nem pelo F12.
 
    O que este trecho faz é o acabamento: esconde as abas que perderam a
@@ -1872,11 +1879,17 @@ function podeUsarChat(){ const u=window.currentUser; return !!(u&&(u.chat||u.use
    Firestore, a tela ficaria certa e o dado continuaria exposto — por isso a
    engrenagem avisa em vermelho quando isso acontece.
    ===================================================================== */
-/* Estas três abas não existem para o Diretor de Parcerias porque o documento
-   dele não tem a matéria-prima delas — desconto, origem de captação e VSO
-   ficaram de fora no servidor. A lista está aqui como documentação do porquê;
-   quem esconde as abas é a tabela PERFIS logo abaixo. */
-const ABAS_FORA_PARCERIAS=["desconto","origem","vso"];
+/* Estas três abas não existem para nenhuma visão restrita porque o documento
+   delas não tem a matéria-prima — desconto, origem de captação e VSO ficaram
+   de fora no servidor (BLOCOS_FORA, no redigir.py). A lista está aqui como
+   documentação do porquê; quem esconde as abas é a tabela PERFIS logo abaixo.
+
+   Para o House a origem dói mais do que para Parcerias: origem, campanha e
+   linha só existem em Salão e Online, quer dizer, o dado é inteiramente dele.
+   Ficou de fora porque a aba mede share sobre TODAS as unidades vendidas, e
+   num payload sem os outros canais o percentual mudaria de régua sem avisar.
+   É reabrível — mas com a régua redefinida de propósito, não por descuido. */
+const ABAS_FORA_RESTRITAS=["desconto","origem","vso"];
 
 /* =====================================================================
    PERFIS DE ACESSO
@@ -1897,10 +1910,16 @@ const ABAS_FORA_PARCERIAS=["desconto","origem","vso"];
    Perfil sem "abas" (null) vê todas as telas.
    ===================================================================== */
 const PERFIS={
-  "":          {rot:"Vê tudo",            papel:"leitor",             abas:null},
-  "parcerias": {rot:"Diretor Parcerias",  papel:"diretor_parcerias",
+  "":          {rot:"Vê tudo",            papel:"leitor", doc:"atual", abas:null, canais:null},
+  "parcerias": {rot:"Diretor Parcerias",  papel:"diretor_parcerias", doc:"parcerias",
+                canais:["Parcerias"], rotCanal:"Parcerias",
                 abas:["sintese","geral","vendas","canais","gerentes","parceiros"]},
-  "gestora":   {rot:"Gestora de Vendas",  papel:"gestora_vendas",
+  "house":     {rot:"Diretor House",      papel:"diretor_house", doc:"house",
+                canais:["Salão","Online"], rotCanal:"House (Salão + Online)",
+                /* sem a aba Parceiros: parceiro só existe no canal Parcerias,
+                   e para ele a aba seria uma tela vazia. */
+                abas:["sintese","geral","vendas","canais","gerentes"]},
+  "gestora":   {rot:"Gestora de Vendas",  papel:"gestora_vendas", doc:"atual", canais:null,
                 abas:["sintese","gerentes","parceiros"]}
 };
 function perfilAtual(){ return PERFIS[visaoDe()]||PERFIS[""]; }
@@ -1915,8 +1934,13 @@ const abaLiberada=p=>{ const l=perfilAtual().abas; return !l||l.indexOf(p)>=0; }
    quebraria um perfil futuro que não tenha a Síntese. */
 function primeiraAba(){ return abasDoAcesso()[0]||"sintese"; }
 function visaoDe(){ const u=window.currentUser; return (u&&u.visao)||""; }
-function visaoRestrita(){ return visaoDe()==="parcerias"; }
-const CANAL_VISIVEL="Parcerias";
+/* Restrito = o servidor entrega um documento recortado. Não é mais "é o
+   Smith": qualquer perfil com doc próprio entra aqui, e a tela se ajusta
+   sozinha. Foi o que permitiu o Diretor House nascer sem reescrever a aba. */
+function visaoRestrita(){ const p=PERFIS[visaoDe()]; return !!(p&&p.doc&&p.doc!=="atual"); }
+function canaisDaVisao(){ const p=PERFIS[visaoDe()]; return (p&&p.canais)||null; }
+function rotCanalVisao(){ const p=PERFIS[visaoDe()]; return (p&&p.rotCanal)||"seu canal"; }
+const CANAL_VISIVEL=(function(){ const p=PERFIS[visaoDe()]; return (p&&p.rotCanal)||"Parcerias"; })();
 /* a linha veio somada do servidor: existe para o total fechar, não para ser
    aberta. Vale tanto para o extrato quanto para qualquer contagem de linha. */
 function pintaAcessos(){
@@ -1997,7 +2021,13 @@ function pintaListaAcessos(){
   const nomeDe=u=>(ACESSOS[u]||{}).nome||(ACESSO_BASE[u]||{}).nome||u;
   const chatDe=u=>u==="admin"?true:!!((ACESSOS[u]||ACESSO_BASE[u]||{}).chat);
   const visaoDeU=u=>u==="admin"?"":((ACESSOS[u]||ACESSO_BASE[u]||{}).visao||"");
-  const restritos=logins.filter(u=>visaoDeU(u)==="parcerias");
+  /* Toda visão que lê um documento próprio precisa do e-mail na regra do
+     Firestore. Escrever "parcerias" aqui funcionava enquanto ela era a única;
+     com o House no ar, o aviso vermelho deixaria de aparecer justamente para
+     o acesso recém-criado — e é o esquecimento dessa regra que vaza a
+     planilha inteira. Por isso a lista sai do PERFIS, não de um nome fixo. */
+  const precisaRegra=v=>{const p=PERFIS[v]; return !!(p&&p.doc&&p.doc!=="atual");};
+  const restritos=logins.filter(u=>precisaRegra(visaoDeU(u)));
   el.innerHTML=logins.map(u=>{
     const fixo=(u==="admin"), doArquivo=!!ACESSO_BASE[u];
     return `<div class="cfgrow" data-ac="${esc(u)}">
@@ -2953,13 +2983,26 @@ function pintaGeral(){
 /* =====================================================================
    3 · VENDAS POR EMPREENDIMENTO
    ===================================================================== */
-/* Recortes de canal da aba Vendas. No acesso restrito existe um canal só, e
-   um seletor de um botão é ruído: ele some, e o rótulo diz qual recorte é. */
-const VISTAS=visaoRestrita()
-  ? [{id:"Geral",rot:"Parcerias",canal:null}]
-  : [{id:"Geral",rot:"Geral",canal:null},
-     {id:"House",rot:"House (Salão + Online)",canal:HOUSE}]
-      .concat(CANAIS.map(c=>({id:c,rot:c,canal:c})));
+/* Recortes de canal da aba Vendas.
+
+   No acesso restrito de UM canal só, um seletor de um botão é ruído: ele some
+   e o rótulo diz qual recorte é. Foi assim que nasceu, com o Diretor de
+   Parcerias.
+
+   Com DOIS canais a conta muda. O Diretor House precisa comparar Salão e
+   Online — é metade do trabalho dele. Colapsar tudo em "Geral" aqui não
+   escondia nada de ninguém (o dado dos dois canais já é dele), só tirava
+   dele a abertura que ele mais usa. Por isso o seletor agora nasce dos
+   canais da visão, e não de um "restrito sim ou não". */
+const VISTAS=(function(){
+  const meus=canaisDaVisao();
+  if(!meus) return [{id:"Geral",rot:"Geral",canal:null},
+                    {id:"House",rot:"House (Salão + Online)",canal:HOUSE}]
+                     .concat(CANAIS.map(c=>({id:c,rot:c,canal:c})));
+  if(meus.length<2) return [{id:"Geral",rot:rotCanalVisao(),canal:null}];
+  return [{id:"Geral",rot:rotCanalVisao(),canal:null}]
+    .concat(meus.map(c=>({id:c,rot:c,canal:c})));
+})();
 let vVenda="Geral";
 
 /* Meta por produto e mês, para um canal (ou o total, quando canal = null).
@@ -3295,7 +3338,7 @@ function rCanais(){
   $("#p-canais").innerHTML=`
   <div class="card" style="margin-bottom:13px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
     <div><div class="h">Canais de venda</div>
-      <div class="sub">${visaoRestrita()?"Seu acesso cobre a operação de <b>Parcerias</b>"
+      <div class="sub">${visaoRestrita()?`Seu acesso cobre a operação de <b>${esc(rotCanalVisao())}</b>`
         :"House reúne Salão e Online · Lançadora é canal próprio desde maio"}</div></div>
     ${visaoRestrita()?"":`<div class="tgl" id="cnT" style="margin-left:auto">
       <button class="${vCanal==="canais"?"on":""}" data-v="canais">Todos os canais</button>
@@ -3376,7 +3419,7 @@ const perGer=novoPeriodo();
    dado que chegou. Manter os três seletores mostraria dois zeros e uma
    pergunta ("cadê o House?") que a resposta certa é "não é seu"). */
 const VG=visaoRestrita()
-  ? [{id:"parc",rot:"Parcerias",canal:"Parcerias"}]
+  ? [{id:"parc",rot:rotCanalVisao(),canal:canaisDaVisao()}]
   : [{id:"house",rot:"House (Salão + Online)",canal:HOUSE},
      {id:"parc",rot:"Parcerias",canal:"Parcerias"},
      {id:"geral",rot:"Geral (House + Parcerias)",canal:HOUSE.concat(["Parcerias"])}];
@@ -3391,23 +3434,26 @@ function rGerentes(){
   const somaMeta=(canal)=>{ const M=(D.metas&&D.metas.canais)||{};
     return (Array.isArray(canal)?canal:[canal]).reduce((s,c)=>
       s+(M[c]?ms.reduce((a,i)=>a+((M[c].meta||[])[i]||0),0):0),0); };
-  const hR=soma(filtrar({canal:HOUSE},perGer)), hM=somaMeta(HOUSE);
-  const pR=soma(filtrar({canal:"Parcerias"},perGer)), pM=somaMeta("Parcerias");
-  const soParc=visaoRestrita();
+  /* Os cartões do topo eram dois fixos — House e Parcerias — e o acesso
+     restrito escondia o de House. Isso funcionava porque o único acesso
+     restrito era o de Parcerias. Para o Diretor House o mesmo código punha
+     "PARCERIAS · R$ 0" como primeiro número da tela dele: o cartão do canal
+     que ele não tem, zerado, no lugar do dele. Agora os cartões vêm da visão. */
+  const CARTOES=visaoRestrita()
+    ? [{lab:rotCanalVisao(), canal:canaisDaVisao()}]
+    : [{lab:"House · Salão + Online", canal:HOUSE},
+       {lab:"Parcerias", canal:"Parcerias"}];
   $("#p-gerentes").innerHTML=`
   <div class="card" style="margin-bottom:13px"><div class="periodo" id="pgerSel"></div>
     <div class="sub" style="margin-top:8px">As metas são contadas por mês inteiro; o realizado usa a data exata da venda.</div></div>
-  <div class="grid ${soParc?"g1":"g2"}" style="margin-bottom:13px">
-    ${soParc?"":`<div class="card kpi"><div class="lab">House · Salão + Online</div>
-      <div class="val">${moeda(hR)}</div>
-      <div class="sub">Meta do período <b>${moeda(hM)}</b> · GAP <b style="color:var(--bad)">${moeda(hM-hR)}</b>
-        · Ating. <b style="color:${stCol(hM?hR/hM:null)}">${pct1(hM?hR/hM:null)}</b></div>
-      <div class="meter"><span style="width:${Math.min(hM?hR/hM:0,1)*100}%;background:${stCol(hM?hR/hM:null)}"></span></div></div>`}
-    <div class="card kpi"><div class="lab">Parcerias</div>
-      <div class="val">${moeda(pR)}</div>
-      <div class="sub">Meta do período <b>${moeda(pM)}</b> · GAP <b style="color:var(--bad)">${moeda(pM-pR)}</b>
-        · Ating. <b style="color:${stCol(pM?pR/pM:null)}">${pct1(pM?pR/pM:null)}</b></div>
-      <div class="meter"><span style="width:${Math.min(pM?pR/pM:0,1)*100}%;background:${stCol(pM?pR/pM:null)}"></span></div></div>
+  <div class="grid ${CARTOES.length>1?"g2":"g1"}" style="margin-bottom:13px">
+    ${CARTOES.map(c=>{ const r=soma(filtrar({canal:c.canal},perGer)), m=somaMeta(c.canal);
+      return `<div class="card kpi"><div class="lab">${esc(c.lab)}</div>
+      <div class="val">${moeda(r)}</div>
+      <div class="sub">Meta do período <b>${moeda(m)}</b> · GAP <b style="color:var(--bad)">${moeda(m-r)}</b>
+        · Ating. <b style="color:${stCol(m?r/m:null)}">${pct1(m?r/m:null)}</b></div>
+      <div class="meter"><span style="width:${Math.min(m?r/m:0,1)*100}%;background:${stCol(m?r/m:null)}"></span></div></div>`;
+    }).join("")}
   </div>
   <div class="card" style="margin-bottom:13px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
     <div class="tgl" id="gT">${VG.map(v=>`<button class="${v.id===vGer?"on":""}" data-v="${v.id}">${v.rot}</button>`).join("")}</div>
@@ -3436,9 +3482,15 @@ function gerentesDoRecorte(){
     if(t.data&&(!por[g].ult||t.data>por[g].ult)) por[g].ult=t.data; });
   // gerentes ativos que ainda não venderam também entram, zerados
   Object.keys(TIME).forEach(n=>{ if(!TIME[n].ativo||por[n]) return;
+    /* De qual canal é o time da pessoa. "House" no cadastro quer dizer os dois
+       canais próprios; qualquer outro nome de time É o nome do canal.
+       Antes esta linha era um encadeado de três ids fixos, e num recorte de
+       House o "senão" caía em Parcerias — resultado: gerente do House sem
+       venda no período sumia da lista dele em vez de aparecer zerado. */
     const t=TIME[n].time;
-    const cabe = vGer==="geral" ? (t==="House"||t==="Parcerias")
-               : vGer==="house" ? t==="House" : t==="Parcerias";
+    const canaisDoTime = t==="House" ? HOUSE : [t];
+    const doRecorte = Array.isArray(canal) ? canal : (canal?[canal]:null);
+    const cabe = !doRecorte || canaisDoTime.some(c=>doRecorte.indexOf(c)>=0);
     if(cabe) por[n]={vgv:0,qtd:0,mes:Array(12).fill(0),ult:null};
   });
   return {canal,foraDoTime,
@@ -5410,7 +5462,7 @@ carregarAcessosDoBanco();
 $("#hdPeriodo").textContent=`Janeiro a Dezembro de ${ANO}`;
 $("#hdUpd").textContent="Atualizado em "+((D.meta&&D.meta.atualizado)||"—");
 $("#ftUpd").textContent="Última atualização da planilha: "+((D.meta&&D.meta.atualizado)||"—");
-$("#ftVer").textContent=`Inteligência Comercial ${ANO} · v44 · aba Origem: funil origem → campanha → linha, compatível com os dois formatos de payload`;
+$("#ftVer").textContent=`Inteligência Comercial ${ANO} · v45 · visão Diretor House (Salão + Online) com documento próprio no servidor`;
 $("#hdTitle").textContent=`Inteligência Comercial ${ANO}`;
 
 window.initDashboard=function(){ Object.keys(feito).forEach(k=>delete feito[k]);

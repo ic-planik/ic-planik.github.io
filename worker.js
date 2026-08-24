@@ -176,6 +176,17 @@ function montaContexto(P) {
      da carteira" sairia calculado só com Parcerias e ainda se chamaria
      carteira. Melhor a seção não existir. */
   const RESTRITO = !!P._visao;
+  /* Rótulos do recorte. Vêm prontos do redigir.py — o mesmo arquivo que
+     decide o que sai do payload — para a tela e o assistente nunca chamarem
+     o mesmo acesso por dois nomes. Os padrões são só rede de segurança para
+     um payload antigo, gerado antes destes campos existirem. */
+  const V = P._visao || {};
+  const VCANAL = V.canal || "Parcerias";
+  const VDET = V.canalDetalhado || VCANAL;
+  const VTEXTO = V.canalTexto || "imobiliárias externas";
+  /* Se o recorte não inclui Parcerias, a base não tem imobiliária nenhuma e
+     as seções que falam delas precisam sumir junto. */
+  const VPARC = !RESTRITO || (V.canais || []).indexOf("Parcerias") >= 0;
 
   /* produtos na ordem do relatório; o que for novo na planilha entra no fim */
   const prods = ORDEM.filter(p => sint[p])
@@ -212,7 +223,7 @@ telas do relatório.
 
 ## O que existe aqui (confira antes de dizer que não tem o dado)
 
-${RESTRITO ? `Esta base é a operação de **${(P._visao||{}).canal||"Parcerias"}**, e só ela: realizado,
+${RESTRITO ? `Esta base é a operação de **${VDET}**, e só ela: realizado,
 meta, GAP, atingimento, ticket médio, desconto, mês a mês por empreendimento e
 por gerente — tudo do canal. A **carteira** (VGV total dos empreendimentos, o que
 já foi vendido na vida e o estoque que sobra) é da empresa inteira, porque é
@@ -243,7 +254,7 @@ proposta, distrato, dados de 2025 e qualquer número de mercado externo.`}
 ${RESTRITO ? "" : `3. **Metragem de Fifith não se soma.** Para valor do m², as duas linhas são
    unificadas antes do cálculo.
 `}4. Se alguém perguntar "quantas vendas", a resposta é **${nu(unTot)}** unidades.${RESTRITO ? `
-5. **Neste acesso as vendas de fora de ${(P._visao||{}).canalDetalhado||"Parcerias"} chegam somadas** por
+5. **Neste acesso as vendas de fora de ${VDET} chegam somadas** por
    empreendimento e mês. Os totais são os mesmos do relatório completo, mas não
    existe unidade, desconto, metragem nem gerente por venda nesses canais.` : ""}
 
@@ -264,8 +275,8 @@ ${RESTRITO ? "" : `- **VSO (Velocidade Sobre Oferta)**: vendas do ano ÷ estoque
   teto aprovado custou.
   teto aprovado custou.
 `}- **Ritmo necessário**: GAP do ano ÷ meses restantes.
-${RESTRITO ? `- **Canal**: esta base cobre um canal só — **${(P._visao||{}).canal||"Parcerias"}**,
-  imobiliárias externas. Os demais canais da empresa não estão aqui.`
+${RESTRITO ? `- **Canal**: esta base cobre um recorte só — **${VDET}**,
+  ${VTEXTO}. Os demais canais da empresa não estão aqui.`
 : `- **Canais**: House reúne Salão e Online (equipe própria). Parcerias são
   imobiliárias externas. Lançadora é canal próprio desde maio. Interna é venda
   direta da empresa.`}
@@ -503,10 +514,16 @@ ${RESTRITO ? "" : `- **Origem de captação**: só Salão e Online têm origem r
   const gerTodos = roster.concat(Object.keys(resumoGer).filter(g => roster.indexOf(g) < 0));
   const vgvGer = g => resumoGer[g] ? resumoGer[g].v : soma(porGer[g] || []);
   w("\n## Por gerente\n");
-  w("Só os gerentes cadastrados da Planik. Toda venda de Parcerias tem um gerente");
-  w("da Planik conduzindo — a imobiliária externa que trouxe o cliente está na");
-  w("seção **Parceiros**, mais abaixo, não nesta lista.");
-  if (RESTRITO) w("Fora de Parcerias o valor vem do resumo mensal — sem data da última venda.");
+  w("Só os gerentes cadastrados da Planik.");
+  /* Esta ressalva só faz sentido onde existe Parcerias na base. No acesso do
+     Diretor House não há imobiliária nenhuma, e mandar procurar a seção
+     Parceiros seria mandar procurar uma aba que ele não tem. */
+  if (VPARC) {
+    w("Toda venda de Parcerias tem um gerente da Planik conduzindo — a imobiliária");
+    w("externa que trouxe o cliente está na seção **Parceiros**, mais abaixo, não");
+    w("nesta lista.");
+  }
+  if (RESTRITO) w(`Esta lista é só o time de ${VCANAL}: os gerentes dos outros canais não chegam a este acesso.`);
   w("");
   w("| gerente | equipe | VGV | unidades | ticket médio | última venda |");
   w("|---|---|---|---|---|---|");
@@ -938,8 +955,19 @@ Ordenados por VGV, do maior para o menor.\n`);
    tem visão restrita, dependendo de quem perguntou primeiro. */
 const cacheCtx = {};
 
+/* Qual documento cada visão lê. Lista fechada de propósito: uma visão nova e
+   ainda não mapeada aqui cai em "atual" — quer dizer, receberia a empresa
+   inteira. Melhor a visão desconhecida não abrir o chat do que abrir demais. */
+const DOC_DA_VISAO = { parcerias: "parcerias", house: "house",
+                       /* a Gestora de Vendas é cortina, não trava: o recorte
+                          dela é de abas, e o dado é o mesmo do relatório
+                          completo. Está escrito aqui para ninguém achar que
+                          foi esquecido. */
+                       gestora: "atual" };
+
 async function baseDeConhecimento(idToken, projectId, visao) {
-  const doc = visao === "parcerias" ? "parcerias" : "atual";
+  const doc = visao ? (DOC_DA_VISAO[visao] || null) : "atual";
+  if (!doc) throw new Error("visão sem documento: " + visao);
   const agora = Date.now();
   const c = cacheCtx[doc];
   if (c && agora - c.quando < 5 * 60 * 1000) return c.texto;
@@ -1043,6 +1071,40 @@ A aba Parceiros é a casa dele: ranking das imobiliárias externas, parceiro por
 empreendimento, por gerente e por mês, e o principal parceiro de cada gerente.
 Quando a pergunta for de relacionamento — quem vende mais, quem parou de vender,
 de quem cada gerente depende — é para lá que você manda conferir.`,
+
+  house: `
+
+## Limite deste acesso
+
+Quem está perguntando é o Diretor House, e a base acima é a operação dele: as
+vendas da equipe própria da Planik, Salão e Online juntos. Os outros canais —
+Parcerias, Lançadora e Interna — não foram omitidos por pudor, foram retirados
+antes de chegar até você. Você não tem como saber o resultado, a meta, o
+desconto ou o gerente deles, e não deve tentar deduzir.
+
+A única coisa que atravessa esse corte é a **carteira**: VGV total dos
+empreendimentos, quanto já foi vendido na vida de cada um e quanto sobra de
+estoque. Isso é patrimônio da empresa e ele acompanha por direito.
+
+House é um recorte de dois canais, e essa é a diferença que mais gera pergunta:
+onde o relatório diz "geral", o geral dele é **Salão + Online somados**, mês a
+mês — meta, realizado, GAP e atingimento. Salão e Online também aparecem
+separados, e comparar os dois é metade do trabalho dele. Se a pergunta não
+disser qual dos dois, responda pelo somado e ofereça a abertura.
+
+Quando perguntarem por outro canal, ou por "a empresa toda" em resultado, diga
+em uma frase que o acesso cobre House e siga com a leitura do que você tem —
+que é bastante: ele tem a unidade, o gerente, o mês e o empreendimento de cada
+venda da equipe dele.
+
+As abas deste acesso são cinco: Síntese, Visão Geral, Vendas por Empreendimento,
+Canais e Gerentes. Não mande conferir em Desconto por Empreendimento, Origem por
+Empreendimento, VSO nem Parceiros — elas não existem para ele. Origem de
+captação merece um cuidado extra: origem, campanha e linha de campanha só
+existem em Salão e Online, ou seja, são dados **dele** — mas não estão nesta
+base, porque a régua de share da aba Origem inclui os outros canais no
+denominador. Se ele pedir origem ou campanha, não invente e não diga que o dado
+não existe: diga que ainda não está neste acesso e que o Jorge pode habilitar.`,
 };
 
 export default {
