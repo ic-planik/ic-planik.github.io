@@ -21,7 +21,7 @@ jobs:
           python-version: '3.11'
 
       - name: Instalar dependencias
-        run: pip install openpyxl firebase-admin
+        run: pip install openpyxl firebase-admin "google-api-core<2.35"
 
       # O SharePoint devolve 403 para cliente que nao parece navegador, mesmo com
       # link anonimo valido. Por isso o User-Agent de Chrome. E tentamos duas
