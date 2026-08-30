@@ -226,6 +226,52 @@ def redigir(P, perfil="parcerias"):
     return Q
 
 
+def _nomes_de_gerente(Q):
+    """Todo lugar do payload onde um NOME DE GERENTE fica guardado.
+
+    Esta lista é o que faz a conferência ser precisa em vez de literal. Se um
+    bloco novo de gerente nascer no extrator, ele tem de entrar aqui — senão a
+    trava para de enxergar aquele lugar. A segunda pergunta do confere(), a da
+    busca no texto, existe justamente como rede para esse esquecimento."""
+    s = set()
+    for t in Q.get("transacoes") or []:
+        if t.get("gerente"):
+            s.add(t["gerente"])
+    G = Q.get("gerentes") or {}
+    for bloco in TODOS_BLOCOS:
+        for x in (G.get(bloco) or []):
+            if x.get("nome"):
+                s.add(x["nome"])
+    s |= set(G.get("parametros") or {})
+    s |= {n for n in (G.get("ativos") or []) if n}
+    for p in (G.get("papeis") or []):
+        if p.get("nome"):
+            s.add(p["nome"])
+    for t in (G.get("totalAno") or []):
+        if t.get("nome"):
+            s.add(t["nome"])
+    for x in (Q.get("gerenteMes") or []):
+        if x.get("nome"):
+            s.add(x["nome"])
+    return s
+
+
+def _valores_proprios(Q):
+    """Valores que aparecem no recorte por direito e podem coincidir com o
+    nome de um gerente de outro canal.
+
+    O caso real é a imobiliária: ela é parceira aqui e, no cadastro, está
+    registrada como gerente de outro bloco. O nome dela no payload de
+    Parcerias não é vazamento — é o dado principal da aba Parceiros."""
+    s = set()
+    for t in Q.get("transacoes") or []:
+        for campo in ("parceiro", "corretor"):
+            v = t.get(campo)
+            if v:
+                s.add(str(v))
+    return s
+
+
 def confere(P, Q, perfil="parcerias"):
     """Duas perguntas: sobrou alguma venda de outro canal, e o que ficou bate
     com o mesmo recorte no relatório completo?"""
@@ -268,14 +314,38 @@ def confere(P, Q, perfil="parcerias"):
     if len(Q.get("sintese") or []) != len(P.get("sintese") or []):
         erros.append("a Síntese perdeu empreendimentos — ela deve ficar completa")
 
-    # o texto todo não pode conter nome de gerente de fora
+    # Nome de gerente de fora não pode sobrar. A pergunta certa NÃO é "esta
+    # palavra aparece no arquivo?".
+    #
+    # Em 25/08 esta trava barrou a publicação por causa da ABYARA. Ela é uma
+    # imobiliária parceira E está cadastrada como "gerente" do bloco Lançadora
+    # — duas coisas legítimas ao mesmo tempo. Quando a planilha passou a ter
+    # uma venda de Parcerias com ela como parceira, o nome apareceu no payload
+    # de Parcerias, que é exatamente onde ele PRECISA aparecer: o diretor de
+    # Parcerias tem de enxergar os parceiros dele. A busca crua no texto não
+    # sabia distinguir "aparece como parceiro" de "vazou como gerente", e
+    # derrubou a atualização do relatório inteiro.
+    #
+    # Agora são duas perguntas separadas:
+    #   1. o nome está em algum campo que guarda GERENTE? Isso é vazamento.
+    #   2. o nome aparece no texto num lugar que eu não enumerei e que não se
+    #      explica por um campo próprio do recorte? Isso é suspeito, e barra
+    #      também — é o que mantém a rede contra um vazamento que eu não previ.
     forasteiros = {t.get("gerente") for t in P["transacoes"]
                    if t.get("canal") not in canais and t.get("gerente")}
     forasteiros -= {t.get("gerente") for t in orig if t.get("gerente")}
     bruto = json.dumps(Q, ensure_ascii=False)
-    for nome in forasteiros:
+
+    vazados = forasteiros & _nomes_de_gerente(Q)
+    for nome in sorted(vazados):
+        erros.append("nome de gerente de outro canal ainda aparece COMO "
+                     "GERENTE: %s" % nome)
+
+    proprios = _valores_proprios(Q)
+    for nome in sorted(forasteiros - vazados - proprios):
         if ('"%s"' % nome) in bruto:
-            erros.append("nome de gerente de outro canal ainda aparece: %s" % nome)
+            erros.append("nome de gerente de outro canal aparece em lugar não "
+                         "previsto: %s" % nome)
 
     # e nenhum nome de canal de fora pode aparecer em canto nenhum
     for c in set((P.get("meta") or {}).get("canais") or []) - canais:
