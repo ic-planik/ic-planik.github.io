@@ -922,6 +922,47 @@ class Extrator:
 
     # -- montagem ------------------------------------------------------------
 
+    def semanas(self):
+        """A tabela de semanas comerciais, lida da aba _Aux_Semanas.
+
+        A convenção é da Planik, não minha: semana de segunda a domingo,
+        numerada no ano, e cada semana pertence ao mês da SEGUNDA-FEIRA dela.
+        Por isso a "Sem 36 AGO" vai de 31/08 a 06/09 — os primeiros dias de
+        setembro são da última semana de agosto. Reimplementar essa regra em
+        JavaScript criaria duas definições de semana que precisariam combinar
+        entre si, e já sabemos como isso termina: foi a lista duplicada de
+        e-mails que produziu o vazamento de 24/08.
+
+        A aba é OPCIONAL de propósito. Se ela sumir ou for renomeada, a
+        extração NÃO falha — o relatório perde a comparação por semana e
+        continua publicando todo o resto. Tornar a aba obrigatória
+        acrescentaria um jeito novo de derrubar a atualização inteira em troca
+        de um recurso acessório, e essa troca não vale a pena.
+        """
+        if "_Aux_Semanas" not in self.wb.sheetnames:
+            self.aviso("aba _Aux_Semanas ausente — a comparação por semana "
+                       "fica indisponível no relatório")
+            return []
+        ws = self.wb["_Aux_Semanas"]
+        fora = []
+        for r in range(2, ws.max_row + 1):
+            n = ws.cell(r, 1).value
+            ini, fim = ws.cell(r, 2).value, ws.cell(r, 3).value
+            rot, mes = ws.cell(r, 4).value, ws.cell(r, 5).value
+            if n is None or not hasattr(ini, "year") or not hasattr(fim, "year"):
+                continue
+            fora.append({
+                "n":   int(n),
+                "ini": ini.strftime("%Y-%m-%d"),
+                "fim": fim.strftime("%Y-%m-%d"),
+                "rot": txt(rot) or f"Sem {int(n):02d}",
+                "mes": int(mes) - 1 if mes is not None else None,
+            })
+        if not fora:
+            self.aviso("aba _Aux_Semanas sem linhas válidas — comparação por "
+                       "semana indisponível")
+        return fora
+
     def montar(self):
         base = self.base()
         metas = self.metas()
@@ -940,6 +981,7 @@ class Extrator:
             "origem": self.origem(),
             "mkt": self.origem_da_base(base["transacoes"]),
             "m2": self.m2_por_produto(base["transacoes"]),
+            "semanas": self.semanas(),
             "transacoes": base["transacoes"],
         }
         payload.update(self.sintese_e_canais())

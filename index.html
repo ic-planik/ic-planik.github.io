@@ -567,6 +567,7 @@ footer{border-top:1px solid var(--border);margin-top:40px;padding:16px 0 24px;fo
       <button class="userbadge" id="userBadge" title="Minha conta" aria-label="Minha conta"></button>
       <button class="iconbtn" id="tgl" title="Tema claro/escuro" aria-label="Alternar tema">◐</button>
       <button class="iconbtn" id="cfgBtn" title="Cadastro do time" aria-label="Cadastro do time">⚙</button>
+      <button class="txtbtn" id="cmpBtn" title="Comparar dois períodos ou recortes">Comparar</button>
       <button class="txtbtn" id="logoutBtn">Sair</button>
       <button class="iconbtn mais" id="maisBtn" title="Mais" aria-label="Mais opções">⋯</button>
     </div>
@@ -4999,6 +5000,8 @@ function pintaFolha(){
     <div class="grupo">Recorte</div>
     <button class="item" data-ato="geral"><span class="ic">${ATO==="geral"?"●":"○"}</span>Geral · todas as vendas</button>
     <button class="item" data-ato="pago"><span class="ic">${ATO==="pago"?"●":"○"}</span>Ato pago · só com ato quitado</button>
+    <div class="grupo">Análise</div>
+    <button class="item" data-acao="comparar"><span class="ic">⇄</span>Comparar períodos</button>
     <div class="grupo">Conta</div>
     <div class="item" style="cursor:default"><span class="ic">👤</span>
       <span>${esc(u.nome||u.user||"—")}
@@ -5030,6 +5033,7 @@ $("#folhaMais").addEventListener("click",e=>{
     return; }
   const a=b.dataset.acao;
   fechaFolha();
+  if(a==="comparar") abrirComparar();
   if(a==="chat") abrirChat();
   if(a==="conta") abrirConta();
   if(a==="cfg") abrirCfg();
@@ -5494,7 +5498,371 @@ carregarAcessosDoBanco();
 $("#hdPeriodo").textContent=`Janeiro a Dezembro de ${ANO}`;
 $("#hdUpd").textContent="Atualizado em "+((D.meta&&D.meta.atualizado)||"—");
 $("#ftUpd").textContent="Última atualização da planilha: "+((D.meta&&D.meta.atualizado)||"—");
-$("#ftVer").textContent=`Inteligência Comercial ${ANO} · v46 · troca de conta na mesma aba recarrega a página; cada visão restrita lê só o próprio documento`;
+/* =====================================================================
+   COMPARAR — painel de comparação entre dois recortes
+
+   Existe porque a pergunta que a diretoria faz não é "quanto vendemos",
+   é "vendemos mais ou menos que na semana passada". O relatório sabia
+   responder a primeira e não a segunda.
+
+   O que torna isso possível é o dado: TODA venda tem data exata na Base,
+   nos 31 dias do mês. Se a planilha trouxesse só o mês, comparação de
+   semana seria impossível e este painel não existiria.
+
+   DUAS DECISÕES QUE VALEM COMENTÁRIO:
+
+   1. A semana NÃO é calculada aqui. Ela vem da aba _Aux_Semanas, no bloco
+      `semanas` do payload. A convenção é da Planik: segunda a domingo,
+      numerada no ano, e cada semana pertence ao mês da SEGUNDA-FEIRA —
+      por isso a "Sem 36 AGO" vai de 31/08 a 06/09. Reimplementar essa
+      regra em JavaScript criaria duas definições de semana que teriam de
+      combinar entre si, e já sabemos como isso termina.
+
+   2. Período em curso é sinalizado e corrigido. Comparar setembro (em
+      andamento) com agosto (fechado) e ler queda de 70% é o erro que este
+      painel mais poderia causar. Por isso o "período justo": quando um
+      lado ainda está correndo, os dois são cortados no mesmo número de
+      dias. Ligado por padrão, e visível.
+   ===================================================================== */
+const CMP_SEM = (D.semanas || []).slice().sort((a, b) => a.n - b.n);
+const CMP_TEM_SEM = CMP_SEM.length > 0;
+
+/* dimensões de recorte. 'parceiro' não existe em filtrar() — é pós-filtro. */
+const CMP_DIMS = [
+  { v: "", r: "Tudo" },
+  { v: "gerente", r: "Gerente" },
+  { v: "canal", r: "Canal" },
+  { v: "produto", r: "Empreendimento" },
+  { v: "parceiro", r: "Parceiro" },
+];
+
+function cmpValores(dim) {
+  if (!dim) return [];
+  const s = new Set();
+  TX.forEach(t => {
+    const v = dim === "parceiro" ? (t.parceiro || null) : t[dim];
+    if (v) s.add(v);
+  });
+  return Array.from(s).sort((a, b) => a.localeCompare(b, "pt-BR"));
+}
+
+const cmpSoma = (a, b) => {
+  const d = new Date(a + "T00:00:00");
+  d.setDate(d.getDate() + b);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+};
+const cmpDif = (a, b) => Math.round((Date.parse(b + "T00:00:00") - Date.parse(a + "T00:00:00")) / 864e5);
+
+/* período de um lado, sem recorte de dias */
+function cmpPeriodo(L) {
+  if (L.tipo === "sem") {
+    const s = CMP_SEM.find(x => x.n === +L.sem);
+    return s ? { ini: s.ini, fim: s.fim, rot: s.rot } : null;
+  }
+  if (L.tipo === "livre") {
+    if (!L.ini || !L.fim || L.ini > L.fim) return null;
+    return { ini: L.ini, fim: L.fim, rot: dtBR(L.ini) + " a " + dtBR(L.fim) };
+  }
+  const m = +L.mes;
+  if (isNaN(m)) return null;
+  const ult = new Date(ANO, m + 1, 0).getDate();
+  const mm = String(m + 1).padStart(2, "0");
+  return { ini: `${ANO}-${mm}-01`, fim: `${ANO}-${mm}-${ult}`, rot: `${MES[m]}/${ANO}` };
+}
+const cmpDiasTotais = p => cmpDif(p.ini, p.fim) + 1;
+/* quantos dias do período já aconteceram. Menor que o total = em curso. */
+function cmpDiasCorridos(p) {
+  const h = hojeISO();
+  if (p.ini > h) return 0;
+  return cmpDif(p.ini, p.fim > h ? h : p.fim) + 1;
+}
+const cmpEmCurso = p => cmpDiasCorridos(p) < cmpDiasTotais(p);
+
+/* vendas de um lado, já com o recorte aplicado */
+function cmpVendas(L, p) {
+  const f = {};
+  if (L.dim && L.val && L.dim !== "parceiro") f[L.dim] = L.val;
+  let rows = filtrar(f, p);
+  if (L.dim === "parceiro" && L.val) rows = rows.filter(t => (t.parceiro || "") === L.val);
+  return rows;
+}
+const cmpMet = rows => {
+  const vgv = rows.reduce((s, t) => s + (t.valor || 0), 0);
+  const un = unid(rows);
+  return { vgv, un, tk: un ? vgv / un : null, linhas: rows.length };
+};
+function cmpRotulo(L, p) {
+  const r = p ? p.rot : "—";
+  return L.dim && L.val ? `${r} · ${L.val}` : r;
+}
+
+/* estado do painel */
+const CMP = {
+  a: { tipo: "mes", mes: null, sem: null, ini: "", fim: "", dim: "", val: "" },
+  b: { tipo: "mes", mes: null, sem: null, ini: "", fim: "", dim: "", val: "" },
+  justo: true,
+  abertura: "produto",
+};
+
+/* O mês de referência. ATENÇÃO: D.meta.mesRef é a CONTAGEM de meses
+   decorridos (9 = setembro), não o índice do mês. O resto do arquivo usa
+   MESREF-1 para indexar, e é isso que vale aqui também — a primeira versão
+   deste painel assumiu 0-based e abria comparando outubro, um mês que ainda
+   não começou, contra setembro: "R$ 0, queda de 100%". */
+const CMP_MES_REF = Math.max(0, Math.min(11, MESREF - 1));
+
+/* estado inicial: mês de referência contra o anterior */
+(function cmpInicial() {
+  CMP.a.mes = CMP_MES_REF;
+  CMP.b.mes = Math.max(0, CMP_MES_REF - 1);
+  if (CMP_TEM_SEM) {
+    const hoje = hojeISO();
+    const atual = CMP_SEM.find(s => hoje >= s.ini && hoje <= s.fim) || CMP_SEM[CMP_SEM.length - 1];
+    CMP.a.sem = atual.n;
+    CMP.b.sem = Math.max(1, atual.n - 1);
+  }
+})();
+
+/* os dois períodos, já com o corte justo aplicado quando faz sentido */
+function cmpResolve() {
+  const pa = cmpPeriodo(CMP.a), pb = cmpPeriodo(CMP.b);
+  if (!pa || !pb) return { pa, pb, cortou: 0 };
+  let ca = pa, cb = pb, cortou = 0;
+  if (CMP.justo && (cmpEmCurso(pa) || cmpEmCurso(pb))) {
+    const n = Math.min(cmpDiasCorridos(pa), cmpDiasCorridos(pb));
+    if (n > 0 && (n < cmpDiasTotais(pa) || n < cmpDiasTotais(pb))) {
+      ca = { ini: pa.ini, fim: cmpSoma(pa.ini, n - 1), rot: pa.rot };
+      cb = { ini: pb.ini, fim: cmpSoma(pb.ini, n - 1), rot: pb.rot };
+      cortou = n;
+    }
+  }
+  return { pa: ca, pb: cb, brutoA: pa, brutoB: pb, cortou };
+}
+
+/* célula de diferença: valor absoluto e percentual, com cor e sinal */
+/* Quando um dos lados ainda não começou, a variação percentual é verdadeira
+   e inútil ao mesmo tempo: "−100%" contra um período que não existe. Nesses
+   casos o painel mostra só a diferença absoluta e explica no alto. */
+let CMP_SEM_PC = false;
+function cmpDelta(a, b, fmt) {
+  if (a == null || b == null) return `<span style="color:var(--muted)">—</span>`;
+  const d = a - b;
+  const pc = b ? d / Math.abs(b) : null;
+  const cor = Math.abs(d) < 1e-9 ? "var(--muted)" : d > 0 ? "var(--good)" : "var(--bad)";
+  const seta = Math.abs(d) < 1e-9 ? "" : d > 0 ? "▲ " : "▼ ";
+  return `<span style="color:${cor};font-weight:600">${seta}${fmt(Math.abs(d))}</span>`
+    + ((pc == null || CMP_SEM_PC) ? "" : `<span style="color:${cor};font-size:11px;display:block">${d > 0 ? "+" : "−"}${nf(Math.abs(pc) * 100, 1)}%</span>`);
+}
+
+function cmpLadoHTML(k) {
+  const L = CMP[k], lbl = k === "a" ? "A" : "B", cor = k === "a" ? "var(--s2)" : "var(--s1)";
+  const vals = cmpValores(L.dim);
+  return `<div class="card" style="padding:12px;border-left:3px solid ${cor}">
+    <div class="lab" style="color:${cor};margin-bottom:8px">Lado ${lbl}</div>
+    <div class="tgl" data-cmp-tipo="${k}" style="margin-bottom:8px">
+      <button class="${L.tipo === "mes" ? "on" : ""}" data-t="mes">Mês</button>
+      ${CMP_TEM_SEM ? `<button class="${L.tipo === "sem" ? "on" : ""}" data-t="sem">Semana</button>` : ""}
+      <button class="${L.tipo === "livre" ? "on" : ""}" data-t="livre">Datas</button>
+    </div>
+    <div style="margin-bottom:8px">
+      ${L.tipo === "mes" ? `<select class="selin" data-cmp="mes" data-k="${k}" style="width:100%">
+          ${MES.map((m, i) => `<option value="${i}" ${i === +L.mes ? "selected" : ""}>${m}/${ANO}</option>`).join("")}
+        </select>` : ""}
+      ${L.tipo === "sem" ? `<select class="selin" data-cmp="sem" data-k="${k}" style="width:100%">
+          ${CMP_SEM.map(s => `<option value="${s.n}" ${s.n === +L.sem ? "selected" : ""}>${esc(s.rot)} · ${dtBR(s.ini)} a ${dtBR(s.fim)}</option>`).join("")}
+        </select>` : ""}
+      ${L.tipo === "livre" ? `<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+          <input type="date" class="selin" data-cmp="ini" data-k="${k}" value="${L.ini}" style="flex:1;min-width:130px">
+          <span style="color:var(--muted);font-size:12px">até</span>
+          <input type="date" class="selin" data-cmp="fim" data-k="${k}" value="${L.fim}" style="flex:1;min-width:130px">
+        </div>` : ""}
+    </div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap">
+      <select class="selin" data-cmp="dim" data-k="${k}" style="flex:1;min-width:120px">
+        ${CMP_DIMS.map(d => `<option value="${d.v}" ${d.v === L.dim ? "selected" : ""}>${d.r}</option>`).join("")}
+      </select>
+      ${L.dim ? `<select class="selin" data-cmp="val" data-k="${k}" style="flex:2;min-width:140px">
+          <option value="">— escolha —</option>
+          ${vals.map(v => `<option value="${esc(v)}" ${v === L.val ? "selected" : ""}>${esc(v)}</option>`).join("")}
+        </select>` : ""}
+    </div>
+  </div>`;
+}
+
+function cmpAtalhosHTML() {
+  const at = [["mesAnt", "Mês atual × anterior"]];
+  if (CMP_TEM_SEM) {
+    at.push(["semAnt", "Semana atual × anterior"]);
+    at.push(["semMes", "1ª semana deste mês × 1ª do anterior"]);
+  }
+  at.push(["trocar", "↔ Inverter A e B"]);
+  return `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">
+    ${at.map(a => `<button class="txtbtn" data-cmp-at="${a[0]}">${a[1]}</button>`).join("")}</div>`;
+}
+
+function cmpAbertura(rowsA, rowsB, dim) {
+  const acc = new Map();
+  const soma = (rows, campo) => rows.forEach(t => {
+    const k = dim === "parceiro" ? (t.parceiro || "Sem parceiro") : (t[dim] || "—");
+    const o = acc.get(k) || { a: { v: 0, u: 0 }, b: { v: 0, u: 0 } };
+    o[campo].v += (t.valor || 0); o[campo].u += (t.peso || 0);
+    acc.set(k, o);
+  });
+  soma(rowsA, "a"); soma(rowsB, "b");
+  return Array.from(acc.entries())
+    .map(([k, o]) => ({ k, ...o }))
+    .sort((x, y) => (y.a.v + y.b.v) - (x.a.v + x.b.v));
+}
+
+function cmpResultadoHTML() {
+  const { pa, pb, brutoA, brutoB, cortou } = cmpResolve();
+  if (!pa || !pb) {
+    return `<div class="card" style="padding:18px;text-align:center;color:var(--muted)">
+      Escolha um período válido nos dois lados.</div>`;
+  }
+  /* um lado inteiramente no futuro não é comparação, é ruído */
+  const naoComecou = [];
+  if (cmpDiasCorridos(brutoA || pa) === 0) naoComecou.push("A");
+  if (cmpDiasCorridos(brutoB || pb) === 0) naoComecou.push("B");
+  CMP_SEM_PC = naoComecou.length > 0;
+
+  const ra = cmpVendas(CMP.a, pa), rb = cmpVendas(CMP.b, pb);
+  const ma = cmpMet(ra), mb = cmpMet(rb);
+  const rotA = cmpRotulo(CMP.a, brutoA || pa), rotB = cmpRotulo(CMP.b, brutoB || pb);
+
+  const kpi = (tit, va, vb, fmt) => `<div class="card" style="padding:12px">
+    <div class="lab">${tit}</div>
+    <div style="display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap;margin-top:6px">
+      <div><div style="font-size:11px;color:var(--s2)">A</div>
+        <div class="val" style="font-size:19px">${fmt(va)}</div></div>
+      <div><div style="font-size:11px;color:var(--s1)">B</div>
+        <div class="val" style="font-size:19px;color:var(--ink-2)">${fmt(vb)}</div></div>
+      <div style="margin-left:auto;text-align:right">${cmpDelta(va, vb, fmt)}</div>
+    </div></div>`;
+
+  const ab = cmpAbertura(ra, rb, CMP.abertura);
+  const dimRot = (CMP_DIMS.find(d => d.v === CMP.abertura) || {}).r || "Empreendimento";
+
+  return `
+  ${naoComecou.length ? `<div class="avisoacesso" style="margin-bottom:12px">
+      <b>O lado ${naoComecou.join(" e ")} ainda não começou.</b> Esse período está
+      inteiramente no futuro, então não há o que comparar — a variação percentual
+      foi omitida de propósito, porque "−100%" contra um período que não existe
+      seria uma leitura falsa. Escolha um período já iniciado.</div>` : ""}
+  ${cortou ? `<div class="avisoacesso" style="margin-bottom:12px">
+      <b>Período justo aplicado.</b> Um dos lados ainda está em curso, então os dois
+      foram cortados nos primeiros <b>${cortou}</b> dia(s): A vai de ${dtBR(pa.ini)} a ${dtBR(pa.fim)},
+      B de ${dtBR(pb.ini)} a ${dtBR(pb.fim)}. Sem esse corte a comparação mostraria queda
+      só porque um período ainda não terminou.</div>` : ""}
+  <div class="grid g2" style="gap:10px;margin-bottom:6px">
+    <div class="card" style="padding:10px"><div class="lab" style="color:var(--s2)">A · ${esc(rotA)}</div>
+      <div class="sub">${dtBR(pa.ini)} a ${dtBR(pa.fim)} · ${ma.linhas} linha(s)</div></div>
+    <div class="card" style="padding:10px"><div class="lab" style="color:var(--s1)">B · ${esc(rotB)}</div>
+      <div class="sub">${dtBR(pb.ini)} a ${dtBR(pb.fim)} · ${mb.linhas} linha(s)</div></div>
+  </div>
+  <div class="grid gauto" style="gap:10px;margin:10px 0">
+    ${kpi("VGV", ma.vgv, mb.vgv, moeda)}
+    ${kpi("Unidades", ma.un, mb.un, nfu)}
+    ${kpi("Ticket médio", ma.tk, mb.tk, moeda)}
+  </div>
+  ${(ma.un < 5 || mb.un < 5) ? `<div class="sub" style="color:var(--warn);margin-bottom:10px">
+      Volume baixo em pelo menos um dos lados (${nfu(ma.un)} e ${nfu(mb.un)} unidades).
+      Uma venda a mais ou a menos move muito o percentual — leia o número absoluto, não só a variação.</div>` : ""}
+  <div class="card">
+    <div class="hd" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+      <div><div class="h">Abertura por ${esc(dimRot.toLowerCase())}</div>
+        <div class="sub">Ordenado pelo peso somado dos dois lados</div></div>
+      <select class="selin" data-cmp="abertura" style="margin-left:auto">
+        ${CMP_DIMS.filter(d => d.v).map(d => `<option value="${d.v}" ${d.v === CMP.abertura ? "selected" : ""}>${d.r}</option>`).join("")}
+      </select>
+    </div>
+    <div class="scroll"><table class="tb num"><thead><tr>
+      <th class="stickyc">${esc(dimRot)}</th>
+      <th class="r">VGV A</th><th class="r">VGV B</th><th class="r">Dif. VGV</th>
+      <th class="r">Un. A</th><th class="r">Un. B</th><th class="r">Dif. un.</th></tr></thead><tbody>
+      ${ab.length ? ab.map(x => `<tr>
+        <td class="nm stickyc">${esc(x.k)}</td>
+        <td class="r">${moeda(x.a.v)}</td><td class="r">${moeda(x.b.v)}</td>
+        <td class="r">${cmpDelta(x.a.v, x.b.v, moeda)}</td>
+        <td class="r">${nfu(x.a.u)}</td><td class="r">${nfu(x.b.u)}</td>
+        <td class="r">${cmpDelta(x.a.u, x.b.u, nfu)}</td></tr>`).join("")
+      : `<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:18px">
+           Nenhuma venda nos dois períodos.</td></tr>`}
+      </tbody></table></div>
+  </div>`;
+}
+
+function cmpEmCursoAlgum() {
+  const pa = cmpPeriodo(CMP.a), pb = cmpPeriodo(CMP.b);
+  return !!(pa && pb && (cmpEmCurso(pa) || cmpEmCurso(pb)));
+}
+
+function pintaCmp() {
+  const el = $("#cmpRoot"); if (!el) return;
+  el.innerHTML = cmpAtalhosHTML()
+    + `<div class="grid g2" style="gap:10px">${cmpLadoHTML("a")}${cmpLadoHTML("b")}</div>`
+    + (cmpEmCursoAlgum() ? `<label style="display:flex;align-items:center;gap:7px;margin:10px 0;font-size:12.5px;cursor:pointer">
+        <input type="checkbox" data-cmp="justo" ${CMP.justo ? "checked" : ""}>
+        <span>Período justo — cortar os dois lados no mesmo número de dias</span></label>` : `<div style="height:10px"></div>`)
+    + cmpResultadoHTML();
+
+  el.querySelectorAll("[data-cmp-tipo] button").forEach(b => b.addEventListener("click", () => {
+    const k = b.closest("[data-cmp-tipo]").dataset.cmpTipo;
+    CMP[k].tipo = b.dataset.t;
+    if (CMP[k].tipo === "livre" && !CMP[k].ini) {
+      const p = cmpPeriodo({ ...CMP[k], tipo: "mes" });
+      if (p) { CMP[k].ini = p.ini; CMP[k].fim = p.fim > hojeISO() ? hojeISO() : p.fim; }
+    }
+    pintaCmp();
+  }));
+  el.querySelectorAll("[data-cmp]").forEach(c => c.addEventListener("change", () => {
+    const campo = c.dataset.cmp, k = c.dataset.k;
+    if (campo === "justo") { CMP.justo = c.checked; return pintaCmp(); }
+    if (campo === "abertura") { CMP.abertura = c.value; return pintaCmp(); }
+    if (campo === "dim") { CMP[k].dim = c.value; CMP[k].val = ""; return pintaCmp(); }
+    CMP[k][campo] = c.value;
+    pintaCmp();
+  }));
+  el.querySelectorAll("[data-cmp-at]").forEach(b => b.addEventListener("click", () => {
+    const a = b.dataset.cmpAt;
+    const mr = CMP_MES_REF;
+    if (a === "mesAnt") {
+      CMP.a = { ...CMP.a, tipo: "mes", mes: mr }; CMP.b = { ...CMP.b, tipo: "mes", mes: Math.max(0, mr - 1) };
+    }
+    if (a === "semAnt") {
+      const hoje = hojeISO();
+      const at = CMP_SEM.find(s => hoje >= s.ini && hoje <= s.fim) || CMP_SEM[CMP_SEM.length - 1];
+      CMP.a = { ...CMP.a, tipo: "sem", sem: at.n };
+      CMP.b = { ...CMP.b, tipo: "sem", sem: Math.max(1, at.n - 1) };
+    }
+    if (a === "semMes") {
+      /* "1ª semana do mês" é a primeira da tabela cujo mês é aquele — não os
+         primeiros 7 dias do calendário. É a convenção da planilha. */
+      const p1 = CMP_SEM.find(s => s.mes === mr);
+      const p0 = CMP_SEM.find(s => s.mes === mr - 1);
+      if (p1) CMP.a = { ...CMP.a, tipo: "sem", sem: p1.n };
+      if (p0) CMP.b = { ...CMP.b, tipo: "sem", sem: p0.n };
+    }
+    if (a === "trocar") { const t = CMP.a; CMP.a = CMP.b; CMP.b = t; }
+    pintaCmp();
+  }));
+}
+
+function abrirComparar() {
+  abrir({
+    titulo: "Comparar",
+    sub: `Dois recortes lado a lado — período, gerente, canal, empreendimento ou parceiro.`
+      + (CMP_TEM_SEM ? ` As semanas são as da planilha: de segunda a domingo, e cada uma pertence ao mês da sua segunda-feira.`
+        : ` <b style="color:var(--warn)">A comparação por semana está indisponível</b> — a aba <code>_Aux_Semanas</code> não veio no payload.`)
+      + (ATO === "pago" ? ` <b style="color:var(--gold)">Recorte Ato pago ligado</b>.` : ""),
+    html: `<div id="cmpRoot"></div>`,
+    render: () => pintaCmp(),
+  });
+}
+
+$("#cmpBtn").addEventListener("click",abrirComparar);
+
+$("#ftVer").textContent=`Inteligência Comercial ${ANO} · v47 · painel Comparar: dois períodos ou recortes lado a lado, com as semanas da planilha`;
 $("#hdTitle").textContent=`Inteligência Comercial ${ANO}`;
 
 window.initDashboard=function(){ Object.keys(feito).forEach(k=>delete feito[k]);
